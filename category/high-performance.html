@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <!-- load favicon from /images -->
+        <link rel="icon" type="image/png" href="/images/favicon.png" />
+        <!-- stgatilov: properly detect device width on a mobile -->
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/> 
+
+        <meta charset="utf-8" />
+        <title>Dirty hands coding - High performance</title>
+        <link rel="stylesheet" href="https://dirtyhandscoding.github.io/theme/css/main.css" />
+        <link href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Dirty hands coding Atom Feed" />
+        <link href="/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="Dirty hands coding RSS Feed" />
+
+        <!--[if IE]>
+            <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+        <![endif]-->
+</head>
+
+<body id="index" class="home">
+        <header id="banner" class="body">
+                <h1><a href="https://dirtyhandscoding.github.io/">Dirty hands coding </a></h1>
+                <nav><ul>
+                    <li><a href="/archives.html">ARCHIVES</a></li>
+                    <li><a href="/categories.html">CATEGORIES</a></li>
+                    <li><a href="/tags.html">TAGS</a></li>
+                    <li><a href="/pages/contact.html">CONTACT</a></li>
+                </ul>
+<form class="navbar-search" action="https://dirtyhandscoding.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);">
+                        <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input">
+                    </form>
+                </nav>
+<div id="submenu">
+                    <ul>
+                            <li class="active"><a href="https://dirtyhandscoding.github.io/category/high-performance.html">High performance</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/off-topic.html">Off-topic</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/the-dark-mod.html">The Dark Mod</a></li>
+                    </ul>
+                <div>
+        </header><!-- /#banner -->
+
+                <section id="content" class="body">
+                    <ol id="posts-list" class="hfeed" start="2">
+            <li><article class="hentry">
+                <header>
+                    <h1><a href="https://dirtyhandscoding.github.io/posts/vectorizing-small-fixed-size-sort.html" rel="bookmark"
+                           title="Permalink to Vectorizing small fixed-size sort">Vectorizing small fixed-size sort</a></h1>
+                </header>
+
+                <div class="entry-content">
+<footer class="post-info">
+        <span>05 January 2018</span>
+	        <span>| in <a href="https://dirtyhandscoding.github.io/category/high-performance.html">High performance</a></span>
+<span>| tags: <a href="https://dirtyhandscoding.github.io/tag/cmov.html">cmov</a><a href="https://dirtyhandscoding.github.io/tag/simd.html">simd</a><a href="https://dirtyhandscoding.github.io/tag/sort.html">sort</a></span>
+</footer><!-- /.post-info -->                <p>After a long break, I can finally return to the topic which was started in the <a href="https://dirtyhandscoding.github.io/posts/performance-comparison-linear-search-vs-binary-search.html">previous blog post</a>. </p>
+<p>Imagine that we have a small array of compile-time constant size with integers. For instance, N = 32. And we want to sort it as fast as possible. What is the best solution for this problem?</p>
+<p>The wisest of you would suggest simply using std::sort, because every modern implementation of it is well-optimized and contains special handling of small subarrays to accelerate the generic quicksort algorithm. The ones who don't trust libraries would suggest using insertion sort: this is the algorithm usually used to handle small cases in std::sort. The performance geeks and regular stackoverflow visitors would definitely point to sorting networks: every question like "the fastest way to sort K integers" ends up with a solution based on them (<a href="https://stackoverflow.com/questions/2786899/fastest-sort-of-fixed-length-6-int-array">N=6</a>, <a href="https://stackoverflow.com/questions/32172144/fastest-way-to-sort-10-numbers-numbers-are-32-bit">N=10</a>, <a href="https://stackoverflow.com/questions/19790522/very-fast-sorting-of-fixed-length-arrays-using-comparator-networks">what</a>, <a href="https://stackoverflow.com/questions/3901079/how-does-a-sorting-network-beat-generic-sorting-algorithms">why</a>). I'm going to present a much less known way to sort small arrays of 32-bit keys, with performance comparable to sorting networks.</p>
+
+                <a class="readmore" href="https://dirtyhandscoding.github.io/posts/vectorizing-small-fixed-size-sort.html">read more</a>
+                </div><!-- /.entry-content -->
+            </article></li>
+
+            <li><article class="hentry">
+                <header>
+                    <h1><a href="https://dirtyhandscoding.github.io/posts/addendum-to-performance-comparison-linear-search-vs-binary-search.html" rel="bookmark"
+                           title="Permalink to Addendum to Performance comparison: linear search vs binary search">Addendum to Performance comparison: linear search vs binary search</a></h1>
+                </header>
+
+                <div class="entry-content">
+<footer class="post-info">
+        <span>29 August 2017</span>
+	        <span>| in <a href="https://dirtyhandscoding.github.io/category/high-performance.html">High performance</a></span>
+<span>| tags: <a href="https://dirtyhandscoding.github.io/tag/binary-search.html">binary search</a><a href="https://dirtyhandscoding.github.io/tag/cmov.html">cmov</a></span>
+</footer><!-- /.post-info -->                <p>The <a href="https://dirtyhandscoding.github.io/posts/performance-comparison-linear-search-vs-binary-search.html">previous blog post</a> got some attention and several good questions and suggestions. So I feel that I should sum up the main points noted by readers. Since the main article is already too long, I decided to keep all of this as a separate post.</p>
+
+                <a class="readmore" href="https://dirtyhandscoding.github.io/posts/addendum-to-performance-comparison-linear-search-vs-binary-search.html">read more</a>
+                </div><!-- /.entry-content -->
+            </article></li>
+
+            <li><article class="hentry">
+                <header>
+                    <h1><a href="https://dirtyhandscoding.github.io/posts/performance-comparison-linear-search-vs-binary-search.html" rel="bookmark"
+                           title="Permalink to Performance comparison: linear search vs binary search">Performance comparison: linear search vs binary search</a></h1>
+                </header>
+
+                <div class="entry-content">
+<footer class="post-info">
+        <span>25 August 2017</span>
+	        <span>| in <a href="https://dirtyhandscoding.github.io/category/high-performance.html">High performance</a></span>
+<span>| tags: <a href="https://dirtyhandscoding.github.io/tag/binary-search.html">binary search</a><a href="https://dirtyhandscoding.github.io/tag/cmov.html">cmov</a><a href="https://dirtyhandscoding.github.io/tag/iaca.html">iaca</a><a href="https://dirtyhandscoding.github.io/tag/simd.html">simd</a></span>
+</footer><!-- /.post-info -->                <p>While working on an implementation of merge sort promised in <a href="https://dirtyhandscoding.github.io/posts/vectorizing-stdmerge-with-vpermd-from-avx2-and-lookup-table.html">the previous article</a>, I realized that I'd like to use one neat little thing, which is worth its own post. It is a simple strategy for sorting or doing comparison-based tasks, which works wonderfully when input data is small enough.</p>
+<p>Suppose that we have a very small array and we want to sort it as fast as possible. Indeed, applying some fancy <em>O(N log N)</em> algorithm is not a good idea: although it has optimal asymptotic performance, its logic is too complicated to outperform simple bubble-sort-like algorithms which take <em>O(N^2)</em> time instead. That's why every well-optimized sorting algorithm based on quicksort (e.g. std::sort) or mergesort includes some simple quadratic algorithm which is run for sufficiently small subarrays like N &lt;= 32.</p>
+<p>What exactly should we strive for to get an algorithm efficient for small N? Here is the list of things to look for:
+<ol>
+  <li>Avoid branches whenever possible: unpredictable ones are very slow.</li>
+  <li>Reduce data dependency: this allows to fully utilize processing units in CPU pipeline.</li>
+  <li>Prefer simple data access and manipulation patterns: this allows to vectorize the algorithm.</li>
+  <li>Avoid complicated algorithms: they almost always fail on one of the previous points, and they sometimes do too much work for small inputs.</li>
+</ol></p>
+<p>I decided to start investigating a simpler problem first, which is solved by std::lower_bound: <u>given a sorted array of elements and a key, find index of the first array element greater or equal than the key</u>. And this investigation soon developed into a full-length standalone article.</p>
+
+                <a class="readmore" href="https://dirtyhandscoding.github.io/posts/performance-comparison-linear-search-vs-binary-search.html">read more</a>
+                </div><!-- /.entry-content -->
+            </article></li>
+            </ol><!-- /#posts-list -->
+<p class="paginator">
+    Page 1 / 2
+        <a href="https://dirtyhandscoding.github.io/category/high-performance2.html">&raquo;</a>
+</p>
+            </section><!-- /#content -->
+        <section id="extras" class="body">
+                <div class="social">
+                        <h2>social</h2>
+                        <ul>
+                            <li><a href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate">atom feed</a></li>
+                            <li><a href="/feeds/all.rss.xml" type="application/rss+xml" rel="alternate">rss feed</a></li>
+
+                        </ul>
+                </div><!-- /.social -->
+        </section><!-- /#extras -->
+
+        <footer id="contentinfo" class="body">
+                <p>Powered by <a href="http://getpelican.com/">Pelican</a>. Theme <a href="https://github.com/blueicefield/pelican-blueidea/">blueidea</a>, customized to personal taste.</p>
+        </footer><!-- /#contentinfo -->
+
+</body>
+</html>

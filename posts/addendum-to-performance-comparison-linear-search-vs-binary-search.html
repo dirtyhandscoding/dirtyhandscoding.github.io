@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <!-- load favicon from /images -->
+        <link rel="icon" type="image/png" href="/images/favicon.png" />
+        <!-- stgatilov: properly detect device width on a mobile -->
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/> 
+
+        <meta charset="utf-8" />
+        <title>Addendum to Performance comparison: linear search vs binary search</title>
+        <link rel="stylesheet" href="https://dirtyhandscoding.github.io/theme/css/main.css" />
+        <link href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Dirty hands coding Atom Feed" />
+        <link href="/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="Dirty hands coding RSS Feed" />
+
+        <!--[if IE]>
+            <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+        <![endif]-->
+</head>
+
+<body id="index" class="home">
+        <header id="banner" class="body">
+                <h1><a href="https://dirtyhandscoding.github.io/">Dirty hands coding </a></h1>
+                <nav><ul>
+                    <li><a href="/archives.html">ARCHIVES</a></li>
+                    <li><a href="/categories.html">CATEGORIES</a></li>
+                    <li><a href="/tags.html">TAGS</a></li>
+                    <li><a href="/pages/contact.html">CONTACT</a></li>
+                </ul>
+<form class="navbar-search" action="https://dirtyhandscoding.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);">
+                        <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input">
+                    </form>
+                </nav>
+<div id="submenu">
+                    <ul>
+                            <li class="active"><a href="https://dirtyhandscoding.github.io/category/high-performance.html">High performance</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/off-topic.html">Off-topic</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/the-dark-mod.html">The Dark Mod</a></li>
+                    </ul>
+                <div>
+        </header><!-- /#banner -->
+<section id="content" class="body">
+  <article>
+    <header>
+      <h1 class="entry-title">
+        <a href="https://dirtyhandscoding.github.io/posts/addendum-to-performance-comparison-linear-search-vs-binary-search.html" rel="bookmark"
+           title="Permalink to Addendum to Performance comparison: linear search vs binary search">Addendum to Performance comparison: linear search vs binary search</a></h1>
+    </header>
+
+    <div class="entry-content">
+<footer class="post-info">
+        <span>29 August 2017</span>
+	        <span>| in <a href="https://dirtyhandscoding.github.io/category/high-performance.html">High performance</a></span>
+<span>| tags: <a href="https://dirtyhandscoding.github.io/tag/binary-search.html">binary search</a><a href="https://dirtyhandscoding.github.io/tag/cmov.html">cmov</a></span>
+</footer><!-- /.post-info -->      <p>The <a href="https://dirtyhandscoding.github.io/posts/performance-comparison-linear-search-vs-binary-search.html">previous blog post</a> got some attention and several good questions and suggestions. So I feel that I should sum up the main points noted by readers. Since the main article is already too long, I decided to keep all of this as a separate post.</p>
+
+
+<h2 id="large-arrays"><a class="toclink" href="#large-arrays">Large arrays</a></h2>
+<p>Let's make it clear: <strong>the whole blog post was only about small arrays!</strong></p>
+<p>Since I was interested in linear search more than in binary search, I was mainly interested in cases like N &lt;= 128. It is clear that for larger arrays linear search is out of consideration anyway.
+All the performance results (except for one pair of plots) were measured in such a way that everything important fits into L1D cache. All the complicated things about memory access like using L2/L3/TLB/RAM were not considered at all. That's why the provided results may mislead if you want to implement binary search over 1 MB array.</p>
+<p>Speaking of really large arrays, there are several points to consider:
+<ol>
+<li>The provided implementation of branchless binary search always has power-of-two step, which causes ill cache utilization for large arrays (due to limited cache associativity). One of the solutions would be using ternary search instead of binary one. You can read more about it in <a href="https://www.pvk.ca/Blog/2012/07/30/binary-search-is-a-pathological-case-for-caches/">Paul Khuong's blog post</a>. </li>
+<li>If you can reorder allements beforehand, better rearrange them so that frequently used elements go first. The resulting layout is equivalent to storing perfectly balanced binary search tree in breadth-first order. This order is much more cache-friendly. Read more in <a href="http://bannalia.blogspot.ru/2015/06/cache-friendly-binary-search.html">bannalia's blog post</a>.</li>
+<li>If you can rearrange/preprocess large array, probably you should use some data structure for your searches. Various variations of B-tree are the most promising. You can read a bit about it e.g. in <a href="http://cglab.ca/~morin/misc/arraylayout/">this article</a>.</li>
+</ol></p>
+<h2 id="branchless-without-ternary-operator"><a class="toclink" href="#branchless-without-ternary-operator">Branchless without ternary operator</a></h2>
+<p>Regarding branchless binary search, some wondered if this can really be called branchless:</p>
+<div class="highlight"><pre><span></span><span class="c1">//binary_search_branchless</span>
+<span class="n">pos</span> <span class="o">=</span> <span class="p">(</span><span class="n">arr</span><span class="p">[</span><span class="n">pos</span> <span class="o">+</span> <span class="n">step</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">key</span> <span class="o">?</span> <span class="n">pos</span> <span class="o">+</span> <span class="nl">step</span> <span class="p">:</span> <span class="n">pos</span><span class="p">);</span>
+</pre></div>
+
+
+<p>There is no point in arguing about terminology, but it is quite interesting to see how other versions perform. For instance, it is possible to use the result of comparison as 0/1 integer value and do some math on it:</p>
+<div class="highlight"><pre><span></span><span class="c1">//binary_search_branchlessM</span>
+<span class="n">pos</span> <span class="o">+=</span> <span class="p">(</span><span class="n">arr</span><span class="p">[</span><span class="n">pos</span> <span class="o">+</span> <span class="n">step</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">key</span><span class="p">)</span> <span class="o">*</span> <span class="n">step</span><span class="p">;</span>
+</pre></div>
+
+
+<!-- split -->
+
+<div class="highlight"><pre><span></span><span class="c1">//binary_search_branchlessA</span>
+<span class="n">pos</span> <span class="o">+=</span> <span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">arr</span><span class="p">[</span><span class="n">pos</span> <span class="o">+</span> <span class="n">step</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">key</span><span class="p">))</span> <span class="o">&amp;</span> <span class="n">step</span><span class="p">;</span>
+</pre></div>
+
+
+<p>Also, it is possible to avoid comparison completely, using arithmetic shift on difference to get empty or full bitmask:</p>
+<div class="highlight"><pre><span></span><span class="c1">//binary_search_branchlessS</span>
+<span class="n">pos</span> <span class="o">+=</span> <span class="p">((</span><span class="n">arr</span><span class="p">[</span><span class="n">pos</span> <span class="o">+</span> <span class="n">step</span><span class="p">]</span> <span class="o">-</span> <span class="n">key</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="mi">31</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">step</span><span class="p">;</span>
+</pre></div>
+
+
+<p>Just remember that this code is not perfectly portable: it <a href="https://stackoverflow.com/questions/8415895/is-left-and-right-shifting-negative-integers-defined-behavior">relies on undefined behavior</a> according to C/C++ standards.</p>
+<p>I included these three cases into extended comparison (see plots below). They are noticeably slower of course, but still much faster than branching binary search.</p>
+<h2 id="preload-pivot-elements"><a class="toclink" href="#preload-pivot-elements">Preload pivot elements</a></h2>
+<p>One really smart idea about binary search was from <a href="https://www.reddit.com/user/seba">seba</a>, who suggested preloading both possible pivots for the next iteration while still performing the current iteration. This means doing two memory loads per iteration instead of one, but since they are started one iteration earlier, their latency is hidden behind other logical instructions going on.</p>
+<p>Note that after both potential pivots are loaded, we need to do additional work to choose the real future pivot among them, and it can be done with cmov with after the comparison already performed.
+Here is the resulting implementation:</p>
+<div class="highlight"><pre><span></span><span class="kt">int</span> <span class="nf">binary_search_branchless_pre</span> <span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="o">*</span><span class="n">arr</span><span class="p">,</span> <span class="kt">int</span> <span class="n">n</span><span class="p">,</span> <span class="kt">int</span> <span class="n">key</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kt">intptr_t</span> <span class="n">pos</span> <span class="o">=</span> <span class="n">MINUS_ONE</span><span class="p">;</span>
+    <span class="kt">intptr_t</span> <span class="n">logstep</span> <span class="o">=</span> <span class="n">bsr</span><span class="p">(</span><span class="n">n</span><span class="p">);</span>
+    <span class="kt">intptr_t</span> <span class="n">step</span> <span class="o">=</span> <span class="kt">intptr_t</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="n">logstep</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="n">pivot</span> <span class="o">=</span> <span class="n">arr</span><span class="p">[</span><span class="n">pos</span> <span class="o">+</span> <span class="n">step</span><span class="p">];</span>
+    <span class="k">while</span> <span class="p">(</span><span class="n">step</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kt">intptr_t</span> <span class="n">nextstep</span> <span class="o">=</span> <span class="n">step</span> <span class="o">&gt;&gt;</span> <span class="mi">1</span><span class="p">;</span>
+        <span class="kt">int</span> <span class="n">pivotL</span> <span class="o">=</span> <span class="n">arr</span><span class="p">[</span><span class="n">pos</span> <span class="o">+</span> <span class="n">nextstep</span><span class="p">];</span>
+        <span class="kt">int</span> <span class="n">pivotR</span> <span class="o">=</span> <span class="n">arr</span><span class="p">[</span><span class="n">pos</span> <span class="o">+</span> <span class="n">step</span> <span class="o">+</span> <span class="n">nextstep</span><span class="p">];</span>
+        <span class="n">pos</span> <span class="o">=</span> <span class="p">(</span><span class="n">pivot</span> <span class="o">&lt;</span> <span class="n">key</span> <span class="o">?</span> <span class="n">pos</span> <span class="o">+</span> <span class="nl">step</span> <span class="p">:</span> <span class="n">pos</span><span class="p">);</span>
+        <span class="n">pivot</span> <span class="o">=</span> <span class="p">(</span><span class="n">pivot</span> <span class="o">&lt;</span> <span class="n">key</span> <span class="o">?</span> <span class="nl">pivotR</span> <span class="p">:</span> <span class="n">pivotL</span><span class="p">);</span>
+        <span class="n">step</span> <span class="o">=</span> <span class="n">nextstep</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="n">pos</span> <span class="o">=</span> <span class="p">(</span><span class="n">pivot</span> <span class="o">&lt;</span> <span class="n">key</span> <span class="o">?</span> <span class="n">pos</span> <span class="o">+</span> <span class="nl">step</span> <span class="p">:</span> <span class="n">pos</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">pos</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>The idea turns binary search into something similar to quaternary search:</p>
+<div class="highlight"><pre><span></span><span class="kt">int</span> <span class="nf">quaternary_search_branchless</span> <span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="o">*</span><span class="n">arr</span><span class="p">,</span> <span class="kt">int</span> <span class="n">n</span><span class="p">,</span> <span class="kt">int</span> <span class="n">key</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">assert</span><span class="p">((</span><span class="n">n</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span><span class="p">);</span> <span class="c1">//n = 2^k - 1</span>
+    <span class="kt">intptr_t</span> <span class="n">pos</span> <span class="o">=</span> <span class="n">MINUS_ONE</span><span class="p">;</span>
+    <span class="kt">intptr_t</span> <span class="n">logstep</span> <span class="o">=</span> <span class="n">bsr</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span>
+    <span class="kt">intptr_t</span> <span class="n">step</span> <span class="o">=</span> <span class="kt">intptr_t</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="n">logstep</span><span class="p">;</span>
+    <span class="k">while</span> <span class="p">(</span><span class="n">step</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kt">int</span> <span class="n">pivotL</span> <span class="o">=</span> <span class="n">arr</span><span class="p">[</span><span class="n">pos</span> <span class="o">+</span> <span class="n">step</span> <span class="o">*</span> <span class="mi">1</span><span class="p">];</span>
+        <span class="kt">int</span> <span class="n">pivotM</span> <span class="o">=</span> <span class="n">arr</span><span class="p">[</span><span class="n">pos</span> <span class="o">+</span> <span class="n">step</span> <span class="o">*</span> <span class="mi">2</span><span class="p">];</span>
+        <span class="kt">int</span> <span class="n">pivotR</span> <span class="o">=</span> <span class="n">arr</span><span class="p">[</span><span class="n">pos</span> <span class="o">+</span> <span class="n">step</span> <span class="o">*</span> <span class="mi">3</span><span class="p">];</span>
+        <span class="n">pos</span> <span class="o">=</span> <span class="p">(</span><span class="n">pivotL</span> <span class="o">&lt;</span> <span class="n">key</span> <span class="o">?</span> <span class="n">pos</span> <span class="o">+</span> <span class="nl">step</span> <span class="p">:</span> <span class="n">pos</span><span class="p">);</span>
+        <span class="n">pos</span> <span class="o">=</span> <span class="p">(</span><span class="n">pivotM</span> <span class="o">&lt;</span> <span class="n">key</span> <span class="o">?</span> <span class="n">pos</span> <span class="o">+</span> <span class="nl">step</span> <span class="p">:</span> <span class="n">pos</span><span class="p">);</span>
+        <span class="n">pos</span> <span class="o">=</span> <span class="p">(</span><span class="n">pivotR</span> <span class="o">&lt;</span> <span class="n">key</span> <span class="o">?</span> <span class="n">pos</span> <span class="o">+</span> <span class="nl">step</span> <span class="p">:</span> <span class="n">pos</span><span class="p">);</span>
+        <span class="n">step</span> <span class="o">&gt;&gt;=</span> <span class="mi">2</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="n">pos</span> <span class="o">=</span> <span class="p">(</span><span class="n">arr</span><span class="p">[</span><span class="n">pos</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">key</span> <span class="o">?</span> <span class="n">pos</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">:</span> <span class="n">pos</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">pos</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>Both of these implementations are included into extended performance comparison given below. The binary search with preloading (<code>binary_search_branchless_pre</code>) actually becomes significantly faster in latency, sacrificing some throughput. The quaternary search is not so good.</p>
+<h2 id="hybrid-search"><a class="toclink" href="#hybrid-search">Hybrid search</a></h2>
+<p>I tried to perform branchless binary search until the segment of interest becomes small enough, then use linear search within it. It seems that making several iterations of linear search is not a good idea though: in fact, the best way is to make the length of linear search fixed, so that it could be fully unrolled. That's why I stopped on doing 16-element linear search. Using movemask instead of counting seems to be a bit faster in this case:</p>
+<div class="highlight"><pre><span></span><span class="kt">int</span> <span class="nf">hybridX_search</span> <span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="o">*</span><span class="n">arr</span><span class="p">,</span> <span class="kt">int</span> <span class="n">n</span><span class="p">,</span> <span class="kt">int</span> <span class="n">key</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kt">intptr_t</span> <span class="n">pos</span> <span class="o">=</span> <span class="n">MINUS_ONE</span><span class="p">;</span>
+    <span class="kt">intptr_t</span> <span class="n">logstep</span> <span class="o">=</span> <span class="n">bsr</span><span class="p">(</span><span class="n">n</span><span class="p">);</span>
+    <span class="kt">intptr_t</span> <span class="n">step</span> <span class="o">=</span> <span class="kt">intptr_t</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="n">logstep</span><span class="p">;</span>
+    <span class="k">while</span> <span class="p">(</span><span class="n">step</span> <span class="o">&gt;</span> <span class="mi">8</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">pos</span> <span class="o">=</span> <span class="p">(</span><span class="n">arr</span><span class="p">[</span><span class="n">pos</span> <span class="o">+</span> <span class="n">step</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">key</span> <span class="o">?</span> <span class="n">pos</span> <span class="o">+</span> <span class="nl">step</span> <span class="p">:</span> <span class="n">pos</span><span class="p">);</span>
+        <span class="n">step</span> <span class="o">&gt;&gt;=</span> <span class="mi">1</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="n">pos</span><span class="o">++</span><span class="p">;</span>
+    <span class="n">step</span> <span class="o">&lt;&lt;=</span> <span class="mi">1</span><span class="p">;</span>
+
+    <span class="kr">__m128i</span> <span class="n">vkey</span> <span class="o">=</span> <span class="n">_mm_set1_epi32</span><span class="p">(</span><span class="n">key</span><span class="p">);</span>
+    <span class="kr">__m128i</span> <span class="n">cnt</span> <span class="o">=</span> <span class="n">_mm_setzero_si128</span><span class="p">();</span>
+    <span class="kr">__m128i</span> <span class="n">cmp0</span> <span class="o">=</span> <span class="n">_mm_cmpgt_epi32</span> <span class="p">(</span><span class="n">vkey</span><span class="p">,</span> <span class="n">_mm_load_si128</span><span class="p">((</span><span class="kr">__m128i</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">arr</span><span class="p">[</span><span class="n">pos</span><span class="o">+</span><span class="mi">0</span><span class="p">]));</span>
+    <span class="kr">__m128i</span> <span class="n">cmp1</span> <span class="o">=</span> <span class="n">_mm_cmpgt_epi32</span> <span class="p">(</span><span class="n">vkey</span><span class="p">,</span> <span class="n">_mm_load_si128</span><span class="p">((</span><span class="kr">__m128i</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">arr</span><span class="p">[</span><span class="n">pos</span><span class="o">+</span><span class="mi">4</span><span class="p">]));</span>
+    <span class="kr">__m128i</span> <span class="n">cmp2</span> <span class="o">=</span> <span class="n">_mm_cmpgt_epi32</span> <span class="p">(</span><span class="n">vkey</span><span class="p">,</span> <span class="n">_mm_load_si128</span><span class="p">((</span><span class="kr">__m128i</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">arr</span><span class="p">[</span><span class="n">pos</span><span class="o">+</span><span class="mi">8</span><span class="p">]));</span>
+    <span class="kr">__m128i</span> <span class="n">cmp3</span> <span class="o">=</span> <span class="n">_mm_cmpgt_epi32</span> <span class="p">(</span><span class="n">vkey</span><span class="p">,</span> <span class="n">_mm_load_si128</span><span class="p">((</span><span class="kr">__m128i</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">arr</span><span class="p">[</span><span class="n">pos</span><span class="o">+</span><span class="mi">12</span><span class="p">]));</span>
+    <span class="kr">__m128i</span> <span class="n">pack01</span> <span class="o">=</span> <span class="n">_mm_packs_epi32</span> <span class="p">(</span><span class="n">cmp0</span><span class="p">,</span> <span class="n">cmp1</span><span class="p">);</span>
+    <span class="kr">__m128i</span> <span class="n">pack23</span> <span class="o">=</span> <span class="n">_mm_packs_epi32</span> <span class="p">(</span><span class="n">cmp2</span><span class="p">,</span> <span class="n">cmp3</span><span class="p">);</span>
+    <span class="kr">__m128i</span> <span class="n">pack0123</span> <span class="o">=</span> <span class="n">_mm_packs_epi16</span> <span class="p">(</span><span class="n">pack01</span><span class="p">,</span> <span class="n">pack23</span><span class="p">);</span>
+    <span class="kt">uint32_t</span> <span class="n">res</span> <span class="o">=</span> <span class="n">_mm_movemask_epi8</span> <span class="p">(</span><span class="n">pack0123</span><span class="p">);</span>
+
+    <span class="k">return</span> <span class="n">pos</span> <span class="o">+</span> <span class="n">bsf</span><span class="p">(</span><span class="o">~</span><span class="n">res</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>It actually helped to reduce both throughput and latency time a bit (see plots below).</p>
+<h2 id="compiler-issues"><a class="toclink" href="#compiler-issues">Compiler issues</a></h2>
+<ol>
+<li><a href="https://www.reddit.com/user/mttd">mttd</a> pointed out that there is intrinsic <a href="http://clang.llvm.org/docs/LanguageExtensions.html#builtin-unpredictable">__builtin_unpredictable</a> in Clang, which helps a lot in getting <code>cmov</code> instructions generated. I guess it is not present in GCC and MSVC...</li>
+<li>I created <a href="https://developercommunity.visualstudio.com/content/problem/102658/initialization-int-x-1-compiles-into-or-eax-1-whic.html">an issue</a> for Visual C++ about that stupid "or r9, -1" instruction generated. <b>UPDATE(Nov.2017)</b>: this transformation is disabled when compiling for speed, the fix is targeted for version 15.6.</li>
+</ol>
+
+<!-- -->
+
+<h1 id="extended-performance-results"><a class="toclink" href="#extended-performance-results">Extended performance results</a></h1>
+<p>Since all the added implementations are for binary search, the best plot would be the one which draws time per search divided by log2(N), which is something like "time per iteration of simple binary search":
+<div class="center-content">
+    <img src="https://dirtyhandscoding.github.io/images/3_lin_bin_search_add/plot_log_65536_thr.png" class="w550" />
+    <img src="https://dirtyhandscoding.github.io/images/3_lin_bin_search_add/plot_log_65536_lat.png" class="w550" />
+</div></p>
+<p>Here is the plain plot also:
+<div class="center-content">
+    <img src="https://dirtyhandscoding.github.io/images/3_lin_bin_search_add/plot_search_65536_thr.png" class="w550" />
+    <img src="https://dirtyhandscoding.github.io/images/3_lin_bin_search_add/plot_search_65536_lat.png" class="w550" />
+</div></p>
+<p>Sorry for the mess: there are too many implementations being compared already.
+Note that linear searches now use cross style of markers, while binary searches use solid figures or asterisks for markers.</p>
+<p>The updated code including all new implementations is in <a href="https://github.com/stgatilov/linear-vs-binary-search">the same repository as before</a>.</p>
+<p>Raw results are also available there in a branch. For instance, you can see all the text logs for throughput <a href="https://github.com/stgatilov/linear-vs-binary-search/tree/results/res_addendum_throughput">here</a> and all the text logs for latency <a href="https://github.com/stgatilov/linear-vs-binary-search/tree/results/res_addendum_latency">here</a>.</p>
+    </div><!-- /.entry-content -->
+    <section>
+        <div id="post-share-links" class="inline-menu">
+            <div>Share on:</div>
+            <a href="https://twitter.com/intent/tweet?text=Addendum%20to%20Performance%20comparison%3A%20linear%20search%20vs%20binary%20search&url=https%3A//dirtyhandscoding.github.io/posts/addendum-to-performance-comparison-linear-search-vs-binary-search.html" target="_blank" class="icon-label" title="Share on Twitter">Twitter</a><!--
+            --><a href="http://www.facebook.com/sharer/sharer.php?u=https%3A//dirtyhandscoding.github.io/posts/addendum-to-performance-comparison-linear-search-vs-binary-search.html" target="_blank" class="icon-label" title="Share on Facebook">Facebook</a><!--
+            --><a href="https://plus.google.com/share?url=https%3A//dirtyhandscoding.github.io/posts/addendum-to-performance-comparison-linear-search-vs-binary-search.html" target="_blank" class="icon-label" title="Share on Google Plus">Google+</a><!--
+            --><a href="https://sharetodiaspora.github.io/?title=Addendum%20to%20Performance%20comparison%3A%20linear%20search%20vs%20binary%20search&url=https%3A//dirtyhandscoding.github.io/posts/addendum-to-performance-comparison-linear-search-vs-binary-search.html" target="_blank" class="icon-label" title="Share on Diaspora">Diaspora*</a><!--
+            --><a href="https://news.ycombinator.com/submitlink?t=Addendum%20to%20Performance%20comparison%3A%20linear%20search%20vs%20binary%20search&u=https%3A//dirtyhandscoding.github.io/posts/addendum-to-performance-comparison-linear-search-vs-binary-search.html" target="_blank" class="icon-label" title="Share on HackerNews">HackerNews</a><!--
+            --><a href="mailto:?subject=Addendum%20to%20Performance%20comparison%3A%20linear%20search%20vs%20binary%20search&amp;body=https%3A//dirtyhandscoding.github.io/posts/addendum-to-performance-comparison-linear-search-vs-binary-search.html" target="_blank" class="icon-label" title="Share via Email">Email</a>
+        </div>
+    </section>
+    
+    			<!--<script type="text/javascript" src="http://code.jquery.com/jquery-2.1.4.min.js"></script>-->
+		<script src="https://dirtyhandscoding.github.io/theme/js/jquery.min.js"></script>
+	<script type="text/javascript" src="https://dirtyhandscoding.github.io/theme/pelican_comment_system/comments.js"></script>
+	<script type="text/javascript">
+		$(document).ready(function() {
+			CommentSystem.email_user   = "itiswrongemail";
+			CommentSystem.email_domain = "outlook.com";
+
+			$('#pcs-comment-form').on("submit",
+				function( event )
+				{
+					event.preventDefault();
+					$(location).attr('href', CommentSystem.getMailtoLink("addendum-to-performance-comparison-linear-search-vs-binary-search"));
+				}
+			);
+		});
+	</script>
+
+    	<section>
+	<div id="pcs-comments-header" class="inline-menu">
+	<header>
+		<div>Comments (0)</div>
+		<button type="button" title="Expand or collapse the comments section" class="icon-label" id="pcs-comments-collapse-button" onclick="CommentSystem.collapsible($('#pcs-comments'), $(this));">
+			<span class="nocss">expand</span>
+		</button>
+			<a href="https://dirtyhandscoding.github.io/feeds/comment.addendum-to-performance-comparison-linear-search-vs-binary-search.atom.xml" class="icon-label">atom feed: comments</a>
+	</header>
+	</div>
+	<div id="pcs-comments">
+		<p>There are no comments yet.</p>
+	<section>
+	<div display="none" id="pcs-comment-notreply-helper" />
+	<form id="pcs-comment-form" action="#">
+		<fieldset>
+		<legend>Add a Comment</legend>
+		<div id="pcs-comment-tab-inputs">
+			<input type="hidden" id="pcs-comment-form-input-replyto"/>
+			<label for="pcs-comment-form-input-name">Name</label>
+			<input  id="pcs-comment-form-input-name" type="text" size="40" placeholder="Enter your name or nickname" />
+			<br/>
+			<label for="pcs-comment-form-input-website">Website</label>
+			<input  id="pcs-comment-form-input-website" type="text" size="40" placeholder="Enter your website (optional)" />
+			<br/>
+			<label for="pcs-comment-form-input-empty">Empty</label>
+			<input  id="pcs-comment-form-input-empty" type="text" size="30" placeholder="Do NOT enter anything here!" />
+			<label   for="pcs-comment-form-input-textarea">Your Comment</label>
+			<br/>
+			<textarea id="pcs-comment-form-input-textarea" rows="7" cols="40" placeholder="Enter your comment (markdown is allowed)"></textarea>
+		</div>
+		<div id="pcs-comment-tab-message" style="display:none">
+			<textarea readonly rows="10" cols="40"></textarea>
+		</div>
+
+		<button type="submit"
+				id="pcs-comment-form-button-submit"
+				title="Create mailto link and open it in default email client &#10;Note: you have to send the email to post comment"
+				>Post via email</button>
+		<button type="button"
+				id="pcs-comment-form-button-message"
+				title="See the text of email message to be sent &#10;Note: you can copy it and send manually"
+				onclick="CommentSystem.viewEmail(&quot;addendum-to-performance-comparison-linear-search-vs-binary-search&quot;);"
+				>View email text</button>
+		<a target="_blank"
+				id="pcs-comment-gmail-config-help"
+				title="How to configure Chrome to open mailto links in Gmail..."
+				href="https://productforums.google.com/forum/#!topic/gmail/JtWVPbUfh-o"
+				>?</a>
+		</fieldset>
+
+		<!--			<a href="https://dirtyhandscoding.github.io/feeds/comment.addendum-to-performance-comparison-linear-search-vs-binary-search.atom.xml">
+				Comment Atom Feed
+			</a>
+-->
+	</form>
+	<script>CommentSystem.displayReplyTo();</script>
+</section>
+
+	</div>
+	<script>
+		$('#pcs-comments').css({display: "none"});
+		$('#pcs-comments-collapse-button').addClass('collapsed');
+	</script>
+</section>
+
+  </article>
+</section>
+        <section id="extras" class="body">
+                <div class="social">
+                        <h2>social</h2>
+                        <ul>
+                            <li><a href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate">atom feed</a></li>
+                            <li><a href="/feeds/all.rss.xml" type="application/rss+xml" rel="alternate">rss feed</a></li>
+
+                        </ul>
+                </div><!-- /.social -->
+        </section><!-- /#extras -->
+
+        <footer id="contentinfo" class="body">
+                <p>Powered by <a href="http://getpelican.com/">Pelican</a>. Theme <a href="https://github.com/blueicefield/pelican-blueidea/">blueidea</a>, customized to personal taste.</p>
+        </footer><!-- /#contentinfo -->
+
+</body>
+</html>

@@ -1,0 +1,6 @@
+The following icons:
+  link.svg
+  reply.svg
+were taken from:
+  https://fontawesome.com/license
+under CC BY 4.0 license.

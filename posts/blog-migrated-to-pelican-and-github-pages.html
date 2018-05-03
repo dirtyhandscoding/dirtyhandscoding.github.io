@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <!-- load favicon from /images -->
+        <link rel="icon" type="image/png" href="/images/favicon.png" />
+        <!-- stgatilov: properly detect device width on a mobile -->
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/> 
+
+        <meta charset="utf-8" />
+        <title>Blog migrated to Pelican and GitHub pages</title>
+        <link rel="stylesheet" href="https://dirtyhandscoding.github.io/theme/css/main.css" />
+        <link href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Dirty hands coding Atom Feed" />
+        <link href="/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="Dirty hands coding RSS Feed" />
+
+        <!--[if IE]>
+            <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+        <![endif]-->
+</head>
+
+<body id="index" class="home">
+        <header id="banner" class="body">
+                <h1><a href="https://dirtyhandscoding.github.io/">Dirty hands coding </a></h1>
+                <nav><ul>
+                    <li><a href="/archives.html">ARCHIVES</a></li>
+                    <li><a href="/categories.html">CATEGORIES</a></li>
+                    <li><a href="/tags.html">TAGS</a></li>
+                    <li><a href="/pages/contact.html">CONTACT</a></li>
+                </ul>
+<form class="navbar-search" action="https://dirtyhandscoding.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);">
+                        <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input">
+                    </form>
+                </nav>
+<div id="submenu">
+                    <ul>
+                            <li><a href="https://dirtyhandscoding.github.io/category/high-performance.html">High performance</a></li>
+                            <li class="active"><a href="https://dirtyhandscoding.github.io/category/off-topic.html">Off-topic</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/the-dark-mod.html">The Dark Mod</a></li>
+                    </ul>
+                <div>
+        </header><!-- /#banner -->
+<section id="content" class="body">
+  <article>
+    <header>
+      <h1 class="entry-title">
+        <a href="https://dirtyhandscoding.github.io/posts/blog-migrated-to-pelican-and-github-pages.html" rel="bookmark"
+           title="Permalink to Blog migrated to Pelican and GitHub pages">Blog migrated to Pelican and GitHub pages</a></h1>
+    </header>
+
+    <div class="entry-content">
+<footer class="post-info">
+        <span>02 May 2018</span>
+	        <span>| in <a href="https://dirtyhandscoding.github.io/category/off-topic.html">Off-topic</a></span>
+<span>| tags: <a href="https://dirtyhandscoding.github.io/tag/blog.html">blog</a><a href="https://dirtyhandscoding.github.io/tag/pelican.html">pelican</a><a href="https://dirtyhandscoding.github.io/tag/gh-pages.html">gh-pages</a></span>
+</footer><!-- /.post-info -->      <p>This article is a sort of report about blog migration.</p>
+<h2 id="on-wordpresscom"><a class="toclink" href="#on-wordpresscom">On wordpress.com</a></h2>
+<p>Initially, I started <a href="http://dirtyhandscoding.wordpress.com">this blog on wordpress.com</a>. I chose wordpress.com thinking that I only need a small personal blog and I can easily live without any advanced features. I was pretty sure that I will post only technical articles, and do so quite rarely, so I searched for a free solution and wordpress.com was a good fit. And the experience was quite good in general: I did not have to configure anything, just choose a classic theme and go on writing.</p>
+<p>A problem which I noticed rather quickly is that the width of the text in my blog was way too small. The amount of text fitting into one line was small, and it was especially ugly for source code fragments. When I wanted to post a piece of code from somewhere, I had to add split lines into pieces, so that the whole code fits and no scroll bar appears.</p>
+
+
+<p>I even had to simplify my own code because of this problem. The following piece of code from Doom 3 is a good example (the <a href="https://dirtyhandscoding.github.io/posts/doom-3-c-enhanced-rtti-and-memory-debugging.html#uninitialized-members">new version</a> has plenty of space):</p>
+<p><img src="https://dirtyhandscoding.github.io/images/5_blog_migration/wordpress_codefragment.png" class="centered bordered" style="width:80%; max-width:650px;"/></p>
+<p>Fixing this problem is rather easy with CSS, but cannot edit CSS unless you switch to premium plan and pay monthly. I tried to search for new themes, but to no avail. At the end I decided that I should search for another hosting.</p>
+<p>One way to get away from this limitations is to use wordpress.org on self-hosted site with custom domain. But it costs money again. Given that I do not need a full-blown website, I do not want to pay. In the age when I can freely share one gigabyte <a href="http://drive.google.com">file</a> or <a href="http://www.youtube.com">video</a> with everyone, having to pay money for serving a few megabytes of website data is plain stupid.</p>
+<h2 id="static-website"><a class="toclink" href="#static-website">Static website</a></h2>
+<p>Finally, I decided to move the blog to <a href="https://pages.github.com/">GitHub pages</a>. It is free, and the concept of static blog is simple, fast, secure. Of course, there is a serious disadvantage: you have to install, configure, fine-tune a lot of stuff, fix some css styles, html templates. I would definitely advise <strong>against</strong> creating static blogs to all people who are either not familiar with website internals or not willing to spend some time to hack things together. Also, dynamic stuff (like <a href="https://dirtyhandscoding.github.io/posts/blog-migrated-to-pelican-and-github-pages.html#comments">comments</a>) can be implemented only with ugly workarounds.</p>
+<p>First of all, I had to choose a static blog generator. There are several such generators. The full list can be seen on netlify's <a href="https://www.staticgen.com/">staticgen.com</a> site. All of them allow you to write articles in Markdown and apply various themes to the blog. Here are the options I chose from:</p>
+<ul>
+<li><a href="https://jekyllrb.com/">Jekyll</a> in Ruby. This option is clearly the most popular, and it is the only one integrated into GitHub (builds are simpler). Even though I have no experience with Ruby, I wanted to choose this option initially. But then I discovered that Jekyll is <strong>not</strong> supported on Windows. Moreover, you cannot even use Ruby packages without downloading and installing 1GB Linux subsystem. It became apparent that this ecosystem does not care for Windows users (which I am one of).</li>
+<li><a href="https://hexo.io/">Hexo</a> in javascript. This option is less popular, but will probably rise in the nearest future. Using javascript for generating websites is a great idea, because any client-side code has to be in javascript anyway, so it is more convenient to use one language in both areas. I have suffered enough from javascript on my daily job, so I decided to avoid this too.</li>
+<li><a href="https://blog.getpelican.com/">Pelican</a> in Python. This option is probably even less popular than Hexo. Python is a great language for a variety of tasks, and my experience with it is strongly positive. It is very user-friendly, truly cross-platform, does not have tons of stupid legacy stuff like javascript.</li>
+</ul>
+<p>I decided to use Pelican at the end.</p>
+<h2 id="quick-start"><a class="toclink" href="#quick-start">Quick-start</a></h2>
+<p>First of all, I created a <a href="https://docs.pipenv.org/">pipenv</a> environment, which works similar to how npm in node.js does. Although I never used pipenv before, it seems that it would be much easier to run Pelican on another machine if I do so.</p>
+<p>I ran <code>pelican-quickstart</code> command to generate some initial files. Then I deleted the generated makefile and shell script, since there are of no use for me on Windows. It seems that they are duplicated by <a href="http://www.fabfile.org/">fabfile.py</a>, which is also generated. To simplify running fabfile tasks, I created <code>fab.cmd</code> file:</p>
+<div class="highlight"><pre><span></span>pipenv run fab.exe <span class="nv">%*</span>
+</pre></div>
+
+
+<p>After I got familiar to existing fabfile tasks, I realized that I want some sort of watch &amp; live reload option similar to what <a href="https://github.com/webpack/webpack-dev-server">wevpack-dev-server</a> provides. Following the <a href="https://merlijn.vandeen.nl/2015/pelican-livereload.html">article by Merlijn van Deen</a>, I have added a <code>livereload</code> task to <code>fabfile.py</code>. It is based on <a href="https://pypi.org/project/livereload/">livereload</a> Python package and requires installing browser extension. Unlike the cited article, I later extended the livereload task to also watch over theme and config files:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">livereload</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Serve site at http://localhost:5500/ automatically livereload in browser&quot;&quot;&quot;</span>
+    <span class="c1"># adapted from: https://merlijn.vandeen.nl/2015/pelican-livereload.html</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">def</span> <span class="nf">build_content</span><span class="p">():</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">SystemExit</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">pass</span>
+    <span class="k">def</span> <span class="nf">build_all</span><span class="p">():</span>
+        <span class="n">nonlocal</span> <span class="n">p</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">Pelican</span><span class="p">(</span><span class="n">read_settings</span><span class="p">(</span><span class="s1">&#39;pelicanconf.py&#39;</span><span class="p">))</span>
+        <span class="n">build_content</span><span class="p">()</span>
+    <span class="n">build_all</span><span class="p">()</span>
+    <span class="n">server</span> <span class="o">=</span> <span class="n">livereload_Server</span><span class="p">()</span>
+    <span class="n">server</span><span class="o">.</span><span class="n">watch</span><span class="p">(</span><span class="s1">&#39;content/&#39;</span><span class="p">,</span> <span class="n">build_content</span><span class="p">)</span>
+    <span class="n">server</span><span class="o">.</span><span class="n">watch</span><span class="p">(</span><span class="s1">&#39;theme/&#39;</span><span class="p">,</span> <span class="n">build_content</span><span class="p">)</span>
+    <span class="n">server</span><span class="o">.</span><span class="n">watch</span><span class="p">(</span><span class="s1">&#39;pelicanconf.py&#39;</span><span class="p">,</span> <span class="n">build_all</span><span class="p">)</span>
+    <span class="n">server</span><span class="o">.</span><span class="n">serve</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="s1">&#39;output&#39;</span><span class="p">)</span>
+</pre></div>
+
+
+<p>As a result, I can run editor on the left half of the screen, and browser on the right shows the current look of the article being edited:</p>
+<p><img src="https://dirtyhandscoding.github.io/images/5_blog_migration/livereload_workspace.png" class="centered bordered" style="width:80%; max-width:1000px;"/></p>
+<h2 id="converting-articles"><a class="toclink" href="#converting-articles">Converting articles</a></h2>
+<p>I had to convert five articles from my wordpress.com blog, which are available only as html files. It turned out that Markdown processor carefully copies all html tags into the output, so even putting html article into markdown file is enough to get it rendered. Here is what I had to do for every article:</p>
+<ol>
+<li>
+<p>Copy article source as html into markdown file. Article source is shown on wordpress.com if you edit your article in <code>html</code> tab.</p>
+</li>
+<li>
+<p>Add meta information at the beginning of the <code>.md</code> file:</p>
+<div class="highlight"><pre><span></span><span class="n">Title</span><span class="o">:</span> <span class="n">Blog</span> <span class="n">migrated</span> <span class="n">to</span> <span class="n">GitHub</span> <span class="n">pages</span> <span class="n">and</span> <span class="n">pelican</span>
+<span class="n">Date</span><span class="o">:</span> <span class="mi">2018</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">19</span> <span class="mi">23</span><span class="o">:</span><span class="mi">26</span>
+<span class="n">Category</span><span class="o">:</span> <span class="n">Off</span><span class="o">-</span><span class="n">topic</span>
+<span class="n">Tags</span><span class="o">:</span> <span class="n">blog</span><span class="o">,</span> <span class="n">pelican</span><span class="o">,</span> <span class="n">gh</span><span class="o">-</span><span class="n">pages</span>
+</pre></div>
+
+
+</li>
+<li>
+<p>Fix all code blocks: use indentation and <code>:::language</code> instead of <code>[code]</code> tags, e.g.:</p>
+<div class="highlight"><pre><span></span>The code starts by iterating over the elements to be moved:
+
+    :::cpp
+    for (size_t i = 0; i &lt; Count; i += 4) {
+</pre></div>
+
+
+</li>
+<li>
+<p>(Optional) Download all the images used in the article from wordpress.com, then fix all links to them in markdown files. Without doing so, the images will still be loaded from wordpress.com.</p>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">img</span> <span class="na">src</span><span class="o">=</span><span class="s">&quot;{filename}/images/0_doom3_typeinfo/uninitialized_warning_console.png&quot;</span> <span class="err">...</span> <span class="p">/&gt;</span>
+</pre></div>
+
+
+</li>
+<li>
+<p>(Optional) Replace all html header tags with markdown headers. This was necessary because markdown toc extension does not understand html tags. So I had to do it later to <a href="https://dirtyhandscoding.github.io/posts/blog-migrated-to-pelican-and-github-pages.html#reference-headers">make all headers referenceable</a>.</p>
+</li>
+<li>
+<p>Manually improve each and every image in the blog. First of all, I had some wordpress-specific images (<code>[gallery]</code> tag) which had to be converted. Second, every image had to be resized and repositioned to look nice. In most cases, now I use something like:</p>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">img</span>
+    <span class="na">src</span><span class="o">=</span><span class="s">&quot;{filename}/images/0_doom3_typeinfo/typeinfo_scheme1.png&quot;</span>
+    <span class="na">class</span><span class="o">=</span><span class="s">&quot;centered w500&quot;</span>
+<span class="p">/&gt;</span>
+</pre></div>
+
+
+</li>
+</ol>
+<h2 id="choosing-a-theme"><a class="toclink" href="#choosing-a-theme">Choosing a theme</a></h2>
+<p>Pelican has a set of themes which define the visual look of the blog and provide some features. Each theme consists of html templates for the pages, css styles, and sometimes a bit of javascript code. In fact, there are two criteria when choosing a theme:</p>
+<ol>
+<li>
+<p>How nice it looks: layout, fonts, colors, etc.</p>
+</li>
+<li>
+<p>Which features it supports: <a href="https://en.wikipedia.org/wiki/Responsive_web_design">responsiveness</a>, categories and tags pages, integration of <a href="https://disqus.com/">disqus</a> comments and <a href="https://github.com/Tipue/Tipue-Search">tipue</a> search.</p>
+</li>
+</ol>
+<p>With livereload enabled, I started iterating over all themes in the <a href="https://github.com/getpelican/pelican-themes">repository of themes</a>. But <strong>no</strong> theme perfectly matched my wishes. In fact, later I have learnt two things about choosing a theme:</p>
+<ol>
+<li>
+<p><em>Many themes by default turn off considerable part of their features</em>. So, a brief visual look at the theme is not enough: you have to read through the theme's readme to see which features and additional customization are supported.</p>
+</li>
+<li>
+<p><em>Taking an existing theme "as is" is unlikely to be enough anyway</em>. Most likely you'll have to tweak a lot of stuff to your liking, which will require css + html knowledge and some time. With this point in mind, it is worth looking into theme's source code and see if you are ready to hack with it.</p>
+</li>
+</ol>
+<p>First I thought about using <a href="https://github.com/talha131/pelican-elegant">elegant</a> or <a href="https://github.com/ingwinlu/pelican-twitchy/">pelican-twitchy</a> theme, since they have most features from the very beginning. But when I started investigating the topic of comments and search, it became clear that 1) search is easy to integrate, 2) I dislike out-of-the-box solutions for commenting.
+So I decided to concentrate more on the visual look of a theme and chose <a href="https://github.com/nasskach/pelican-blueidea">blueidea</a> theme. As an additional benefit, this theme is also rather simple: all css styles (except code highlighting) are written in single css file, no javascript is used.</p>
+<h2 id="customizing-the-theme"><a class="toclink" href="#customizing-the-theme">Customizing the theme</a></h2>
+<p>My initial idea was to list all the tweaks and customizations which I did to the <code>blueidea</code> theme. But while I spent more time tweaking html and css, I did more and more changes all over the code. At the end, the tweaking went out of control =) So I'll try to provide an overview of the changes and only describe the moments which I consider interesting.</p>
+<h4 id="responsive"><a class="toclink" href="#responsive">Responsive</a></h4>
+<p>I made the theme responsive and mobile-friendly (originally this theme was fixed-width) with CSS3. To my surprise, it was very easy to do.</p>
+<p>First, I added meta to <code>base.html</code> to disable scaling on mobiles:</p>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">meta</span> <span class="na">name</span><span class="o">=</span><span class="s">&quot;viewport&quot;</span> <span class="na">content</span><span class="o">=</span><span class="s">&quot;width=device-width, initial-scale=1.0&quot;</span><span class="p">/&gt;</span>
+</pre></div>
+
+
+<p>Then I refactored <code>main.css</code> so that all width-related sizes were computed from a single variable. I added a <code>main-width</code> variable on <code>body</code> (which is sort of global):</p>
+<div class="highlight"><pre><span></span><span class="nt">body</span> <span class="p">{</span>
+    <span class="err">--</span><span class="n">main-width</span><span class="p">:</span> <span class="mi">1200</span><span class="kt">px</span><span class="p">;</span>
+    <span class="k">background</span><span class="p">:</span> <span class="mh">#f2f3f3</span><span class="p">;</span>
+    <span class="c">/*...*/</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>And fixed all places where the width of the text area was used implicitly. Now it is deduced via <code>calc</code> function, e.g.:</p>
+<div class="highlight"><pre><span></span><span class="p">#</span><span class="nn">content</span> <span class="p">{</span>
+    <span class="c">/*...*/</span>
+    <span class="k">padding</span><span class="p">:</span> <span class="mi">20</span><span class="kt">px</span> <span class="mi">20</span><span class="kt">px</span><span class="p">;</span>
+    <span class="k">width</span><span class="p">:</span> <span class="nb">calc</span><span class="p">(</span><span class="nf">var</span><span class="p">(</span><span class="o">--</span><span class="n">main</span><span class="o">-</span><span class="n">width</span><span class="p">)</span> <span class="o">-</span> <span class="mi">40</span><span class="kt">px</span><span class="p">);</span>
+    <span class="c">/*...*/</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>Finally, I added logic of choosing smaller values of <code>main-width</code> if browser screen width is not wide enough (using media queries):</p>
+<div class="highlight"><pre><span></span><span class="p">@</span><span class="k">media</span> <span class="nt">screen</span> <span class="nt">and</span> <span class="o">(</span><span class="nt">max-width</span><span class="o">:</span> <span class="nt">1400px</span><span class="o">)</span> <span class="p">{</span>
+    <span class="nt">body</span> <span class="p">{</span>
+        <span class="err">--</span><span class="n">main-width</span><span class="p">:</span> <span class="mi">1000</span><span class="kt">px</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="p">@</span><span class="k">media</span> <span class="nt">screen</span> <span class="nt">and</span> <span class="o">(</span><span class="nt">max-width</span><span class="o">:</span> <span class="nt">1100px</span><span class="o">)</span> <span class="p">{</span>
+    <span class="nt">body</span> <span class="p">{</span>
+        <span class="err">--</span><span class="n">main-width</span><span class="p">:</span> <span class="mi">800</span><span class="kt">px</span><span class="p">;</span>
+<span class="c">/* ... more cases follow */</span>
+</pre></div>
+
+
+<p>Another problem with <code>blueidea</code> theme is how it displays menu buttons on a small screen. Below you can see the old look on the left, and the new on the right (I marked the issue in red):</p>
+<div class="center-content">
+    <img src="https://dirtyhandscoding.github.io/images/5_blog_migration/blueidea_menuwrap_old.png" height="150px" class="bordered" />
+    <img src="https://dirtyhandscoding.github.io/images/5_blog_migration/blueidea_menuwrap_new.png" height="150px" class="bordered" />
+</div>
+
+<p>To ensure that buttons are correctly moved to the next line on overflow, it is enough to do the following:</p>
+<div class="highlight"><pre><span></span><span class="p">#</span><span class="nn">banner</span> <span class="nt">nav</span> <span class="p">{</span>
+    <span class="k">overflow</span><span class="p">:</span> <span class="kc">auto</span><span class="p">;</span>
+    <span class="k">min-height</span><span class="p">:</span> <span class="mi">40</span><span class="kt">px</span><span class="p">;</span>  <span class="c">/* instead of &quot;height: 40px;&quot; */</span>
+    <span class="c">/*...*/</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>Finally, I remember having to insert <code>clear: both;</code> somewhere to fix layout after right-aligned buttons.</p>
+<h4 id="reference-headers"><a class="toclink" href="#reference-headers">Reference headers</a></h4>
+<p>I enabled markdown <a href="https://Python-Markdown.github.io/extensions/toc">toc</a> extension with <code>anchorlink=True</code> to make headers referenceable. Here is the corresponding section from <code>pelicanconf.py</code>:</p>
+<div class="highlight"><pre><span></span><span class="n">MARKDOWN</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;extension_configs&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;markdown.extensions.toc&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;anchorlink&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">},</span>  <span class="c1">#referenceable headers</span>
+        <span class="s1">&#39;markdown.extensions.codehilite&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;css_class&#39;</span><span class="p">:</span> <span class="s1">&#39;highlight&#39;</span><span class="p">},</span>
+        <span class="s1">&#39;markdown.extensions.extra&#39;</span><span class="p">:</span> <span class="p">{},</span>
+        <span class="s1">&#39;markdown.extensions.meta&#39;</span><span class="p">:</span> <span class="p">{},</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;output_format&#39;</span><span class="p">:</span> <span class="s1">&#39;html5&#39;</span><span class="p">,</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p></details></p>
+<p>It took me quite some time to realize that it does <strong>not</strong> apply to <code>&lt;h3&gt;</code>-like tags (i.e. html headers). So I had to replace html headers with their markdown equivalents in all the articles. </p>
+<h4 id="menus-and-pages"><a class="toclink" href="#menus-and-pages">Menus and pages</a></h4>
+<p>I changed the set of items displayed on the top menu (in <code>pelicanconf.py</code>):</p>
+<div class="highlight"><pre><span></span><span class="c1"># hide categories in the main menu (little space there)</span>
+<span class="n">DISPLAY_CATEGORIES_ON_MENU</span> <span class="o">=</span> <span class="bp">False</span>
+<span class="c1"># display categories in a small submenu instead</span>
+<span class="n">DISPLAY_CATEGORIES_ON_SUBMENU</span> <span class="o">=</span> <span class="bp">True</span>
+
+<span class="c1"># buttons displayed in the main menu</span>
+<span class="n">MENUITEMS</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="p">(</span><span class="s1">&#39;ARCHIVES&#39;</span><span class="p">,</span> <span class="s1">&#39;/archives.html&#39;</span><span class="p">),</span>         <span class="c1"># list of all articles (compact)</span>
+    <span class="p">(</span><span class="s1">&#39;CATEGORIES&#39;</span><span class="p">,</span> <span class="s1">&#39;/categories.html&#39;</span><span class="p">),</span>     <span class="c1"># list of categories (with counts)</span>
+    <span class="p">(</span><span class="s1">&#39;TAGS&#39;</span><span class="p">,</span> <span class="s1">&#39;/tags.html&#39;</span><span class="p">),</span>                 <span class="c1"># list of tags (with counts)</span>
+    <span class="p">(</span><span class="s1">&#39;CONTACT&#39;</span><span class="p">,</span> <span class="s1">&#39;/pages/contact.html&#39;</span><span class="p">),</span>     <span class="c1"># ordinary page with email address</span>
+<span class="p">)</span>
+
+<span class="c1"># global html templates which are always rendered (even if unreferenced)</span>
+<span class="n">DIRECT_TEMPLATES</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s1">&#39;index&#39;</span><span class="p">,</span> <span class="s1">&#39;archives&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;categories&#39;</span><span class="p">,</span> <span class="s1">&#39;tags&#39;</span><span class="p">,</span>
+    <span class="c1"># &#39;authors&#39;,   --- don&#39;t need the list of authors</span>
+<span class="p">]</span>
+<span class="c1"># do not generate per-author index pages</span>
+<span class="n">AUTHOR_SAVE_AS</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+</pre></div>
+
+
+<h4 id="featured-article"><a class="toclink" href="#featured-article">Featured article</a></h4>
+<p>I disabled featured article on all the index pages (in <code>index.html</code> template). My articles are usually too long, and having a featured article makes index pages indistinguishable from article pages.</p>
+<div class="highlight"><pre><span></span><span class="x">    :::jinja</span>
+<span class="x">    </span><span class="c">{# note: DISPLAY_FEATURED_ARTICLE = False in pelicanconf.py #}</span><span class="x"></span>
+<span class="x">    </span><span class="c">{# First item #}</span><span class="x"></span>
+<span class="x">    </span><span class="cp">{%</span> <span class="k">if</span> <span class="nv">DISPLAY_FEATURED_ARTICLE</span> <span class="k">and</span> <span class="nb">loop</span><span class="nv">.first</span> <span class="k">and</span> <span class="k">not</span> <span class="nv">articles_page.has_previous</span><span class="o">()</span> <span class="cp">%}</span><span class="x"></span>
+<span class="x">        &lt;aside id=&quot;featured&quot; class=&quot;body&quot;&gt;</span>
+</pre></div>
+
+
+<h2 id="plugins"><a class="toclink" href="#plugins">Plugins</a></h2>
+<p>I enabled the following plugins:</p>
+<ol>
+<li>
+<p><a href="https://github.com/getpelican/pelican-plugins/tree/master/render_math">render_math</a> plugin to render <a href="https://en.wikibooks.org/wiki/LaTeX/Mathematics">LaTeX formulas</a> via <a href="https://www.mathjax.org/">MathJax</a>.</p>
+</li>
+<li>
+<p><a href="https://github.com/getpelican/pelican-plugins/tree/master/sitemap">sitemap</a> to aid indexing by search engines.</p>
+</li>
+<li>
+<p><a href="https://github.com/getpelican/pelican-plugins/tree/master/summary">summary</a> for configurable summaries on index pages.
+ I configured <code>summary</code> plugin to detect <code>&lt;!--more--&gt;</code> tag as end of summary, exactly as on wordpress.com:</p>
+<div class="highlight"><pre><span></span><span class="n">PLUGIN_PATHS</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;plugins&#39;</span><span class="p">]</span>
+<span class="n">PLUGINS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s1">&#39;summary&#39;</span><span class="p">,</span>
+    <span class="c1"># ...</span>
+<span class="p">]</span>
+
+<span class="n">SUMMARY_BEGIN_MARKER</span> <span class="o">=</span> <span class="s1">&#39;&lt;!--summary--&gt;&#39;</span>
+<span class="n">SUMMARY_END_MARKER</span> <span class="o">=</span> <span class="s1">&#39;&lt;!--more--&gt;&#39;</span>  <span class="c1">#as on wordpress.com</span>
+</pre></div>
+
+
+</li>
+<li>
+<p><a href="https://github.com/getpelican/pelican-plugins/tree/master/share_post">share_post</a> for buttons like "Share on Twitter". 
+ I spent huge amount of time on styling these buttons! I even had to draw a few missing icons myself=( This is because <code>blueidea</code> theme does not support <code>share_post</code> plugin out-of-the-box: it is much easier to choose a theme which supports all the features you want.</p>
+</li>
+<li>
+<p><a href="https://github.com/getpelican/pelican-plugins/tree/master/tipue_search">tipue_search</a> for searching over the website (discussed in more detail <a href="https://dirtyhandscoding.github.io/posts/blog-migrated-to-pelican-and-github-pages.html#tipue-search">later</a>).</p>
+</li>
+<li>
+<p><a href="https://github.com/getpelican/pelican-plugins/tree/master/pelican_comment_system">pelican_comment_system</a> for user comments (discussed in more detail <a href="https://dirtyhandscoding.github.io/posts/blog-migrated-to-pelican-and-github-pages.html#comments">later</a>).</p>
+</li>
+</ol>
+<h2 id="tipue-search"><a class="toclink" href="#tipue-search">Tipue search</a></h2>
+<p>The <code>blueidea</code> theme has builtin integration with <a href="https://duckduckgo.com/">duckduckgo</a> search engine. The whole integration is trivial: when you enter some text into search box, trivial javascript callback redirects you to <code>duckduckgo.com</code> address with entered text and your site in http parameters:</p>
+<div class="highlight"><pre><span></span><span class="cp">{%</span> <span class="k">if</span> <span class="nv">DISPLAY_SEARCH_FORM</span> -<span class="cp">%}</span><span class="x"></span>
+<span class="x">    &lt;form id=&quot;search&quot; action&quot;#&quot; onsubmit=&quot;javascript:window.open(&#39;https://duckduckgo.com/?q=&#39;+document.getElementById(&#39;keywords&#39;).value+&#39;+site:</span><span class="cp">{{</span> <span class="nv">SITEURL</span> <span class="cp">}}</span><span class="x">&#39;);&quot;&gt;</span>
+<span class="x">        &lt;input id=&quot;keywords&quot; type=&quot;text&quot; /&gt;</span>
+<span class="x">    &lt;/form&gt;</span>
+<span class="cp">{%</span> <span class="k">endif</span> <span class="cp">%}</span><span class="x"></span>
+</pre></div>
+
+
+<p>This relies on external search engine and has its benefits and drawbacks. The main benefit is that google is much more intelligent and surely can do some <a href="https://en.wikipedia.org/wiki/Stemming">stemming</a> on your query. The drawback is that this search will only work properly after the up-to-date version of site gets visited by <a href="https://en.wikipedia.org/wiki/Web_crawler">search engine crawlers</a>.</p>
+<p>So I decided to go the full static route and integrate full-javascript search instead. Luckily, <a href="https://github.com/Tipue/Tipue-Search">tipue search</a> is already available for this purpose. It is integrated into several pelican themes, including the aforementioned <a href="https://github.com/talha131/pelican-elegant">elegant</a> theme.</p>
+<p>The way it works is very simple: during pelican build, it produces file <code>tipuesearch_content.json</code>, which contains the plain text of each article. When user enters some keywords into the search box, he is redirected to <code>search.html</code> page (with entered text passed as http parameter). Here <code>tipuesearch.js</code> runs. It checks how much keywords are present as substrings in each article and sorts articles by this number decreasing (well, title and tags also influence the score). The articles which contain none of the keywords are excluded from the results list. Finally, it splits results into pages and generates their html representation into <code>search-content</code> element.</p>
+<p>The integration of tipue search into pelican site is very well covered in the <a href="http://mygeekdaddy.net/2014/11/17/adding-local-search-to-pelican/">mygeekdaddy's article</a>. I won't repeat everything, just mention a few important things:</p>
+<ol>
+<li>
+<p>I had to change <code>tipue_search.py</code> file in the source code of <code>tipue_search</code> plugin, as described <a href="https://github.com/talha131/pelican-elegant/issues/147">here</a>. Due to some weird reason, the plugin puts addresses into <code>url</code> property, while the javascript code expects them in <code>loc</code> property. This is easily fixed by updating <strong>two</strong> places in the python code:</p>
+<div class="highlight"><pre><span></span><span class="n">node</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;title&#39;</span><span class="p">:</span> <span class="n">page_title</span><span class="p">,</span>
+        <span class="s1">&#39;text&#39;</span><span class="p">:</span> <span class="n">page_text</span><span class="p">,</span>
+        <span class="s1">&#39;tags&#39;</span><span class="p">:</span> <span class="n">page_category</span><span class="p">,</span>
+        <span class="s1">&#39;loc&#39;</span><span class="p">:</span> <span class="n">page_url</span><span class="p">,</span>  <span class="c1">#note: write address to &#39;loc&#39; too</span>
+        <span class="s1">&#39;url&#39;</span><span class="p">:</span> <span class="n">page_url</span><span class="p">}</span>
+</pre></div>
+
+
+</li>
+<li>
+<p>Since <code>search.html</code> template is not referenced directly in any html files, pelican will <strong>not</strong> render it by default. To force rendering of this file, it must be marked as direct template in <code>pelicanconf.py</code>:</p>
+<div class="highlight"><pre><span></span><span class="n">DIRECT_TEMPLATES</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s1">&#39;index&#39;</span><span class="p">,</span> <span class="s1">&#39;categories&#39;</span><span class="p">,</span> <span class="s1">&#39;authors&#39;</span><span class="p">,</span> <span class="s1">&#39;archives&#39;</span><span class="p">,</span>   <span class="c1">#(default)</span>
+    <span class="s1">&#39;search&#39;</span><span class="p">,</span> <span class="c1">#tipue search results</span>
+<span class="p">]</span>
+</pre></div>
+
+
+</li>
+</ol>
+<h2 id="comments"><a class="toclink" href="#comments">Comments</a></h2>
+<p>Integrating comments is a big problem for all static blogs. Mainly because whenever reader leaves a comment, it must somehow alter the website, which contradicts with the fact that it is static. A static blog has no server which could receive the comments from user and update the blog contents. On the other hand, a static blog can communicate with foreign servers all over the web.</p>
+<h3 id="overview"><a class="toclink" href="#overview">Overview</a></h3>
+<p>There are several known ways to integrate comments into static blog:</p>
+<ol>
+<li>
+<p>Integration with <a href="https://disqus.com/">Disqus</a>. This is the simplest and the most common choice, it is <a href="http://querbalken.net/howto-setup-comments-with-disqus-in-pelican-en.html">integrated in most pelican themes</a>, including <code>blueidea</code> theme. In this case all the comments are stored on Disqus servers, the blog only displays them and works as a frontend for adding more comments to those servers. While Disqus is a good option in general, there are some negative views on it over the web: <a href="http://www.wpbeginner.com/opinion/switching-away-from-disqus-review-increased-comments-by-304/">ads and sponsored comments</a>, <a href="https://notes.peter-baumgartner.net/2017/09/14/alternatives-for-disqus/">ownership privacy and openness questions</a>, <a href="http://donw.io/post/github-comments/">slowness and privacy again</a>.</p>
+</li>
+<li>
+<p>All the comments are stored in the blog's repository and they are compiled by blog generator just as articles do. The <a href="https://github.com/getpelican/pelican-plugins/tree/master/pelican_comment_system">pelican_comment_system</a> plugin does this exactly: it translates comments from markdown files into the html code, just as pelican does for all articles by default. So the main question is how can reader comments get from the static website into the repository. Here are some options:</p>
+<p>2.a. Reader sends his comment to the author of blog via email. He can either do it manually, or click on a button with <code>mailto:</code> link. The default template <code>comments.html</code> of <code>pelican_comment_system</code> plugin <a href="https://github.com/getpelican/pelican-plugins/blob/master/pelican_comment_system/doc/quickstart.md">works this way</a>.</p>
+<p>2.b. Reader sends his comment to <a href="https://staticman.net/">staticman</a> server, which commits it into predefined GitHub repository. It either pushes changes directly or submits pull requests which blog owner has to review and approve. It is possible to configure so that comments appear on the site in almost real time soon after reader posts it. To achieve it, some continuous integration is needed (or simply using Jekyll and GitHub pages). You can read more about <code>staticman</code> integration e.g. in <a href="https://mademistakes.com/articles/jekyll-static-comments/">this article</a>.</p>
+<p>2.c. When reader decides to leave a comment, he is redirected to GitHub page of an issue in blog owner's repository. This issue is created in advance by blog owner specifically for the article being commented. Reader posts his message as a comment on this GitHub issue, and it is saved there. The blog owner uses GitHub public API to fetch comments on the issues at any time. This workflow is described in <a href="http://donw.io/post/github-comments/">this article</a> and is implemented in <a href="https://github.com/imsun/gitment">gitment</a> project for Hexo. </p>
+</li>
+</ol>
+<h3 id="choice"><a class="toclink" href="#choice">Choice</a></h3>
+<p>While I think Disqus is perfectly suitable for comments, I once again decided to go the "purist's way" and treat all the comments as part of my blog.
+The option 2.b is very nice, but it looks quite complicated and it relies on the third-party server (<code>api.staticman.net</code>). Also it ties your blog repository to GitHub, which btw does not allow free private repositories.
+The option 2.c is rather simple. But it requires user to have GitHub login (unlikely a problem though) and it redirects user to GitHub site to even start writing his comment (maybe this is fixable).</p>
+<p>I chose the <strong>option 2.a</strong> with sending comments over email. In my opinion, <em>it is the most proper way of commenting static sites.</em> It returns us back to roots: if you want to say something, just send an email to the author. No intermediary is needed, embrace direct communication.</p>
+<p>The email-based system does not depend on any third party. Since everyone uses emails for a long time, it is much more reliable than any custom server. And even if e.g. Gmail becomes unusable, I can easily switch to another email provider. Everyone who reads technical blogs has an email box (probably even several of them), so no special login is required. Commenting is as secure as emails are, since no information leaves reader's machine except for the email, which he sends himself.</p>
+<h3 id="implementation"><a class="toclink" href="#implementation">Implementation</a></h3>
+<p>The first step was to enable the plugin itself. In order to play with it a bit, I manually converted all comments from the wordpress.com site into markdown files. It did not take much time, since I don't have many comments yet.</p>
+<p>The html template and javascript code was initially taken from the plugin's official example (<a href="https://github.com/getpelican/pelican-plugins/blob/master/pelican_comment_system/theme/templates/pcs/comments.html">html</a> and <a href="https://github.com/getpelican/pelican-plugins/blob/master/pelican_comment_system/theme/static/js/comments.js">js</a>).
+However, I had to change it quite heavily. Also, I had to write all the styles myself. The <code>blueidea</code> theme supports only Disqus comments, and I could not even see how these comments were originally supposed to look. The major points are listed below.</p>
+<p><strong>Collapsible.</strong>
+The whole commenting section is collapsible. In fact, it is collapsed by default (unless javascript is disabled). This is <a href="http://oncrashreboot.com/elegant-best-pelican-theme-features#collapsible-comments">one of the arguments</a> used to popularize <code>elegant</code> theme =)</p>
+<p>The collapsing and expanding is done by javascript code, animation is done via css transition. I was quite unhappy that there is no way to animate <code>max-height</code> to the actual height of the content, so I had to do some hacks:</p>
+<div class="highlight"><pre><span></span><span class="c1">//getting height of potentially hidden element: https://stackoverflow.com/a/2345813/556899</span>
+<span class="kd">var</span> <span class="nx">previousStyle</span> <span class="o">=</span> <span class="nx">content</span><span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&quot;style&quot;</span><span class="p">);</span>
+<span class="nx">content</span><span class="p">.</span><span class="nx">css</span><span class="p">({</span><span class="nx">position</span><span class="o">:</span> <span class="s1">&#39;absolute&#39;</span><span class="p">,</span> <span class="nx">visibility</span><span class="o">:</span> <span class="s1">&#39;hidden&#39;</span><span class="p">,</span> <span class="nx">display</span><span class="o">:</span> <span class="s1">&#39;block&#39;</span><span class="p">,</span> <span class="nx">maxHeight</span><span class="o">:</span> <span class="s1">&#39;none&#39;</span><span class="p">});</span>
+<span class="nx">fullHeight</span> <span class="o">=</span> <span class="nx">content</span><span class="p">.</span><span class="nx">height</span><span class="p">()</span> <span class="o">+</span> <span class="mi">100</span><span class="p">;</span>
+<span class="nx">content</span><span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&quot;style&quot;</span><span class="p">,</span> <span class="nx">previousStyle</span> <span class="o">||</span> <span class="s2">&quot;&quot;</span><span class="p">);</span>
+</pre></div>
+
+
+<p>And another hack was needed to trigger transition when I change <code>max-height</code> property:</p>
+<div class="highlight"><pre><span></span><span class="nx">content</span><span class="p">.</span><span class="nx">css</span><span class="p">({</span><span class="nx">maxHeight</span><span class="o">:</span> <span class="p">(</span><span class="nx">isExpanding</span> <span class="o">?</span> <span class="mi">0</span> <span class="o">:</span> <span class="nx">fullHeight</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;px&#39;</span><span class="p">});</span>
+<span class="nx">content</span><span class="p">.</span><span class="nx">css</span><span class="p">(</span><span class="s1">&#39;maxHeight&#39;</span><span class="p">);</span>   <span class="c1">//why is this needed?</span>
+<span class="nx">content</span><span class="p">.</span><span class="nx">css</span><span class="p">({</span><span class="nx">maxHeight</span><span class="o">:</span> <span class="p">(</span><span class="nx">isExpanding</span> <span class="o">?</span> <span class="nx">fullHeight</span> <span class="o">:</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;px&#39;</span><span class="p">});</span>
+</pre></div>
+
+
+<p><strong>View email source.</strong>
+Reader can click a button to see the generated email contents before sending it. This is especially helpful if reader's machine is not properly configured to open <code>mailto</code> links: then he can copy/paste the message into his web client and send it manually (avoiding mailto link).</p>
+<p><strong>Move form on reply.</strong>
+When reader clicks a "reply" button near existing comment, the comment form moves to the place immediately after it. Also, dynamic content showing that currently a reply is being composed is moved to the header (legend).</p>
+<p><strong>Spam protection.</strong>
+The sample code has some protection of blog author's email, but not very good, so I decided to obfuscate it a bit further. Plus, added a minor nuisance for a potential bot filling the form.</p>
+<p><strong>Mailto config help.</strong>
+I added a link to page where it is explained how to configure Chrome to open mailto links in Gmail. I think it is important, because a lot of people use web mail client but don't know how to open mailto links with it. To be honest, I plan to create a special page behind this button, which would thoroughly explain how commenting system works and how to use it easily.</p>
+<p><strong>Even-odd coloring.</strong>
+To distinguish consecutive comments from each other, every even comment has gray background.  Astonishingly, css even has a rule <code>nth-child(2n)</code> for it, which is used in <code>blueidea</code> styles for Disqus comments. However, it works incorrectly with nested enumerations.
+The problem is fixed by assigning <code>even</code>/<code>odd</code> classes to comments during html generation. Notice the <a href="https://stackoverflow.com/a/49699589/556899">namespace hack</a> to circumvent <a href="https://stackoverflow.com/questions/18755046/jinja2-nested-loop-counter">scoping rules of jinja</a>:</p>
+<div class="highlight"><pre><span></span><span class="x">&lt;ul&gt;</span>
+<span class="cp">{%</span> <span class="k">set</span> <span class="nv">recursive_counter</span> <span class="o">=</span> <span class="nv">namespace</span><span class="o">(</span><span class="nv">a</span><span class="o">=</span><span class="m">0</span><span class="o">)</span> <span class="cp">%}</span><span class="x"></span>
+<span class="cp">{%</span> <span class="k">for</span> <span class="nv">comment</span> <span class="k">in</span> <span class="nv">article.comments</span> <span class="k">recursive</span> <span class="cp">%}</span><span class="x"></span>
+<span class="x">    </span><span class="cp">{%</span> <span class="k">set</span> <span class="nv">recursive_counter.a</span> <span class="o">=</span> <span class="nv">recursive_counter.a</span> <span class="o">+</span> <span class="m">1</span> <span class="cp">%}</span><span class="x"></span>
+<span class="x">    &lt;li id=&quot;comment-</span><span class="cp">{{</span><span class="nv">comment.slug</span><span class="cp">}}</span><span class="x">&quot;&gt;</span>
+<span class="x">        &lt;div class=&quot;comment-left&quot;&gt;</span>
+<span class="x">            &lt;!-- ... --&gt;</span>
+<span class="x">        &lt;/div&gt;</span>
+<span class="x">        &lt;div class=&quot;comment-body&quot;&gt;</span>
+<span class="x">            &lt;div class=&quot;comment-self </span><span class="cp">{{</span><span class="s1">&#39;even&#39;</span> <span class="k">if</span> <span class="nv">recursive_counter.a</span> <span class="err">%</span> <span class="m">2</span> <span class="k">else</span> <span class="s1">&#39;odd&#39;</span><span class="cp">}}</span><span class="x">&quot;&gt;</span>
+<span class="x">                &lt;!-- ... --&gt;</span>
+<span class="x">                &lt;div class=&quot;pcs-comment-content&quot; </span><span class="c">{# class used as id in comments.js#}</span><span class="x">&gt;</span>
+<span class="x">                    </span><span class="cp">{{</span> <span class="nv">comment.content</span> <span class="cp">}}</span><span class="x"></span>
+<span class="x">                &lt;/div&gt;</span>
+<span class="x">            &lt;/div&gt;</span>
+<span class="x">            </span><span class="cp">{%</span> <span class="k">if</span> <span class="nv">comment.replies</span> <span class="cp">%}</span><span class="x"></span>
+<span class="x">                &lt;ul&gt;</span>
+<span class="x">                    </span><span class="cp">{{</span> <span class="nb">loop</span><span class="o">(</span><span class="nv">comment.replies</span><span class="o">)</span> <span class="cp">}}</span><span class="x"></span>
+<span class="x">                &lt;/ul&gt;</span>
+<span class="x">            </span><span class="cp">{%</span> <span class="k">endif</span> <span class="cp">%}</span><span class="x"></span>
+<span class="x">        &lt;/div&gt;</span>
+<span class="x">    &lt;/li&gt;</span>
+<span class="cp">{%</span> <span class="k">endfor</span> <span class="cp">%}</span><span class="x"></span>
+<span class="x">&lt;/ul&gt;</span>
+</pre></div>
+
+
+<h2 id="android-issue"><a class="toclink" href="#android-issue">Android issue</a></h2>
+<p>I stumbled upon a nasty issue in Chrome browser on Android. When I open an article from my blog in the browser, it loads the page, and soon after that it hangs for noticeable time. The whole process is completely frozen. It becomes unresponsive and OS soon suggests to kill it. Chrome profiler (via remote debugging) shows nothing, so the hang happens somewhere in the internals.</p>
+<p>I noticed the following:</p>
+<ol>
+<li>
+<p>If I remove all images from the page, the issue still happens. If I remove all javascript code, the issue still happens. If I remove all css files, the issue still happens. In fact, even if I remove everything except the html file itself, the issue still happens.</p>
+</li>
+<li>
+<p>The issue does <strong>not</strong> happen if I remove all code fragments from the page.</p>
+</li>
+<li>
+<p>The length of the freeze is dependent on the page, but on <a href="https://dirtyhandscoding.github.io/posts/performance-comparison-linear-search-vs-binary-search.html">this article</a> it takes literally minutes.</p>
+</li>
+<li>
+<p>The freeze happens on Chrome for Android recent version (66.0.3359.126). It does <strong>not</strong> happen on stock version of Chrome (55.0.2883.91), and it does <strong>not</strong> happen on Firefox.</p>
+</li>
+</ol>
+<p>So it looks like a bug caused by bulky html of the code fragments. I'll probably try to submit a bug report about it.</p>
+<h2 id="publish"><a class="toclink" href="#publish">Publish</a></h2>
+<p>The very last thing for a new static website is to publish the result.</p>
+<p>All the differences between local development environment and deployment environment are usually described in <code>publishconf.py</code> file. By default, command <code>fab preview</code> can be used to build website with this publishing config. Here is what I have in my <code>publishconf.py</code>:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pelicanconf</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="n">SITEURL</span> <span class="o">=</span> <span class="s1">&#39;https://dirtyhandscoding.github.io&#39;</span>
+<span class="n">RELATIVE_URLS</span> <span class="o">=</span> <span class="bp">False</span>
+
+<span class="n">OUTPUT_PATH</span> <span class="o">=</span> <span class="s1">&#39;publish_output/&#39;</span>
+<span class="n">DELETE_OUTPUT_DIRECTORY</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="n">OUTPUT_RETENTION</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;.hg&quot;</span><span class="p">,</span> <span class="s2">&quot;.git&quot;</span><span class="p">,</span> <span class="s2">&quot;.nojekyll&quot;</span><span class="p">]</span>
+</pre></div>
+
+
+<p>As you see, the differences are minimal:</p>
+<ol>
+<li>
+<p>The final URL of the site is specified, so all the internal links are expressed as absolute paths using it.</p>
+</li>
+<li>
+<p>The result is generated to a different <code>publish_output</code> subdirectory. The contents of this directory are cleaned before every build, except for <code>.hg</code> subdirectory (mercurial repository) and <code>.nojekyll</code> file (<a href="https://blog.github.com/2009-12-29-bypassing-jekyll-on-github-pages/">disables Jekyll build on GitHub pages</a>), which are saved between builds.</p>
+</li>
+</ol>
+<p>I honestly dislike git and prefer using mercurial (tortoisehg) to do things. Also, I want to have full control over the publishing operation, performing it manually. That's why I cannot use the popular <a href="https://github.com/davisp/ghp-import">ghp-import</a> tool.</p>
+<p>Instead, I simply maintain a second mercurial repository inside <code>publish_output</code> subdirectory specifically to track the final website data. Whenever I want to publish new version, I run <code>fab preview</code>, then do a full commit in this mercurial repo and review changes. Finally, I push the current state to GitHub using <a href="http://hg-git.github.io/">hg-git</a> extension.</p>
+<hr/>
+
+<p>Now that it is complete, I feel tired of all the hacking done. On the positive side, I have learnt a lot about html and css. Let's hope that this blog won't need much care in the nearest future =)</p>
+    </div><!-- /.entry-content -->
+    <section>
+        <div id="post-share-links" class="inline-menu">
+            <div>Share on:</div>
+            <a href="https://twitter.com/intent/tweet?text=Blog%20migrated%20to%20Pelican%20and%20GitHub%20pages&url=https%3A//dirtyhandscoding.github.io/posts/blog-migrated-to-pelican-and-github-pages.html" target="_blank" class="icon-label" title="Share on Twitter">Twitter</a><!--
+            --><a href="http://www.facebook.com/sharer/sharer.php?u=https%3A//dirtyhandscoding.github.io/posts/blog-migrated-to-pelican-and-github-pages.html" target="_blank" class="icon-label" title="Share on Facebook">Facebook</a><!--
+            --><a href="https://plus.google.com/share?url=https%3A//dirtyhandscoding.github.io/posts/blog-migrated-to-pelican-and-github-pages.html" target="_blank" class="icon-label" title="Share on Google Plus">Google+</a><!--
+            --><a href="https://sharetodiaspora.github.io/?title=Blog%20migrated%20to%20Pelican%20and%20GitHub%20pages&url=https%3A//dirtyhandscoding.github.io/posts/blog-migrated-to-pelican-and-github-pages.html" target="_blank" class="icon-label" title="Share on Diaspora">Diaspora*</a><!--
+            --><a href="https://news.ycombinator.com/submitlink?t=Blog%20migrated%20to%20Pelican%20and%20GitHub%20pages&u=https%3A//dirtyhandscoding.github.io/posts/blog-migrated-to-pelican-and-github-pages.html" target="_blank" class="icon-label" title="Share on HackerNews">HackerNews</a><!--
+            --><a href="mailto:?subject=Blog%20migrated%20to%20Pelican%20and%20GitHub%20pages&amp;body=https%3A//dirtyhandscoding.github.io/posts/blog-migrated-to-pelican-and-github-pages.html" target="_blank" class="icon-label" title="Share via Email">Email</a>
+        </div>
+    </section>
+    
+    			<!--<script type="text/javascript" src="http://code.jquery.com/jquery-2.1.4.min.js"></script>-->
+		<script src="https://dirtyhandscoding.github.io/theme/js/jquery.min.js"></script>
+	<script type="text/javascript" src="https://dirtyhandscoding.github.io/theme/pelican_comment_system/comments.js"></script>
+	<script type="text/javascript">
+		$(document).ready(function() {
+			CommentSystem.email_user   = "itiswrongemail";
+			CommentSystem.email_domain = "outlook.com";
+
+			$('#pcs-comment-form').on("submit",
+				function( event )
+				{
+					event.preventDefault();
+					$(location).attr('href', CommentSystem.getMailtoLink("blog-migrated-to-pelican-and-github-pages"));
+				}
+			);
+		});
+	</script>
+
+    	<section>
+	<div id="pcs-comments-header" class="inline-menu">
+	<header>
+		<div>Comments (0)</div>
+		<button type="button" title="Expand or collapse the comments section" class="icon-label" id="pcs-comments-collapse-button" onclick="CommentSystem.collapsible($('#pcs-comments'), $(this));">
+			<span class="nocss">expand</span>
+		</button>
+			<a href="https://dirtyhandscoding.github.io/feeds/comment.blog-migrated-to-pelican-and-github-pages.atom.xml" class="icon-label">atom feed: comments</a>
+	</header>
+	</div>
+	<div id="pcs-comments">
+		<p>There are no comments yet.</p>
+	<section>
+	<div display="none" id="pcs-comment-notreply-helper" />
+	<form id="pcs-comment-form" action="#">
+		<fieldset>
+		<legend>Add a Comment</legend>
+		<div id="pcs-comment-tab-inputs">
+			<input type="hidden" id="pcs-comment-form-input-replyto"/>
+			<label for="pcs-comment-form-input-name">Name</label>
+			<input  id="pcs-comment-form-input-name" type="text" size="40" placeholder="Enter your name or nickname" />
+			<br/>
+			<label for="pcs-comment-form-input-website">Website</label>
+			<input  id="pcs-comment-form-input-website" type="text" size="40" placeholder="Enter your website (optional)" />
+			<br/>
+			<label for="pcs-comment-form-input-empty">Empty</label>
+			<input  id="pcs-comment-form-input-empty" type="text" size="30" placeholder="Do NOT enter anything here!" />
+			<label   for="pcs-comment-form-input-textarea">Your Comment</label>
+			<br/>
+			<textarea id="pcs-comment-form-input-textarea" rows="7" cols="40" placeholder="Enter your comment (markdown is allowed)"></textarea>
+		</div>
+		<div id="pcs-comment-tab-message" style="display:none">
+			<textarea readonly rows="10" cols="40"></textarea>
+		</div>
+
+		<button type="submit"
+				id="pcs-comment-form-button-submit"
+				title="Create mailto link and open it in default email client &#10;Note: you have to send the email to post comment"
+				>Post via email</button>
+		<button type="button"
+				id="pcs-comment-form-button-message"
+				title="See the text of email message to be sent &#10;Note: you can copy it and send manually"
+				onclick="CommentSystem.viewEmail(&quot;blog-migrated-to-pelican-and-github-pages&quot;);"
+				>View email text</button>
+		<a target="_blank"
+				id="pcs-comment-gmail-config-help"
+				title="How to configure Chrome to open mailto links in Gmail..."
+				href="https://productforums.google.com/forum/#!topic/gmail/JtWVPbUfh-o"
+				>?</a>
+		</fieldset>
+
+		<!--			<a href="https://dirtyhandscoding.github.io/feeds/comment.blog-migrated-to-pelican-and-github-pages.atom.xml">
+				Comment Atom Feed
+			</a>
+-->
+	</form>
+	<script>CommentSystem.displayReplyTo();</script>
+</section>
+
+	</div>
+	<script>
+		$('#pcs-comments').css({display: "none"});
+		$('#pcs-comments-collapse-button').addClass('collapsed');
+	</script>
+</section>
+
+  </article>
+</section>
+        <section id="extras" class="body">
+                <div class="social">
+                        <h2>social</h2>
+                        <ul>
+                            <li><a href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate">atom feed</a></li>
+                            <li><a href="/feeds/all.rss.xml" type="application/rss+xml" rel="alternate">rss feed</a></li>
+
+                        </ul>
+                </div><!-- /.social -->
+        </section><!-- /#extras -->
+
+        <footer id="contentinfo" class="body">
+                <p>Powered by <a href="http://getpelican.com/">Pelican</a>. Theme <a href="https://github.com/blueicefield/pelican-blueidea/">blueidea</a>, customized to personal taste.</p>
+        </footer><!-- /#contentinfo -->
+
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <!-- load favicon from /images -->
+        <link rel="icon" type="image/png" href="/images/favicon.png" />
+        <!-- stgatilov: properly detect device width on a mobile -->
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/> 
+
+        <meta charset="utf-8" />
+        <title>Dirty hands coding - memory debugging</title>
+        <link rel="stylesheet" href="https://dirtyhandscoding.github.io/theme/css/main.css" />
+        <link href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Dirty hands coding Atom Feed" />
+        <link href="/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="Dirty hands coding RSS Feed" />
+
+        <!--[if IE]>
+            <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+        <![endif]-->
+</head>
+
+<body id="index" class="home">
+        <header id="banner" class="body">
+                <h1><a href="https://dirtyhandscoding.github.io/">Dirty hands coding </a></h1>
+                <nav><ul>
+                    <li><a href="/archives.html">ARCHIVES</a></li>
+                    <li><a href="/categories.html">CATEGORIES</a></li>
+                    <li><a href="/tags.html">TAGS</a></li>
+                    <li><a href="/pages/contact.html">CONTACT</a></li>
+                </ul>
+<form class="navbar-search" action="https://dirtyhandscoding.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);">
+                        <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input">
+                    </form>
+                </nav>
+<div id="submenu">
+                    <ul>
+                            <li><a href="https://dirtyhandscoding.github.io/category/high-performance.html">High performance</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/off-topic.html">Off-topic</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/the-dark-mod.html">The Dark Mod</a></li>
+                    </ul>
+                <div>
+        </header><!-- /#banner -->
+
+                <section id="content" class="body">
+                    <ol id="posts-list" class="hfeed" start="2">
+            <li><article class="hentry">
+                <header>
+                    <h1><a href="https://dirtyhandscoding.github.io/posts/doom-3-c-enhanced-rtti-and-memory-debugging.html" rel="bookmark"
+                           title="Permalink to Doom 3: C++ enhanced RTTI and memory debugging">Doom 3: C++ enhanced RTTI and memory debugging</a></h1>
+                </header>
+
+                <div class="entry-content">
+<footer class="post-info">
+        <span>19 July 2017</span>
+	        <span>| in <a href="https://dirtyhandscoding.github.io/category/the-dark-mod.html">The Dark Mod</a></span>
+<span>| tags: <a href="https://dirtyhandscoding.github.io/tag/idtech4.html">idtech4</a><a href="https://dirtyhandscoding.github.io/tag/memory-debugging.html">memory debugging</a></span>
+</footer><!-- /.post-info -->                <p>Although Doom 3 was released 13 years ago, there is still of lot of interesting stuff to find in it. The main reason for that is: it was developed in the time of changes. The ID software team had just moved from C to C++ (using Visual C++ 6). Graphic cards were moving from fixed pipeline to programming pipeline, CPUs were getting SIMD extensions. All of this caused a lot of diversity in the code: crazy mix of C++/C/asm code, several renderer backends, code acceleration for MMX/SSE/AltiVec (yeah, Macs used PowerPC at that time). Not to mention tons of scripts and defs, including C++-like scripting language, and in-game GUI system.</p>
+<p>I have to deal with Doom 3 engine in the context of <a href="http://www.thedarkmod.com">The Dark Mod</a> (TDM for short).</p>
+<p>This article is about <strong>memory debugging</strong> configuration in Doom 3 SDK (more precisely, "Debug with inlines and memory log").</p>
+
+                <a class="readmore" href="https://dirtyhandscoding.github.io/posts/doom-3-c-enhanced-rtti-and-memory-debugging.html">read more</a>
+                </div><!-- /.entry-content -->
+            </article></li>
+            </ol><!-- /#posts-list -->
+            </section><!-- /#content -->
+        <section id="extras" class="body">
+                <div class="social">
+                        <h2>social</h2>
+                        <ul>
+                            <li><a href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate">atom feed</a></li>
+                            <li><a href="/feeds/all.rss.xml" type="application/rss+xml" rel="alternate">rss feed</a></li>
+
+                        </ul>
+                </div><!-- /.social -->
+        </section><!-- /#extras -->
+
+        <footer id="contentinfo" class="body">
+                <p>Powered by <a href="http://getpelican.com/">Pelican</a>. Theme <a href="https://github.com/blueicefield/pelican-blueidea/">blueidea</a>, customized to personal taste.</p>
+        </footer><!-- /#contentinfo -->
+
+</body>
+</html>

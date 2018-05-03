@@ -470,11 +470,12 @@ The problem is fixed by assigning <code>even</code>/<code>odd</code> classes to 
 <p>The final URL of the site is specified, so all the internal links are expressed as absolute paths using it.</p>
 </li>
 <li>
-<p>The result is generated to a different <code>publish_output</code> subdirectory. The contents of this directory are cleaned before every build, except for <code>.hg</code> subdirectory (mercurial repository) and <code>.nojekyll</code> file (<a href="https://blog.github.com/2009-12-29-bypassing-jekyll-on-github-pages/">disables Jekyll build on GitHub pages</a>), which are saved between builds.</p>
+<p>The result is generated to a different <code>publish_output</code> subdirectory. The contents of this directory are cleaned before every build, except for <code>.hg</code> and <code>.git</code> subdirectories (mercurial/git repository) and <code>.nojekyll</code> file (<a href="https://blog.github.com/2009-12-29-bypassing-jekyll-on-github-pages/">disables Jekyll build on GitHub pages</a>), which are saved between builds.</p>
 </li>
 </ol>
-<p>I honestly dislike git and prefer using mercurial (tortoisehg) to do things. Also, I want to have full control over the publishing operation, performing it manually. That's why I cannot use the popular <a href="https://github.com/davisp/ghp-import">ghp-import</a> tool.</p>
+<p>I honestly dislike git and prefer using mercurial (TortoiseHG) to do things. Also, I want to have full control over the publishing operation, performing it manually. That's why I cannot use the popular <a href="https://github.com/davisp/ghp-import">ghp-import</a> tool.</p>
 <p>Instead, I simply maintain a second mercurial repository inside <code>publish_output</code> subdirectory specifically to track the final website data. Whenever I want to publish new version, I run <code>fab preview</code>, then do a full commit in this mercurial repo and review changes. Finally, I push the current state to GitHub using <a href="http://hg-git.github.io/">hg-git</a> extension.</p>
+<p><strong>UPDATE:</strong> Unfortunately, TortoiseHG failed to push my blog output to GitHub. Most likely due to some restrictions on the GitHub side, because smaller commits are pushed successfully. Did not manage to find out what the problem was. Unhappily switched to TortoiseGit for pushing the output =(</p>
 <hr/>
 
 <p>Now that it is complete, I feel tired of all the hacking done. On the positive side, I have learnt a lot about html and css. Let's hope that this blog won't need much care in the nearest future =)</p>

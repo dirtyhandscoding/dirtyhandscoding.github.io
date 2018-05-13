@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <!-- load favicon from /images -->
+        <link rel="icon" type="image/png" href="/images/favicon.png" />
+        <!-- stgatilov: properly detect device width on a mobile -->
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/> 
+
+        <meta charset="utf-8" />
+        <title>On C++ code bloat</title>
+        <link rel="stylesheet" href="https://dirtyhandscoding.github.io/theme/css/main.css" />
+        <link href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Dirty hands coding Atom Feed" />
+        <link href="/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="Dirty hands coding RSS Feed" />
+
+        <!--[if IE]>
+            <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+        <![endif]-->
+</head>
+
+<body id="index" class="home">
+        <header id="banner" class="body">
+                <h1><a href="https://dirtyhandscoding.github.io/">Dirty hands coding </a></h1>
+                <nav><ul>
+                    <li><a href="/archives.html">ARCHIVES</a></li>
+                    <li><a href="/categories.html">CATEGORIES</a></li>
+                    <li><a href="/tags.html">TAGS</a></li>
+                    <li><a href="/pages/contact.html">CONTACT</a></li>
+                </ul>
+<form class="navbar-search" action="https://dirtyhandscoding.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);">
+                        <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input">
+                    </form>
+                </nav>
+<div id="submenu">
+                    <ul>
+                            <li><a href="https://dirtyhandscoding.github.io/category/high-performance.html">High performance</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/off-topic.html">Off-topic</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/the-dark-mod.html">The Dark Mod</a></li>
+                            <li class="active"><a href="https://dirtyhandscoding.github.io/category/uncategorized.html">Uncategorized</a></li>
+                    </ul>
+                <div>
+        </header><!-- /#banner -->
+<section id="content" class="body">
+  <article>
+    <header>
+      <h1 class="entry-title">
+        <a href="https://dirtyhandscoding.github.io/posts/on-cpp-code-bloat.html" rel="bookmark"
+           title="Permalink to On C++ code bloat">On C++ code bloat</a></h1>
+    </header>
+
+    <div class="entry-content">
+<footer class="post-info">
+        <span>13 May 2018</span>
+	        <span>| in <a href="https://dirtyhandscoding.github.io/category/uncategorized.html">Uncategorized</a></span>
+<span>| tags: <a href="https://dirtyhandscoding.github.io/tag/cpp.html">cpp</a><a href="https://dirtyhandscoding.github.io/tag/bloat.html">bloat</a><a href="https://dirtyhandscoding.github.io/tag/build.html">build</a><a href="https://dirtyhandscoding.github.io/tag/msvc.html">msvc</a></span>
+</footer><!-- /.post-info -->      <p>The C++ language is known for its slow build times. This problem is not present in the world of pure C, which might give a hint that the problem is caused by some C++ feature. In fact, it is caused by bad habit or writing code in headers, severely worsened by C++ templates and inspired by STL itself.</p>
+
+
+<h2 id="headers"><a class="toclink" href="#headers">Headers</a></h2>
+<p>The first reason of code bloat is <a href="https://en.wikipedia.org/wiki/Translation_unit_(programming)">the object model</a>, which is inherited directly from C. Suppose that a function or a method is defined in <em>header</em> file like this:</p>
+<div class="highlight"><pre><span></span><span class="c1">// ===== utils.h =====</span>
+<span class="cp">#pragma once</span>
+<span class="cp">#include</span> <span class="cpf">&lt;numeric&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;vector&gt;</span><span class="cp"></span>
+
+<span class="kr">inline</span> <span class="kr">int</span> <span class="nf">calcSum</span><span class="p">(</span><span class="kr">const</span> <span class="kr">int</span> <span class="o">*</span><span class="n">arr</span><span class="p">,</span> <span class="kr">int</span> <span class="n">num</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kr">int</span> <span class="n">sum</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kr">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">num</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
+        <span class="n">sum</span> <span class="o">+=</span> <span class="n">arr</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+    <span class="k">return</span> <span class="n">sum</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kr">struct</span> <span class="n">Foo</span> <span class="p">{</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kr">int</span><span class="o">&gt;</span> <span class="n">arr</span><span class="p">;</span>
+    <span class="kr">int</span> <span class="nf">run</span><span class="p">()</span> <span class="kr">const</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">accumulate</span><span class="p">(</span><span class="n">arr</span><span class="p">.</span><span class="nf">begin</span><span class="p">(),</span> <span class="n">arr</span><span class="p">.</span><span class="nf">end</span><span class="p">(),</span> <span class="mi">0</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">};</span>
+</pre></div>
+
+
+<p><img style="float:right; max-width:300px; width:50%; margin:10px" src="https://imgs.xkcd.com/comics/compiling.png"/></p>
+<p>Both <code>calcSum</code> and <code>Foo::run</code> are functions defined in header file. So each of them will be compiled separately in every source file where it is used (directly or indirectly). In some cases (dllexport or old MSVC) such functions are compiled in every source file which includes this header, even if they are not used! One particularly nasty type of header-defined functions is comprised of methods generated implicitly by the compiler, i.e. destructor, copying, constructors. Last but not least, a dynamic class also needs virtual functions table and RTTI data, and every source file where at least one header-defined constructor is called (including implicitly generated one) also forces compiler to generate all this data.</p>
+<p>When the project is large, it contains hundreds of source files, so every popular function defined in header may easily be compiled hundreds of times.
+One may hope that compiler is clever, that it knows that these functions are same in every source file, and that it manages to do all the hard work only once. But I have never heard of anything like this. Even though linker will merge all the duplicate symbols across .obj files into one, you will get enough time for <a href="https://xkcd.com/303/">some swordsplay</a> before it happens =)</p>
+<h2 id="templates"><a class="toclink" href="#templates">Templates</a></h2>
+<p>And now we come to C++ templates. Almost every modern language supports generic programming of some sort, but C++ calls this feature "templates" instead of "generics". C++ templates work like a very advanced code generator integrated into the language: every instance of a template is a completely separate piece of code generated by compiler (although linker <a href="https://msdn.microsoft.com/en-us/library/bxwfs976.aspx">can merge some methods</a> if their machine code is exactly the same). Consider an example:</p>
+<div class="highlight"><pre><span></span><span class="c1">// ===== utils2.h =====</span>
+<span class="cp">#pragma once</span>
+<span class="cp">#include</span> <span class="cpf">&lt;numeric&gt;</span><span class="cp"></span>
+
+<span class="k">template</span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span> <span class="n">T</span> <span class="n">calcSum</span><span class="p">(</span><span class="k">const</span> <span class="n">T</span> <span class="o">*</span><span class="n">arr</span><span class="p">,</span> <span class="kt">int</span> <span class="n">num</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">accumulate</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">arr</span> <span class="o">+</span> <span class="n">num</span><span class="p">,</span> <span class="n">T</span><span class="p">(</span><span class="mi">0</span><span class="p">));</span>
+<span class="p">}</span>
+
+<span class="k">template</span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="p">,</span> <span class="kt">int</span> <span class="n">N</span><span class="o">&gt;</span> <span class="k">struct</span> <span class="n">Bar</span> <span class="p">{</span>
+    <span class="n">T</span> <span class="n">arr</span><span class="p">[</span><span class="n">N</span><span class="p">];</span>
+    <span class="n">T</span> <span class="nf">run</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+        <span class="n">T</span> <span class="n">res</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">N</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
+            <span class="n">res</span> <span class="o">+=</span> <span class="n">arr</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+        <span class="k">return</span> <span class="n">res</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">};</span>
+</pre></div>
+
+
+<p>Suppose that the program has only one source file. Then function <code>calcSum</code> is compiled once per each used type of template parameter <code>T</code>. The function <code>Bar::run</code> is compiled as many times as there are different <code>&lt;T, N&gt;</code> pairs for which the method <code>run</code> is called. This particular case can be quite disastrous because size <code>N</code> can vary a lot.
+There are some techniques to diminish the problem (e.g. <a href="http://www.drdobbs.com/templates-without-code-bloat/184403053">use type-erased base class</a>), but they are not simple.</p>
+<p>Also, the aforementioned issue with headers also applies to templates, because templates are almost always defined in header files. In fact, there are two only ways to avoid duplication of template functions across translation units:</p>
+<ol>
+<li>
+<p><em>Define template functions in source file and explicitly instantiate them there</em>. Unfortunately, it is possible only if you can enumerate all the wanted instances of the template in this source file. Surely, this approach cannot be applied to container classes like <code>std::vector</code>.</p>
+</li>
+<li>
+<p>(C++11) <em>Use extern template declarations in header, combined with explicit template instantiations in source files</em>. This can work for class templates <a href="https://stackoverflow.com/questions/12650737/is-there-a-bug-with-extern-template-in-visual-c">only if methods are defined outside of the class body</a>. Needless to say, today everyone has a habit of defining methods inside class body. In particular, this is how STL is usually implemented, so extern templates won't help with STL.</p>
+</li>
+</ol>
+<p>Although both reasons of template code bloat can be addressed to greatly reduce the issue, almost <strong>nobody does so</strong>. Because the code written without concern works perfectly well! It is smaller, simpler, faster to write and easier to read, and easier to maintain. Why bother wasting time on something when it is not necessary? And when the project grows large enough that build times start causing pain, it may be too late already to change your mind.</p>
+<h2 id="questionable-solutions"><a class="toclink" href="#questionable-solutions">Questionable solutions</a></h2>
+<p>Some people think that precompiled headers is the way to reduce code bloat. This is not the case: precompiled headers are used to reduce the cost of <strong>parsing</strong> header files many times. This is yet another inefficiency in C++ object model: each header has to be parsed once again for every translation unit it is included in. The precompiled header may remove some of code bloat in MSVC, but it definitely won't help with functions which are used only after PCH ends.</p>
+<p>There are some hopes that not-yet-standardized C++ modules will fix the problem. As it seems now, upcoming C++ modules are simply modular precompiled headers. They will definitely solve problems with parsing, but I'm not so sure about code bloat.
+The latest draft (<a href="http://open-std.org/JTC1/SC22/WG21/docs/papers/2015/n4465.pdf">N4465</a>, section 4.10) has some rules for instantiations of exported templates, which looks like an improvement from what we have know. The time will show, I guess.</p>
+<p>The most widely used solution to fight code bloat (across translation units) is to use <a href="https://en.wikipedia.org/wiki/Single_Compilation_Unit">unity builds</a>, i.e. merge all source files into one. In other words, instead of horrendously abusing object model, people simply throw it away. Of course, this solution backfires at the speed of incremental builds.</p>
+<h2 id="conclusion"><a class="toclink" href="#conclusion">Conclusion</a></h2>
+<p>The problem of C++ code bloat is so severe today, that vast majority of build time is wasted on unnecessary duplicates instead of any useful compiling. And the duplication is caused by C++ object model not being respected. Any code present in a source file won't cause problems, but every function defined in header is a candidate for unlimited duplication. The templates are especially harmful, since they generate code bloat across two dimensions: across template parameters and across translation units.</p>
+<p>In my opinion, the overuse of templates today is caused by modern trends in C++. Moreover, these trends have organically grown up from the Standard Template Library itself, which by the way typically causes a lot of code bloat in any project. Given that rare project is brave enough to throw STL away, it means that code bloat will almost certainly stay with us. Gamedev is perhaps one of the largest areas with enough distrust towards STL, let's hope they will not fall to the trend.</p>
+<p>As of now, we can only learn how compilation works and try to avoid too much code bloat. Define stuff in source files as much as possible and prefer virtual methods or type erasure over templates when performance is not critical. If you are still not convinced that the issue is serious, please review the <a href="https://www.chromium.org/developers/coding-style/cpp-dos-and-donts">C++ recommendations in Chromium project</a>, the first half of which is solely dedicated to the "don't define stuff in headers" mantra.</p>
+    </div><!-- /.entry-content -->
+    <section>
+        <div id="post-share-links" class="inline-menu">
+            <div>Share on:</div>
+            <a href="https://twitter.com/intent/tweet?text=On%20C%2B%2B%20code%20bloat&url=https%3A//dirtyhandscoding.github.io/posts/on-cpp-code-bloat.html" target="_blank" class="icon-label" title="Share on Twitter">Twitter</a><!--
+            --><a href="http://www.facebook.com/sharer/sharer.php?u=https%3A//dirtyhandscoding.github.io/posts/on-cpp-code-bloat.html" target="_blank" class="icon-label" title="Share on Facebook">Facebook</a><!--
+            --><a href="https://plus.google.com/share?url=https%3A//dirtyhandscoding.github.io/posts/on-cpp-code-bloat.html" target="_blank" class="icon-label" title="Share on Google Plus">Google+</a><!--
+            --><a href="https://sharetodiaspora.github.io/?title=On%20C%2B%2B%20code%20bloat&url=https%3A//dirtyhandscoding.github.io/posts/on-cpp-code-bloat.html" target="_blank" class="icon-label" title="Share on Diaspora">Diaspora*</a><!--
+            --><a href="https://news.ycombinator.com/submitlink?t=On%20C%2B%2B%20code%20bloat&u=https%3A//dirtyhandscoding.github.io/posts/on-cpp-code-bloat.html" target="_blank" class="icon-label" title="Share on HackerNews">HackerNews</a><!--
+            --><a href="mailto:?subject=On%20C%2B%2B%20code%20bloat&amp;body=https%3A//dirtyhandscoding.github.io/posts/on-cpp-code-bloat.html" target="_blank" class="icon-label" title="Share via Email">Email</a>
+        </div>
+    </section>
+    
+    			<!--<script type="text/javascript" src="http://code.jquery.com/jquery-2.1.4.min.js"></script>-->
+		<script src="https://dirtyhandscoding.github.io/theme/js/jquery.min.js"></script>
+	<script type="text/javascript" src="https://dirtyhandscoding.github.io/theme/pelican_comment_system/comments.js"></script>
+	<script type="text/javascript">
+		$(document).ready(function() {
+			CommentSystem.email_user   = "itiswrongemail";
+			CommentSystem.email_domain = "outlook.com";
+
+			$('#pcs-comment-form').on("submit",
+				function( event )
+				{
+					event.preventDefault();
+					$(location).attr('href', CommentSystem.getMailtoLink("on-cpp-code-bloat"));
+				}
+			);
+		});
+	</script>
+
+    	<section>
+	<div id="pcs-comments-header" class="inline-menu">
+	<header>
+		<div>Comments (0)</div>
+		<button type="button" title="Expand or collapse the comments section" class="icon-label" id="pcs-comments-collapse-button" onclick="CommentSystem.collapsible($('#pcs-comments'), $(this));">
+			<span class="nocss">expand</span>
+		</button>
+			<a href="https://dirtyhandscoding.github.io/feeds/comment.on-cpp-code-bloat.atom.xml" class="icon-label">atom feed: comments</a>
+	</header>
+	</div>
+	<div id="pcs-comments">
+		<p>There are no comments yet.</p>
+	<section>
+	<div display="none" id="pcs-comment-notreply-helper" />
+	<form id="pcs-comment-form" action="#">
+		<fieldset>
+		<legend>Add a Comment</legend>
+		<div id="pcs-comment-tab-inputs">
+			<input type="hidden" id="pcs-comment-form-input-replyto"/>
+			<label for="pcs-comment-form-input-name">Name</label>
+			<input  id="pcs-comment-form-input-name" type="text" size="40" placeholder="Enter your name or nickname" />
+			<br/>
+			<label for="pcs-comment-form-input-website">Website</label>
+			<input  id="pcs-comment-form-input-website" type="text" size="40" placeholder="Enter your website (optional)" />
+			<br/>
+			<label for="pcs-comment-form-input-empty">Empty</label>
+			<input  id="pcs-comment-form-input-empty" type="text" size="30" placeholder="Do NOT enter anything here!" />
+			<label   for="pcs-comment-form-input-textarea">Your Comment</label>
+			<br/>
+			<textarea id="pcs-comment-form-input-textarea" rows="7" cols="40" placeholder="Enter your comment (markdown is allowed)"></textarea>
+		</div>
+		<div id="pcs-comment-tab-message" style="display:none">
+			<textarea readonly rows="10" cols="40"></textarea>
+		</div>
+
+		<button type="submit"
+				id="pcs-comment-form-button-submit"
+				title="Create mailto link and open it in default email client &#10;Note: you have to send the email to post comment"
+				>Post via email</button>
+		<button type="button"
+				id="pcs-comment-form-button-message"
+				title="See the text of email message to be sent &#10;Note: you can copy it and send manually"
+				onclick="CommentSystem.viewEmail(&quot;on-cpp-code-bloat&quot;);"
+				>View email text</button>
+		<a target="_blank"
+				id="pcs-comment-gmail-config-help"
+				title="How to configure Chrome to open mailto links in Gmail..."
+				href="https://productforums.google.com/forum/#!topic/gmail/JtWVPbUfh-o"
+				>?</a>
+		</fieldset>
+
+		<!--			<a href="https://dirtyhandscoding.github.io/feeds/comment.on-cpp-code-bloat.atom.xml">
+				Comment Atom Feed
+			</a>
+-->
+	</form>
+	<script>CommentSystem.displayReplyTo();</script>
+</section>
+
+	</div>
+	<script>
+		$('#pcs-comments').css({display: "none"});
+		$('#pcs-comments-collapse-button').addClass('collapsed');
+	</script>
+</section>
+
+  </article>
+</section>
+        <section id="extras" class="body">
+                <div class="social">
+                        <h2>social</h2>
+                        <ul>
+                            <li><a href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate">atom feed</a></li>
+                            <li><a href="/feeds/all.rss.xml" type="application/rss+xml" rel="alternate">rss feed</a></li>
+
+                        </ul>
+                </div><!-- /.social -->
+        </section><!-- /#extras -->
+
+        <footer id="contentinfo" class="body">
+                <p>Powered by <a href="http://getpelican.com/">Pelican</a>. Theme <a href="https://github.com/blueicefield/pelican-blueidea/">blueidea</a>, customized to personal taste.</p>
+        </footer><!-- /#contentinfo -->
+
+</body>
+</html>

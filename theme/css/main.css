@@ -13,14 +13,26 @@
 @import url("reset.css");
 @import url("pygment.css");
 @import url("typogrify.css");
-@import url(//fonts.googleapis.com/css?family=Yanone+Kaffeesatz&subset=latin);
+
+
+/*@import url(//fonts.googleapis.com/css?family=Yanone+Kaffeesatz&subset=latin);*/
+/* yanone-kaffeesatz-regular - latin */
+@font-face {
+  font-family: 'Yanone Kaffeesatz';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Yanone Kaffeesatz Regular'), local('YanoneKaffeesatz-Regular'),
+       url('../fonts/yanone-kaffeesatz-v9-latin-regular.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
+       url('../fonts/yanone-kaffeesatz-v9-latin-regular.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+}
+
 
 /***** Global *****/
 /* Body */
 body {
     background: #f2f3f3;
     color: #000305;
-    font-size: 87.5%; /* Base font size: 14px */
+    font-size: 100%; /* Base font size: 16px */
     font-family: 'Trebuchet MS', Trebuchet, 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
     line-height: 1.429;
     margin: 0;
@@ -42,6 +54,7 @@ body {
 @media screen and (max-width: 1100px) {
     body {
         --main-width: 800px;
+        font-size: 87.5%;   /* Base font size: 14px */
     }
 }
 @media screen and (max-width: 880px) {
@@ -157,6 +170,7 @@ dd {margin-left: 1.5em;}
 
 pre{background-color:  rgb(238, 238, 238); padding: 10px; margin: 10px; overflow: auto;}
 
+
 .linenos {
     width: 30px;
 }
@@ -172,6 +186,11 @@ td.code, td.linenos {
 }
 td.code pre {
     margin: 0;
+    /* it seems that there is no other way to
+       make code fragment with line numbers
+       scrollable when overflow
+    */
+    width: calc(var(--main-width) - 102px)
 }
 
 /* Quotes */

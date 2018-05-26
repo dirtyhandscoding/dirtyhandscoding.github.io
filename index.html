@@ -44,6 +44,24 @@
                     <ol id="posts-list" class="hfeed" start="2">
             <li><article class="hentry">
                 <header>
+                    <h1><a href="https://dirtyhandscoding.github.io/posts/improvements-to-symbolsort-tool-for-c-code-bloat-analysis.html" rel="bookmark"
+                           title="Permalink to Improvements to SymbolSort tool for C++ code bloat analysis">Improvements to SymbolSort tool for C++ code bloat analysis</a></h1>
+                </header>
+
+                <div class="entry-content">
+<footer class="post-info">
+        <span>27 May 2018</span>
+	        <span>| in <a href="https://dirtyhandscoding.github.io/category/uncategorized.html">Uncategorized</a></span>
+<span>| tags: <a href="https://dirtyhandscoding.github.io/tag/cpp.html">cpp</a><a href="https://dirtyhandscoding.github.io/tag/bloat.html">bloat</a><a href="https://dirtyhandscoding.github.io/tag/build.html">build</a><a href="https://dirtyhandscoding.github.io/tag/msvc.html">msvc</a></span>
+</footer><!-- /.post-info -->                <p>It is known that code bloat <a href="https://dirtyhandscoding.github.io/posts/on-cpp-code-bloat.html">significantly increases build times in C++</a>. The question is: how can we quantify code bloat? How can we see things which are compiled too many times or the things which generate too much object code? How can we know which places would benefit most from improvement efforts?</p>
+<p>This article is about an excellent tool called <a href="https://github.com/adrianstone55/SymbolSort">SymbolSort</a>, which produces useful code bloat statistics in a project of any size. In particular, the article describes a few improvements which I have implemented recently to provide more useful analysis.</p>
+
+                <a class="readmore" href="https://dirtyhandscoding.github.io/posts/improvements-to-symbolsort-tool-for-c-code-bloat-analysis.html">read more</a>
+                </div><!-- /.entry-content -->
+            </article></li>
+
+            <li><article class="hentry">
+                <header>
                     <h1><a href="https://dirtyhandscoding.github.io/posts/on-cpp-code-bloat.html" rel="bookmark"
                            title="Permalink to On C++ code bloat">On C++ code bloat</a></h1>
                 </header>
@@ -76,25 +94,6 @@
 <p>A problem which I noticed rather quickly is that the width of the text in my blog was way too small. The amount of text fitting into one line was small, and it was especially ugly for source code fragments. When I wanted to post a piece of code from somewhere, I had to add split lines into pieces, so that the whole code fits and no scroll bar appears.</p>
 
                 <a class="readmore" href="https://dirtyhandscoding.github.io/posts/blog-migrated-to-pelican-and-github-pages.html">read more</a>
-                </div><!-- /.entry-content -->
-            </article></li>
-
-            <li><article class="hentry">
-                <header>
-                    <h1><a href="https://dirtyhandscoding.github.io/posts/vectorizing-small-fixed-size-sort.html" rel="bookmark"
-                           title="Permalink to Vectorizing small fixed-size sort">Vectorizing small fixed-size sort</a></h1>
-                </header>
-
-                <div class="entry-content">
-<footer class="post-info">
-        <span>05 January 2018</span>
-	        <span>| in <a href="https://dirtyhandscoding.github.io/category/high-performance.html">High performance</a></span>
-<span>| tags: <a href="https://dirtyhandscoding.github.io/tag/cmov.html">cmov</a><a href="https://dirtyhandscoding.github.io/tag/simd.html">simd</a><a href="https://dirtyhandscoding.github.io/tag/sort.html">sort</a></span>
-</footer><!-- /.post-info -->                <p>After a long break, I can finally return to the topic which was started in the <a href="https://dirtyhandscoding.github.io/posts/performance-comparison-linear-search-vs-binary-search.html">previous blog post</a>. </p>
-<p>Imagine that we have a small array of compile-time constant size with integers. For instance, N = 32. And we want to sort it as fast as possible. What is the best solution for this problem?</p>
-<p>The wisest of you would suggest simply using std::sort, because every modern implementation of it is well-optimized and contains special handling of small subarrays to accelerate the generic quicksort algorithm. The ones who don't trust libraries would suggest using insertion sort: this is the algorithm usually used to handle small cases in std::sort. The performance geeks and regular stackoverflow visitors would definitely point to sorting networks: every question like "the fastest way to sort K integers" ends up with a solution based on them (<a href="https://stackoverflow.com/questions/2786899/fastest-sort-of-fixed-length-6-int-array">N=6</a>, <a href="https://stackoverflow.com/questions/32172144/fastest-way-to-sort-10-numbers-numbers-are-32-bit">N=10</a>, <a href="https://stackoverflow.com/questions/19790522/very-fast-sorting-of-fixed-length-arrays-using-comparator-networks">what</a>, <a href="https://stackoverflow.com/questions/3901079/how-does-a-sorting-network-beat-generic-sorting-algorithms">why</a>). I'm going to present a much less known way to sort small arrays of 32-bit keys, with performance comparable to sorting networks.</p>
-
-                <a class="readmore" href="https://dirtyhandscoding.github.io/posts/vectorizing-small-fixed-size-sort.html">read more</a>
                 </div><!-- /.entry-content -->
             </article></li>
             </ol><!-- /#posts-list -->

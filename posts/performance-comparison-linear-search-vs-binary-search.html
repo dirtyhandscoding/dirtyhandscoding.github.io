@@ -549,7 +549,7 @@ These images can be helpful to estimate the cost of single step of a binary sear
     	<section>
 	<div id="pcs-comments-header" class="inline-menu">
 	<header>
-		<div>Comments (8)</div>
+		<div>Comments (10)</div>
 		<button type="button" title="Expand or collapse the comments section" class="icon-label" id="pcs-comments-collapse-button" onclick="CommentSystem.collapsible($('#pcs-comments'), $(this));">
 			<span class="nocss">expand</span>
 		</button>
@@ -815,6 +815,69 @@ These images can be helpful to estimate the cost of single step of a binary sear
 			</li>
 
 						</ul>
+				</div>
+			</li>
+			<li id="comment-9md">
+				<div class="comment-left">
+					<img    src="https://dirtyhandscoding.github.io/images/identicon\9f2bb4b170a38d5cf4df884ee600a76c.png"
+							alt="Avatar"
+							height="36"
+							width="36">
+					<a role="button" href="https://dirtyhandscoding.github.io/posts/performance-comparison-linear-search-vs-binary-search.html#comment-9md" rel="bookmark" title="Link to this comment" class="comment-left-icon">
+						<span class="nocss">link</span>
+					</a><!--
+					--><button onclick="CommentSystem.setReply('9md', 'Dr.%20Khalid%20Omar%20Thabit');" title="Reply to this comment" class="comment-left-icon">
+						<span class="nocss">reply</span>
+					</button>
+				</div>
+				<div class="comment-body">
+					<div class="comment-self even">
+					<h4>
+							Dr. Khalid Omar Thabit
+					</h4>
+					<!-- <p>
+						Posted on -->
+						<div style="float: right">
+						<time datetime="2018-11-14T06:23:00+07:00" title="2018-11-14T06:23:00+07:00">(14.11.2018 at 06:23)</time>
+						</div>
+					<!-- </p> -->
+					<div class="pcs-comment-content" >
+						<p>If prefetch instruction was used with the AVX2 in linear search it would even improve the speed.</p>
+					</div>
+					</div>
+				</div>
+			</li>
+			<li id="comment-10md">
+				<div class="comment-left">
+					<img    src="https://dirtyhandscoding.github.io/images/identicon\8564164a5c4ae9210f39cc4b256743d6.png"
+							alt="Avatar"
+							height="36"
+							width="36">
+					<a role="button" href="https://dirtyhandscoding.github.io/posts/performance-comparison-linear-search-vs-binary-search.html#comment-10md" rel="bookmark" title="Link to this comment" class="comment-left-icon">
+						<span class="nocss">link</span>
+					</a><!--
+					--><button onclick="CommentSystem.setReply('10md', 'RyanB');" title="Reply to this comment" class="comment-left-icon">
+						<span class="nocss">reply</span>
+					</button>
+				</div>
+				<div class="comment-body">
+					<div class="comment-self odd">
+					<h4>
+							RyanB
+					</h4>
+					<!-- <p>
+						Posted on -->
+						<div style="float: right">
+						<time datetime="2019-05-15T10:06:00+07:00" title="2019-05-15T10:06:00+07:00">(15.05.2019 at 10:06)</time>
+						</div>
+					<!-- </p> -->
+					<div class="pcs-comment-content" >
+						<p>I came up with a little trick that seems to be 33% faster on my machine, for my use case (and it doesn’t require sorting):
+In linear_search_scalar(), replace <code>arr[i] &lt; key</code> with <code>(arr[i] == key) * i</code>.
+Presumably, this allows the loop to just do one non-trivial addition operation (or none if the item isn't to be found) instead of multiple.
+Give it a try!</p>
+					</div>
+					</div>
 				</div>
 			</li>
 		</ul>

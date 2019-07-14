@@ -5,28 +5,28 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
 <url>
 <loc>https://dirtyhandscoding.github.io/</loc>
-<lastmod>2018-05-27T00:13:35-00:00</lastmod>
+<lastmod>2019-07-14T12:41:19-00:00</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
 
 <url>
 <loc>https://dirtyhandscoding.github.io/archives.html</loc>
-<lastmod>2018-05-27T00:13:35-00:00</lastmod>
+<lastmod>2019-07-14T12:41:19-00:00</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
 
 <url>
 <loc>https://dirtyhandscoding.github.io/tags.html</loc>
-<lastmod>2018-05-27T00:13:35-00:00</lastmod>
+<lastmod>2019-07-14T12:41:19-00:00</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
 
 <url>
 <loc>https://dirtyhandscoding.github.io/categories.html</loc>
-<lastmod>2018-05-27T00:13:35-00:00</lastmod>
+<lastmod>2019-07-14T12:41:19-00:00</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
@@ -123,29 +123,8 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 </url>
 
 <url>
-<loc>https://dirtyhandscoding.github.io/tag/avx.html</loc>
-<lastmod>2017-08-02T23:20:00+05:32</lastmod>
-<changefreq>daily</changefreq>
-<priority>0.3</priority>
-</url>
-
-<url>
-<loc>https://dirtyhandscoding.github.io/tag/blog.html</loc>
-<lastmod>2018-05-03T22:25:00+05:32</lastmod>
-<changefreq>daily</changefreq>
-<priority>0.3</priority>
-</url>
-
-<url>
-<loc>https://dirtyhandscoding.github.io/tag/simd.html</loc>
-<lastmod>2018-01-05T23:26:00+05:32</lastmod>
-<changefreq>daily</changefreq>
-<priority>0.3</priority>
-</url>
-
-<url>
-<loc>https://dirtyhandscoding.github.io/tag/pelican.html</loc>
-<lastmod>2018-05-03T22:25:00+05:32</lastmod>
+<loc>https://dirtyhandscoding.github.io/tag/cpp.html</loc>
+<lastmod>2018-05-27T00:09:00+05:32</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
@@ -158,15 +137,8 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 </url>
 
 <url>
-<loc>https://dirtyhandscoding.github.io/tag/gh-pages.html</loc>
-<lastmod>2018-05-03T22:25:00+05:32</lastmod>
-<changefreq>daily</changefreq>
-<priority>0.3</priority>
-</url>
-
-<url>
-<loc>https://dirtyhandscoding.github.io/tag/iaca.html</loc>
-<lastmod>2017-08-25T21:02:00+05:32</lastmod>
+<loc>https://dirtyhandscoding.github.io/tag/build.html</loc>
+<lastmod>2018-05-27T00:09:00+05:32</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
@@ -179,8 +151,36 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 </url>
 
 <url>
-<loc>https://dirtyhandscoding.github.io/tag/binary-search.html</loc>
-<lastmod>2017-08-29T02:21:00+05:32</lastmod>
+<loc>https://dirtyhandscoding.github.io/tag/blog.html</loc>
+<lastmod>2018-05-03T22:25:00+05:32</lastmod>
+<changefreq>daily</changefreq>
+<priority>0.3</priority>
+</url>
+
+<url>
+<loc>https://dirtyhandscoding.github.io/tag/pelican.html</loc>
+<lastmod>2018-05-03T22:25:00+05:32</lastmod>
+<changefreq>daily</changefreq>
+<priority>0.3</priority>
+</url>
+
+<url>
+<loc>https://dirtyhandscoding.github.io/tag/gh-pages.html</loc>
+<lastmod>2018-05-03T22:25:00+05:32</lastmod>
+<changefreq>daily</changefreq>
+<priority>0.3</priority>
+</url>
+
+<url>
+<loc>https://dirtyhandscoding.github.io/tag/cmov.html</loc>
+<lastmod>2018-01-05T23:26:00+05:32</lastmod>
+<changefreq>daily</changefreq>
+<priority>0.3</priority>
+</url>
+
+<url>
+<loc>https://dirtyhandscoding.github.io/tag/simd.html</loc>
+<lastmod>2018-01-05T23:26:00+05:32</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
@@ -193,15 +193,22 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 </url>
 
 <url>
-<loc>https://dirtyhandscoding.github.io/tag/build.html</loc>
-<lastmod>2018-05-27T00:09:00+05:32</lastmod>
+<loc>https://dirtyhandscoding.github.io/tag/binary-search.html</loc>
+<lastmod>2017-08-29T02:21:00+05:32</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
 
 <url>
-<loc>https://dirtyhandscoding.github.io/tag/memory-debugging.html</loc>
-<lastmod>2017-07-19T10:49:00+05:32</lastmod>
+<loc>https://dirtyhandscoding.github.io/tag/iaca.html</loc>
+<lastmod>2017-08-25T21:02:00+05:32</lastmod>
+<changefreq>daily</changefreq>
+<priority>0.3</priority>
+</url>
+
+<url>
+<loc>https://dirtyhandscoding.github.io/tag/avx.html</loc>
+<lastmod>2017-08-02T23:20:00+05:32</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
@@ -214,15 +221,8 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 </url>
 
 <url>
-<loc>https://dirtyhandscoding.github.io/tag/cpp.html</loc>
-<lastmod>2018-05-27T00:09:00+05:32</lastmod>
-<changefreq>daily</changefreq>
-<priority>0.3</priority>
-</url>
-
-<url>
-<loc>https://dirtyhandscoding.github.io/tag/cmov.html</loc>
-<lastmod>2018-01-05T23:26:00+05:32</lastmod>
+<loc>https://dirtyhandscoding.github.io/tag/memory-debugging.html</loc>
+<lastmod>2017-07-19T10:49:00+05:32</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>

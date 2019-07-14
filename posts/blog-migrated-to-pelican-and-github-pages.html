@@ -111,10 +111,10 @@
 </li>
 <li>
 <p>Add meta information at the beginning of the <code>.md</code> file:</p>
-<div class="highlight"><pre><span></span><span class="n">Title</span><span class="o">:</span> <span class="n">Blog</span> <span class="n">migrated</span> <span class="n">to</span> <span class="n">GitHub</span> <span class="n">pages</span> <span class="n">and</span> <span class="n">pelican</span>
-<span class="n">Date</span><span class="o">:</span> <span class="mi">2018</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">19</span> <span class="mi">23</span><span class="o">:</span><span class="mi">26</span>
-<span class="n">Category</span><span class="o">:</span> <span class="n">Off</span><span class="o">-</span><span class="n">topic</span>
-<span class="n">Tags</span><span class="o">:</span> <span class="n">blog</span><span class="o">,</span> <span class="n">pelican</span><span class="o">,</span> <span class="n">gh</span><span class="o">-</span><span class="n">pages</span>
+<div class="highlight"><pre><span></span>Title: Blog migrated to GitHub pages and pelican
+Date: 2018-04-19 23:26
+Category: Off-topic
+Tags: blog, pelican, gh-pages
 </pre></div>
 
 
@@ -242,7 +242,8 @@ So I decided to concentrate more on the visual look of a theme and chose <a href
 </pre></div>
 
 
-<p></details></p>
+</details>
+
 <p>It took me quite some time to realize that it does <strong>not</strong> apply to <code>&lt;h3&gt;</code>-like tags (i.e. html headers). So I had to replace html headers with their markdown equivalents in all the articles. </p>
 <h4 id="menus-and-pages"><a class="toclink" href="#menus-and-pages">Menus and pages</a></h4>
 <p>I changed the set of items displayed on the top menu (in <code>pelicanconf.py</code>):</p>
@@ -415,7 +416,7 @@ The problem is fixed by assigning <code>even</code>/<code>odd</code> classes to 
 <span class="x">            &lt;!-- ... --&gt;</span>
 <span class="x">        &lt;/div&gt;</span>
 <span class="x">        &lt;div class=&quot;comment-body&quot;&gt;</span>
-<span class="x">            &lt;div class=&quot;comment-self </span><span class="cp">{{</span><span class="s1">&#39;even&#39;</span> <span class="k">if</span> <span class="nv">recursive_counter.a</span> <span class="err">%</span> <span class="m">2</span> <span class="k">else</span> <span class="s1">&#39;odd&#39;</span><span class="cp">}}</span><span class="x">&quot;&gt;</span>
+<span class="x">            &lt;div class=&quot;comment-self </span><span class="cp">{{</span><span class="s1">&#39;even&#39;</span> <span class="k">if</span> <span class="nv">recursive_counter.a</span> <span class="o">%</span> <span class="m">2</span> <span class="k">else</span> <span class="s1">&#39;odd&#39;</span><span class="cp">}}</span><span class="x">&quot;&gt;</span>
 <span class="x">                &lt;!-- ... --&gt;</span>
 <span class="x">                &lt;div class=&quot;pcs-comment-content&quot; </span><span class="c">{# class used as id in comments.js#}</span><span class="x">&gt;</span>
 <span class="x">                    </span><span class="cp">{{</span> <span class="nv">comment.content</span> <span class="cp">}}</span><span class="x"></span>

@@ -618,17 +618,17 @@ It turned out that &lt;code&gt;UnDecorateSymbolName&lt;/code&gt; function is no 
 &lt;span class="cp"&gt;#include&lt;/span&gt; &lt;span class="cpf"&gt;&amp;lt;numeric&amp;gt;&lt;/span&gt;&lt;span class="cp"&gt;&lt;/span&gt;
 &lt;span class="cp"&gt;#include&lt;/span&gt; &lt;span class="cpf"&gt;&amp;lt;vector&amp;gt;&lt;/span&gt;&lt;span class="cp"&gt;&lt;/span&gt;
 
-&lt;span class="kr"&gt;inline&lt;/span&gt; &lt;span class="kr"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;calcSum&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kr"&gt;const&lt;/span&gt; &lt;span class="kr"&gt;int&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;arr&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kr"&gt;int&lt;/span&gt; &lt;span class="n"&gt;num&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
-    &lt;span class="kr"&gt;int&lt;/span&gt; &lt;span class="n"&gt;sum&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
-    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kr"&gt;int&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="n"&gt;num&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="o"&gt;++&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="kr"&gt;inline&lt;/span&gt; &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;calcSum&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;const&lt;/span&gt; &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;arr&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;num&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;sum&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="n"&gt;num&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="o"&gt;++&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
         &lt;span class="n"&gt;sum&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="n"&gt;arr&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;];&lt;/span&gt;
     &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;sum&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
 &lt;span class="p"&gt;}&lt;/span&gt;
 
-&lt;span class="kr"&gt;struct&lt;/span&gt; &lt;span class="n"&gt;Foo&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
-    &lt;span class="n"&gt;std&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="n"&gt;vector&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="kr"&gt;int&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;arr&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
-    &lt;span class="kr"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;run&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="kr"&gt;const&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
-        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;std&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="n"&gt;accumulate&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;arr&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;begin&lt;/span&gt;&lt;span class="p"&gt;(),&lt;/span&gt; &lt;span class="n"&gt;arr&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;end&lt;/span&gt;&lt;span class="p"&gt;(),&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="n"&gt;Foo&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;std&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="n"&gt;vector&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;arr&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+    &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;run&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="k"&gt;const&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;std&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="n"&gt;accumulate&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;arr&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;begin&lt;/span&gt;&lt;span class="p"&gt;(),&lt;/span&gt; &lt;span class="n"&gt;arr&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;end&lt;/span&gt;&lt;span class="p"&gt;(),&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
     &lt;span class="p"&gt;}&lt;/span&gt;
 &lt;span class="p"&gt;};&lt;/span&gt;
 &lt;/pre&gt;&lt;/div&gt;
@@ -743,10 +743,10 @@ The latest draft (&lt;a href="http://open-std.org/JTC1/SC22/WG21/docs/papers/201
 &lt;/li&gt;
 &lt;li&gt;
 &lt;p&gt;Add meta information at the beginning of the &lt;code&gt;.md&lt;/code&gt; file:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;Title&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Blog&lt;/span&gt; &lt;span class="n"&gt;migrated&lt;/span&gt; &lt;span class="n"&gt;to&lt;/span&gt; &lt;span class="n"&gt;GitHub&lt;/span&gt; &lt;span class="n"&gt;pages&lt;/span&gt; &lt;span class="n"&gt;and&lt;/span&gt; &lt;span class="n"&gt;pelican&lt;/span&gt;
-&lt;span class="n"&gt;Date&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="mi"&gt;2018&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;04&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;19&lt;/span&gt; &lt;span class="mi"&gt;23&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="mi"&gt;26&lt;/span&gt;
-&lt;span class="n"&gt;Category&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Off&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;topic&lt;/span&gt;
-&lt;span class="n"&gt;Tags&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;blog&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;pelican&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;gh&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;pages&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;Title: Blog migrated to GitHub pages and pelican
+Date: 2018-04-19 23:26
+Category: Off-topic
+Tags: blog, pelican, gh-pages
 &lt;/pre&gt;&lt;/div&gt;
 
 
@@ -874,7 +874,8 @@ So I decided to concentrate more on the visual look of a theme and chose &lt;a h
 &lt;/pre&gt;&lt;/div&gt;
 
 
-&lt;p&gt;&lt;/details&gt;&lt;/p&gt;
+&lt;/details&gt;
+
 &lt;p&gt;It took me quite some time to realize that it does &lt;strong&gt;not&lt;/strong&gt; apply to &lt;code&gt;&amp;lt;h3&amp;gt;&lt;/code&gt;-like tags (i.e. html headers). So I had to replace html headers with their markdown equivalents in all the articles. &lt;/p&gt;
 &lt;h4 id="menus-and-pages"&gt;&lt;a class="toclink" href="#menus-and-pages"&gt;Menus and pages&lt;/a&gt;&lt;/h4&gt;
 &lt;p&gt;I changed the set of items displayed on the top menu (in &lt;code&gt;pelicanconf.py&lt;/code&gt;):&lt;/p&gt;
@@ -1047,7 +1048,7 @@ The problem is fixed by assigning &lt;code&gt;even&lt;/code&gt;/&lt;code&gt;odd&
 &lt;span class="x"&gt;            &amp;lt;!-- ... --&amp;gt;&lt;/span&gt;
 &lt;span class="x"&gt;        &amp;lt;/div&amp;gt;&lt;/span&gt;
 &lt;span class="x"&gt;        &amp;lt;div class=&amp;quot;comment-body&amp;quot;&amp;gt;&lt;/span&gt;
-&lt;span class="x"&gt;            &amp;lt;div class=&amp;quot;comment-self &lt;/span&gt;&lt;span class="cp"&gt;{{&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;even&amp;#39;&lt;/span&gt; &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="nv"&gt;recursive_counter.a&lt;/span&gt; &lt;span class="err"&gt;%&lt;/span&gt; &lt;span class="m"&gt;2&lt;/span&gt; &lt;span class="k"&gt;else&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;odd&amp;#39;&lt;/span&gt;&lt;span class="cp"&gt;}}&lt;/span&gt;&lt;span class="x"&gt;&amp;quot;&amp;gt;&lt;/span&gt;
+&lt;span class="x"&gt;            &amp;lt;div class=&amp;quot;comment-self &lt;/span&gt;&lt;span class="cp"&gt;{{&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;even&amp;#39;&lt;/span&gt; &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="nv"&gt;recursive_counter.a&lt;/span&gt; &lt;span class="o"&gt;%&lt;/span&gt; &lt;span class="m"&gt;2&lt;/span&gt; &lt;span class="k"&gt;else&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;odd&amp;#39;&lt;/span&gt;&lt;span class="cp"&gt;}}&lt;/span&gt;&lt;span class="x"&gt;&amp;quot;&amp;gt;&lt;/span&gt;
 &lt;span class="x"&gt;                &amp;lt;!-- ... --&amp;gt;&lt;/span&gt;
 &lt;span class="x"&gt;                &amp;lt;div class=&amp;quot;pcs-comment-content&amp;quot; &lt;/span&gt;&lt;span class="c"&gt;{# class used as id in comments.js#}&lt;/span&gt;&lt;span class="x"&gt;&amp;gt;&lt;/span&gt;
 &lt;span class="x"&gt;                    &lt;/span&gt;&lt;span class="cp"&gt;{{&lt;/span&gt; &lt;span class="nv"&gt;comment.content&lt;/span&gt; &lt;span class="cp"&gt;}}&lt;/span&gt;&lt;span class="x"&gt;&lt;/span&gt;
@@ -1907,12 +1908,12 @@ Of course, I did notice how much performance differs for unrolled and looped ver
 26
 27&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="err"&gt;?&lt;/span&gt;&lt;span class="nf"&gt;binary_search_branchless@@YAHPEBHHH@Z&lt;/span&gt; &lt;span class="no"&gt;PROC&lt;/span&gt;
 &lt;span class="nf"&gt;bsr&lt;/span&gt; &lt;span class="no"&gt;edx&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="no"&gt;edx&lt;/span&gt;         &lt;span class="c"&gt;; intptr_t logstep = bsr(n);&lt;/span&gt;
-&lt;span class="no"&gt;mov&lt;/span&gt; &lt;span class="no"&gt;eax&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+&lt;span class="nf"&gt;mov&lt;/span&gt; &lt;span class="no"&gt;eax&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
 &lt;span class="hll"&gt;&lt;span class="nf"&gt;or&lt;/span&gt; &lt;span class="no"&gt;r9&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;            &lt;span class="c"&gt;; intptr_t pos = -1;&lt;/span&gt;
-&lt;/span&gt;&lt;span class="no"&gt;shlx&lt;/span&gt; &lt;span class="no"&gt;rax&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="no"&gt;rax&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="no"&gt;rdx&lt;/span&gt;   &lt;span class="c"&gt;; intptr_t step = intptr_t(1) &amp;lt;&amp;lt; logstep;&lt;/span&gt;
+&lt;/span&gt;&lt;span class="nf"&gt;shlx&lt;/span&gt; &lt;span class="no"&gt;rax&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="no"&gt;rax&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="no"&gt;rdx&lt;/span&gt;   &lt;span class="c"&gt;; intptr_t step = intptr_t(1) &amp;lt;&amp;lt; logstep;&lt;/span&gt;
 
 &lt;span class="nf"&gt;test&lt;/span&gt; &lt;span class="no"&gt;rax&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="no"&gt;rax&lt;/span&gt;        &lt;span class="c"&gt;; while (step &amp;gt; 0) {&lt;/span&gt;
-&lt;span class="no"&gt;jle&lt;/span&gt; &lt;span class="no"&gt;SHORT&lt;/span&gt; &lt;span class="no"&gt;$LN13&lt;/span&gt;
+&lt;span class="nf"&gt;jle&lt;/span&gt; &lt;span class="no"&gt;SHORT&lt;/span&gt; &lt;span class="no"&gt;$LN13&lt;/span&gt;
 &lt;span class="nf"&gt;npad&lt;/span&gt; &lt;span class="mi"&gt;10&lt;/span&gt;
 &lt;span class="nl"&gt;$LL2:&lt;/span&gt;
     &lt;span class="c"&gt;; pos = (arr[pos + step] &amp;lt; key ? pos + step : pos);&lt;/span&gt;
@@ -1927,10 +1928,10 @@ Of course, I did notice how much performance differs for unrolled and looped ver
 &lt;span class="nf"&gt;jg&lt;/span&gt; &lt;span class="no"&gt;SHORT&lt;/span&gt; &lt;span class="no"&gt;$LL2&lt;/span&gt;
 
 &lt;span class="nf"&gt;lea&lt;/span&gt; &lt;span class="no"&gt;rax&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="no"&gt;QWORD&lt;/span&gt; &lt;span class="no"&gt;PTR&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="no"&gt;rdx&lt;/span&gt;&lt;span class="err"&gt;+&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;   &lt;span class="c"&gt;; return pos + 1;&lt;/span&gt;
-&lt;span class="no"&gt;ret&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+&lt;span class="nf"&gt;ret&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
 &lt;span class="nl"&gt;$LN13:&lt;/span&gt;
 &lt;span class="nf"&gt;lea&lt;/span&gt; &lt;span class="no"&gt;rax&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="no"&gt;QWORD&lt;/span&gt; &lt;span class="no"&gt;PTR&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="no"&gt;r9&lt;/span&gt;&lt;span class="err"&gt;+&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;      &lt;span class="c"&gt;; return pos + 1;&lt;/span&gt;
-&lt;span class="no"&gt;ret&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+&lt;span class="nf"&gt;ret&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
 &lt;span class="err"&gt;?&lt;/span&gt;&lt;span class="nf"&gt;binary_search_branchless@@YAHPEBHHH@Z&lt;/span&gt; &lt;span class="no"&gt;ENDP&lt;/span&gt;
 &lt;/pre&gt;&lt;/div&gt;
 &lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
@@ -2834,7 +2835,8 @@ When this memory is freed, &lt;em&gt;size&lt;/em&gt; data member is used to upda
 &lt;/pre&gt;&lt;/div&gt;
 
 
-&lt;p&gt;&lt;/details&gt;&lt;/p&gt;
+&lt;/details&gt;
+
 &lt;h3 id="uninitialized-members"&gt;&lt;a class="toclink" href="#uninitialized-members"&gt;Uninitialized members&lt;/a&gt;&lt;/h3&gt;
 &lt;p&gt;Leaving class members of primitive type uninitialized can cause annoying and non-reproducible bugs. That's why Visual C++ &lt;a href="https://stackoverflow.com/a/370362/556899"&gt;fills allocated memory with magic values&lt;/a&gt; like 0xCD or 0xCC in debug build, to increase the chances of program crashing due to such an error. For some reason, ID devs decided to implement their own version of this system for game objects.&lt;/p&gt;
 &lt;p&gt;In the game module of Doom 3, most of the classes inherit from &lt;a href="https://github.com/id-Software/DOOM-3/blob/master/neo/game/gamesys/Class.h#L30"&gt;idClass&lt;/a&gt; base, which allows to create object instance by type name and supports events for scripting system. All objects in this hierarchy are manually filled with 0xCD because &lt;em&gt;idClass&lt;/em&gt; overloads &lt;em&gt;operator new&lt;/em&gt; and &lt;em&gt;operator delete&lt;/em&gt;:&lt;/p&gt;

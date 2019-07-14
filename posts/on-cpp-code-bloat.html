@@ -62,17 +62,17 @@
 <span class="cp">#include</span> <span class="cpf">&lt;numeric&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;vector&gt;</span><span class="cp"></span>
 
-<span class="kr">inline</span> <span class="kr">int</span> <span class="nf">calcSum</span><span class="p">(</span><span class="kr">const</span> <span class="kr">int</span> <span class="o">*</span><span class="n">arr</span><span class="p">,</span> <span class="kr">int</span> <span class="n">num</span><span class="p">)</span> <span class="p">{</span>
-    <span class="kr">int</span> <span class="n">sum</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-    <span class="k">for</span> <span class="p">(</span><span class="kr">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">num</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
+<span class="kr">inline</span> <span class="kt">int</span> <span class="nf">calcSum</span><span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="o">*</span><span class="n">arr</span><span class="p">,</span> <span class="kt">int</span> <span class="n">num</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kt">int</span> <span class="n">sum</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">num</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
         <span class="n">sum</span> <span class="o">+=</span> <span class="n">arr</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
     <span class="k">return</span> <span class="n">sum</span><span class="p">;</span>
 <span class="p">}</span>
 
-<span class="kr">struct</span> <span class="n">Foo</span> <span class="p">{</span>
-    <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kr">int</span><span class="o">&gt;</span> <span class="n">arr</span><span class="p">;</span>
-    <span class="kr">int</span> <span class="nf">run</span><span class="p">()</span> <span class="kr">const</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">accumulate</span><span class="p">(</span><span class="n">arr</span><span class="p">.</span><span class="nf">begin</span><span class="p">(),</span> <span class="n">arr</span><span class="p">.</span><span class="nf">end</span><span class="p">(),</span> <span class="mi">0</span><span class="p">);</span>
+<span class="k">struct</span> <span class="n">Foo</span> <span class="p">{</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">arr</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="nf">run</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">accumulate</span><span class="p">(</span><span class="n">arr</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span> <span class="n">arr</span><span class="p">.</span><span class="n">end</span><span class="p">(),</span> <span class="mi">0</span><span class="p">);</span>
     <span class="p">}</span>
 <span class="p">};</span>
 </pre></div>

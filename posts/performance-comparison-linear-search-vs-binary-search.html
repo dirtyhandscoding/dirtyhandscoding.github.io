@@ -426,12 +426,12 @@ Of course, I did notice how much performance differs for unrolled and looped ver
 26
 27</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="err">?</span><span class="nf">binary_search_branchless@@YAHPEBHHH@Z</span> <span class="no">PROC</span>
 <span class="nf">bsr</span> <span class="no">edx</span><span class="p">,</span> <span class="no">edx</span>         <span class="c">; intptr_t logstep = bsr(n);</span>
-<span class="no">mov</span> <span class="no">eax</span><span class="p">,</span> <span class="mi">1</span>
+<span class="nf">mov</span> <span class="no">eax</span><span class="p">,</span> <span class="mi">1</span>
 <span class="hll"><span class="nf">or</span> <span class="no">r9</span><span class="p">,</span> <span class="p">-</span><span class="mi">1</span>            <span class="c">; intptr_t pos = -1;</span>
-</span><span class="no">shlx</span> <span class="no">rax</span><span class="p">,</span> <span class="no">rax</span><span class="p">,</span> <span class="no">rdx</span>   <span class="c">; intptr_t step = intptr_t(1) &lt;&lt; logstep;</span>
+</span><span class="nf">shlx</span> <span class="no">rax</span><span class="p">,</span> <span class="no">rax</span><span class="p">,</span> <span class="no">rdx</span>   <span class="c">; intptr_t step = intptr_t(1) &lt;&lt; logstep;</span>
 
 <span class="nf">test</span> <span class="no">rax</span><span class="p">,</span> <span class="no">rax</span>        <span class="c">; while (step &gt; 0) {</span>
-<span class="no">jle</span> <span class="no">SHORT</span> <span class="no">$LN13</span>
+<span class="nf">jle</span> <span class="no">SHORT</span> <span class="no">$LN13</span>
 <span class="nf">npad</span> <span class="mi">10</span>
 <span class="nl">$LL2:</span>
     <span class="c">; pos = (arr[pos + step] &lt; key ? pos + step : pos);</span>
@@ -446,10 +446,10 @@ Of course, I did notice how much performance differs for unrolled and looped ver
 <span class="nf">jg</span> <span class="no">SHORT</span> <span class="no">$LL2</span>
 
 <span class="nf">lea</span> <span class="no">rax</span><span class="p">,</span> <span class="no">QWORD</span> <span class="no">PTR</span> <span class="p">[</span><span class="no">rdx</span><span class="err">+</span><span class="mi">1</span><span class="p">]</span>   <span class="c">; return pos + 1;</span>
-<span class="no">ret</span> <span class="mi">0</span>
+<span class="nf">ret</span> <span class="mi">0</span>
 <span class="nl">$LN13:</span>
 <span class="nf">lea</span> <span class="no">rax</span><span class="p">,</span> <span class="no">QWORD</span> <span class="no">PTR</span> <span class="p">[</span><span class="no">r9</span><span class="err">+</span><span class="mi">1</span><span class="p">]</span>      <span class="c">; return pos + 1;</span>
-<span class="no">ret</span> <span class="mi">0</span>
+<span class="nf">ret</span> <span class="mi">0</span>
 <span class="err">?</span><span class="nf">binary_search_branchless@@YAHPEBHHH@Z</span> <span class="no">ENDP</span>
 </pre></div>
 </td></tr></table>

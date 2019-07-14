@@ -488,7 +488,8 @@ When this memory is freed, <em>size</em> data member is used to update allocatio
 </pre></div>
 
 
-<p></details></p>
+</details>
+
 <h3 id="uninitialized-members"><a class="toclink" href="#uninitialized-members">Uninitialized members</a></h3>
 <p>Leaving class members of primitive type uninitialized can cause annoying and non-reproducible bugs. That's why Visual C++ <a href="https://stackoverflow.com/a/370362/556899">fills allocated memory with magic values</a> like 0xCD or 0xCC in debug build, to increase the chances of program crashing due to such an error. For some reason, ID devs decided to implement their own version of this system for game objects.</p>
 <p>In the game module of Doom 3, most of the classes inherit from <a href="https://github.com/id-Software/DOOM-3/blob/master/neo/game/gamesys/Class.h#L30">idClass</a> base, which allows to create object instance by type name and supports events for scripting system. All objects in this hierarchy are manually filled with 0xCD because <em>idClass</em> overloads <em>operator new</em> and <em>operator delete</em>:</p>

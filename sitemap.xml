@@ -5,28 +5,28 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
 <url>
 <loc>https://dirtyhandscoding.github.io/</loc>
-<lastmod>2019-08-04T15:59:50-00:00</lastmod>
+<lastmod>2019-08-04T21:40:22-00:00</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
 
 <url>
 <loc>https://dirtyhandscoding.github.io/archives.html</loc>
-<lastmod>2019-08-04T15:59:50-00:00</lastmod>
+<lastmod>2019-08-04T21:40:22-00:00</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
 
 <url>
 <loc>https://dirtyhandscoding.github.io/tags.html</loc>
-<lastmod>2019-08-04T15:59:50-00:00</lastmod>
+<lastmod>2019-08-04T21:40:22-00:00</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
 
 <url>
 <loc>https://dirtyhandscoding.github.io/categories.html</loc>
-<lastmod>2019-08-04T15:59:50-00:00</lastmod>
+<lastmod>2019-08-04T21:40:22-00:00</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
@@ -104,13 +104,6 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url>
 <loc>https://dirtyhandscoding.github.io/category/high-performance.html</loc>
 <lastmod>2019-08-04T15:31:00+05:32</lastmod>
-<changefreq>daily</changefreq>
-<priority>0.3</priority>
-</url>
-
-<url>
-<loc>https://dirtyhandscoding.github.io/category/off-topic.html</loc>
-<lastmod>2018-05-03T22:25:00+05:32</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>

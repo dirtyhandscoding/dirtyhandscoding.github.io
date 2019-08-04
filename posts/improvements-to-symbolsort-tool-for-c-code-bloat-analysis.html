@@ -52,7 +52,8 @@
         <span>27 May 2018</span>
 	        <span>| in <a href="https://dirtyhandscoding.github.io/category/uncategorized.html">Uncategorized</a></span>
 <span>| tags: <a href="https://dirtyhandscoding.github.io/tag/cpp.html">cpp</a><a href="https://dirtyhandscoding.github.io/tag/bloat.html">bloat</a><a href="https://dirtyhandscoding.github.io/tag/build.html">build</a><a href="https://dirtyhandscoding.github.io/tag/msvc.html">msvc</a></span>
-</footer><!-- /.post-info -->      <p>It is known that code bloat <a href="https://dirtyhandscoding.github.io/posts/on-cpp-code-bloat.html">significantly increases build times in C++</a>. The question is: how can we quantify code bloat? How can we see things which are compiled too many times or the things which generate too much object code? How can we know which places would benefit most from improvement efforts?</p>
+</footer><!-- /.post-info -->      
+      <p>It is known that code bloat <a href="https://dirtyhandscoding.github.io/posts/on-cpp-code-bloat.html">significantly increases build times in C++</a>. The question is: how can we quantify code bloat? How can we see things which are compiled too many times or the things which generate too much object code? How can we know which places would benefit most from improvement efforts?</p>
 <p>This article is about an excellent tool called <a href="https://github.com/adrianstone55/SymbolSort">SymbolSort</a>, which produces useful code bloat statistics in a project of any size. In particular, the article describes a few improvements which I have implemented recently to provide more useful analysis.</p>
 
 
@@ -659,6 +660,7 @@ It turned out that <code>UnDecorateSymbolName</code> function is no longer maint
 <h2 id="afterword"><a class="toclink" href="#afterword">Afterword</a></h2>
 <p>I hope the two improvements will provide a better vision of how much bloat headers and templates produce. In my opinion, both approaches are useful, despite being hacky and not 100% precise. Right now they are available in <a href="https://github.com/stgatilov/SymbolSort">my fork</a>, but I will prepare pull requests in the nearest future.</p>
 <p>SymbolSort has two more features which I never tried: analyzing nm dumps and producing diff reports. The latter feature may be very useful in continuous integration if you really care about build times and code bloat.</p>
+      
     </div><!-- /.entry-content -->
     <section>
         <div id="post-share-links" class="inline-menu">

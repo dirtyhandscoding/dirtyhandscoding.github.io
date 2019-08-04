@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <!-- load favicon from /images -->
+        <link rel="icon" type="image/png" href="/images/favicon.png" />
+        <!-- stgatilov: properly detect device width on a mobile -->
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/> 
+
+        <meta charset="utf-8" />
+        <title>utf8lut: Vectorized UTF-8 converter. Decoding UTF-8</title>
+        <link rel="stylesheet" href="https://dirtyhandscoding.github.io/theme/css/main.css" />
+        <link href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Dirty hands coding Atom Feed" />
+        <link href="/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="Dirty hands coding RSS Feed" />
+
+        <!--[if IE]>
+            <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+        <![endif]-->
+</head>
+
+<body id="index" class="home">
+        <header id="banner" class="body">
+                <h1><a href="https://dirtyhandscoding.github.io/">Dirty hands coding </a></h1>
+                <nav><ul>
+                    <li><a href="/archives.html">ARCHIVES</a></li>
+                    <li><a href="/categories.html">CATEGORIES</a></li>
+                    <li><a href="/tags.html">TAGS</a></li>
+                    <li><a href="/pages/contact.html">CONTACT</a></li>
+                </ul>
+<form class="navbar-search" action="https://dirtyhandscoding.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);">
+                        <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input">
+                    </form>
+                </nav>
+<div id="submenu">
+                    <ul>
+                            <li class="active"><a href="https://dirtyhandscoding.github.io/category/high-performance.html">High performance</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/off-topic.html">Off-topic</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/the-dark-mod.html">The Dark Mod</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/uncategorized.html">Uncategorized</a></li>
+                    </ul>
+                <div>
+        </header><!-- /#banner -->
+<section id="content" class="body">
+  <article>
+    <header>
+      <h1 class="entry-title">
+        <a href="https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-decoding-utf-8.html" rel="bookmark"
+           title="Permalink to utf8lut: Vectorized UTF-8 converter. Decoding UTF-8">utf8lut: Vectorized UTF-8 converter. Decoding UTF-8</a></h1>
+    </header>
+
+    <div class="entry-content">
+<footer class="post-info">
+        <span>04 August 2019</span>
+	        <span>| in <a href="https://dirtyhandscoding.github.io/category/high-performance.html">High performance</a></span>
+<span>| tags: <a href="https://dirtyhandscoding.github.io/tag/unicode.html">unicode</a><a href="https://dirtyhandscoding.github.io/tag/simd.html">simd</a><a href="https://dirtyhandscoding.github.io/tag/lut.html">lut</a></span>
+</footer><!-- /.post-info -->          <div class="series-summary series-in-article">
+        <p>This article is part 2 of the <span class="series-name">utf8lut: Vectorized UTF-8 converter</span> series:</p>
+            <ol class="parts">
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-introduction.html'>Introduction</a>
+        </li>
+        <li class="active">
+            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-decoding-utf-8.html'>Decoding UTF-8</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-encoding-utf-8.html'>Encoding UTF-8</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-technical-details.html'>Technical details</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-test-results.html'>Test results</a>
+        </li>
+    </ol>
+
+    </div>
+
+      <p>Since we only support basic plane in the fast path, all the code points must not exceed <code>0xFFFF</code>, so each one fit into 16 bits. For simplicity, we will convert from UTF-8 into UTF-16 here. If one needs conversion to UTF-32, it is trivially obtained from UTF-16 output by interleaving its code units with zeros.</p>
+<!--more-->
+
+<p>All the pictures in this article are drawn using the following endianness convention. The bytes are ordered in little-endian convention: lowest-order byte goes first (on the left side), and the highest-order byte goes last (on the right side).
+The bits of every single byte are represented in big-endian convention: highest-order bit is on the left, and lowest-order bit is on the right. The same big-endian notation applies to hexadecimal numbers. If a word larger than byte is treated as a single chunk without any splitting lines inside, then the whole word is written in big-endian.</p>
+<h2 id="idea"><a class="toclink" href="#idea">Idea</a></h2>
+<p>The core algorithm of utf8lut follows the same generic approach as described <a href="https://dirtyhandscoding.github.io/posts/vectorizing-stdmerge-with-vpermd-from-avx2-and-lookup-table.html#idea-of-vectorization">here</a>:</p>
+<ol>
+<li>
+<p>Obtain enough information about input, so that the needed shuffle control mask could be uniquely determined from this information.</p>
+</li>
+<li>
+<p>Convert information into compact bitmask in general purpose register (usually done by some shuffling and movemask intrinsic).</p>
+</li>
+<li>
+<p>(optional) Apply perfect hash function (e.g. some multiplicative hash) to bitmask to obtain number of smaller size.</p>
+</li>
+<li>
+<p>Use obtained number as index in a lookup table. The corresponding element of the table must contain the desired control mask for shuffling (precomputed beforehand).</p>
+</li>
+</ol>
+<p>In case of UTF-8 decoding, knowing which bytes among the 16 input bytes are continuation bytes is enough to fully determine the structure of UTF-8 data: we can determine how the bytes are grouped into code points, except for the last code point perhaps. So the first two steps are rather straightforward. The last step is relatively clear, except that for utf8lut we put quite a lot of data into LUT (four <code>__m128i</code> values per entry). Perfect hash function is <strong>not</strong> used.</p>
+<h2 id="input-data"><a class="toclink" href="#input-data">Input data</a></h2>
+<p>Consider the picture just below. It shows that bytes in UTF-8 data can be classified into five types: either first byte of <strong>1</strong>-byte, <strong>2</strong>-byte, <strong>3</strong>-byte or <strong>4</strong>-byte code point or a <strong>c</strong>ontinuation byte. Each class has fixed bit representation: a header or 1-5 bits followed by 3-7 bits of payload.</p>
+<div class="center-content">
+    <img src="https://dirtyhandscoding.github.io/images/8_utf8lut_2_decode/classification_bits.svg" class="w450"/>
+    <img src="https://dirtyhandscoding.github.io/images/8_utf8lut_2_decode/bytes_classification.svg" class="w500"/>
+</div>
+
+<p>The picture also shows classification of bytes in a sample text. The sample text is same as in <a href="https://woboq.com/blog/utf-8-processing-using-simd.html">this article</a>: it is <strong>x≤(α+β)²γ²</strong>, represented in UTF-8 as <code>x\e2\89\a4(\ce\b1+\ce\b2)\c2\b2\ce\b3\c2\b2</code>.</p>
+<h3 id="get-lut-index"><a class="toclink" href="#get-lut-index">Get LUT index</a></h3>
+<p>We do not need full information about classes: knowing which bytes are continuation bytes is perfectly enough to deduce how bytes are grouped into code points. So we start the algorithm by taking 16-bit mask of continuation bytes:</p>
+<p><img src="https://dirtyhandscoding.github.io/images/8_utf8lut_2_decode/continuation_mask.svg" class="centered w500"/></p>
+<p>Note that one nasty limitation of SSE2 is that it supports only signed comparisons on integers. In the current case all signed bytes less than <code>0xC0</code> are all bytes in range <code>[0x80..0xC0)</code>, which are exactly all continuation bytes:</p>
+<div class="highlight"><pre><span></span><span class="kr">__m128i</span> <span class="n">reg</span> <span class="o">=</span> <span class="n">_mm_loadu_si128</span><span class="p">((</span><span class="kr">__m128i</span><span class="o">*</span><span class="p">)</span><span class="n">pSource</span><span class="p">);</span>
+<span class="kt">uint32_t</span> <span class="n">mask</span> <span class="o">=</span> <span class="n">_mm_movemask_epi8</span><span class="p">(</span><span class="n">_mm_cmplt_epi8</span><span class="p">(</span><span class="n">reg</span><span class="p">,</span> <span class="n">_mm_set1_epi8</span><span class="p">(</span><span class="mh">0xC0U</span><span class="p">)));</span>
+</pre></div>
+
+
+<h3 id="fetch-from-lut"><a class="toclink" href="#fetch-from-lut">Fetch from LUT</a></h3>
+<p>Now we can fetch precomputed data from lookup table. We do not know exactly what we need yet, so let's load a single entry struct with contents to be determined:</p>
+<div class="highlight"><pre><span></span><span class="k">const</span> <span class="n">DecoderLutEntry</span> <span class="o">&amp;</span><span class="n">lookup</span> <span class="o">=</span> <span class="n">lutTable</span><span class="p">[</span><span class="n">mask</span><span class="p">];</span>
+</pre></div>
+
+
+<h3 id="shuffle"><a class="toclink" href="#shuffle">Shuffle</a></h3>
+<p>To get sequence of code points, first we need to shuffle the input bytes we have. We can perform any shuffle, as long as it is fully within 16 bytes. If we consider the shuffled data as eight 16-bit words, the most convenient layout would be the one which has last byte of UTF-8 data in the low half of each word, and pre-last byte in the high half of each word. If any code point is three bytes long, then we put its starting byte into separate <code>__m128i</code> register by doing one more shuffle.
+Here is how this shuffle applies to the sample input:</p>
+<div class="center-content">
+    <img src="https://dirtyhandscoding.github.io/images/8_utf8lut_2_decode/shuffle_masks.svg" class="w500"/>
+    <img src="https://dirtyhandscoding.github.io/images/8_utf8lut_2_decode/shuffle_bytes.svg" class="w500"/>
+</div>
+
+<p>Note that these pictures are drawn in little-endian convention, so low-order bytes are on the left, and high-order ones are on the right. The byte-granular shuffle is performed using <code>_mm_shuffle_epi8</code> from SSSE3, and shuffle masks <code>shufAB</code> and <code>shufC</code> must be precomputed for each LUT entry. The bytes depicted as white cells are filled with zeros by setting corresponding values in shuffle mask to -1.</p>
+<div class="highlight"><pre><span></span><span class="kr">__m128i</span> <span class="n">Rab</span> <span class="o">=</span> <span class="n">_mm_shuffle_epi8</span><span class="p">(</span><span class="n">reg</span><span class="p">,</span> <span class="n">lookup</span><span class="p">.</span><span class="n">shufAB</span><span class="p">);</span>
+<span class="kr">__m128i</span> <span class="n">Rc</span> <span class="o">=</span> <span class="n">_mm_shuffle_epi8</span><span class="p">(</span><span class="n">reg</span><span class="p">,</span> <span class="n">lookup</span><span class="p">.</span><span class="n">shufC</span><span class="p">);</span>
+</pre></div>
+
+
+<h3 id="extract-bits"><a class="toclink" href="#extract-bits">Extract bits</a></h3>
+<p>From now on each 16-bit word in <code>__m128i</code> values will be processed independently, information will not move horizontally any more. For this reason, only one 16-bit word from each <code>__m128i</code> value will be shown on the remaining illustrations.</p>
+<p>Now we need to extract all useful bits from <code>Rab</code> and <code>Rc</code> and combine them into single 16-bit value.</p>
+<p><img src="https://dirtyhandscoding.github.io/images/8_utf8lut_2_decode/extract_bits.svg" class="centered w700"/></p>
+<p>Let's start with <code>Rab</code>.
+Due to the way how shuffling works, the low byte of <code>Rab</code> can be either of type <strong>c</strong> or of type <strong>1</strong>, and the high byte is either of type <strong>c</strong> or of type <strong>2</strong> (or zero). The types are defined <a href="https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-decoding-utf-8.html#input-data">here</a>. So the low byte has either 6 or 7 bits of payload, and the high byte has either 5 or 6 bits of payload. Recall that the bit just before payload is always zero. It means that we can mask away headers by doing bitwise-and with a constant:</p>
+<div class="highlight"><pre><span></span><span class="n">Rab</span> <span class="o">=</span> <span class="n">_mm_and_si128</span><span class="p">(</span><span class="n">Rab</span><span class="p">,</span> <span class="n">_mm_set1_epi16</span><span class="p">(</span><span class="mh">0x3F7F</span><span class="p">));</span>
+</pre></div>
+
+
+<p>In order to compress the bits of <code>Rab</code>, it is enough to shift its high byte right by two bits, with two bits carried into the low byte as the result. Instead doing the shift in straightforward way, we implement it with a single <code>_mm_maddubs_epi16</code> instruction. This instruction computes dot product of byte pairs, so we can use it to compute <code>(low + high * 64)</code>:</p>
+<div class="highlight"><pre><span></span><span class="n">Rab</span> <span class="o">=</span> <span class="n">_mm_maddubs_epi16</span><span class="p">(</span><span class="n">Rab</span><span class="p">,</span> <span class="n">_mm_set1_epi16</span><span class="p">(</span><span class="mh">0x4001</span><span class="p">));</span>
+</pre></div>
+
+
+<p>The last step is to take <code>Rc</code> into account. It always has low byte of type <strong>3</strong> (or zero) with exactly 4 bits of payload. We simply shift it left by 12 bits, so that the payload gets into the high-order 4 bits (and header disappears), then add it to <code>Rab</code>:</p>
+<div class="highlight"><pre><span></span><span class="kr">__m128i</span> <span class="n">sum</span> <span class="o">=</span> <span class="n">_mm_add_epi16</span><span class="p">(</span><span class="n">Rab</span><span class="p">,</span> <span class="n">_mm_slli_epi16</span><span class="p">(</span><span class="n">Rc</span><span class="p">,</span> <span class="mi">12</span><span class="p">));</span>
+</pre></div>
+
+
+<h3 id="advance-pointers"><a class="toclink" href="#advance-pointers">Advance pointers</a></h3>
+<p>Now <code>sum</code> actually contains 16-bit code points, we can write them into the destination buffer. The non-trivial question is: how many code points are present in <code>sum</code>?
+The answer depends on the structure of the 16 input bytes:</p>
+<ul>
+<li>
+<p>If input contains only three-byte long characters, then only five characters will fit into 16-byte chunk, thus only five UTF-16 code points will be obtained.</p>
+</li>
+<li>
+<p>If input contains only ASCII characters, then eight UTF-16 code points will be obtained, since shuffling is limited to 16-byte of data (both in input and output sense). Note that the remaining eight characters read from input will be processed on the following iteration.</p>
+</li>
+<li>
+<p>If input contains only two-byte long characters, then seven UTF-16 code points will be obtained. The last character will not be processed, because it is not yet clear if it is two bytes long or three bytes long: it depends on whether the next byte is continuation byte or not.</p>
+</li>
+</ul>
+<p>As a result, it is not clear how many bytes of input have been consumed and how many bytes of output have been produced. Computing these numbers is not going to work fast, so the simplest approach is to take them from the lookup table. Compared to two <code>__m128</code> shuffle masks, two small integers won't waste much memory anyway.</p>
+<div class="highlight"><pre><span></span><span class="n">_mm_storeu_si128</span><span class="p">((</span><span class="kr">__m128i</span><span class="o">*</span><span class="p">)</span><span class="n">pDest</span><span class="p">,</span> <span class="n">sum</span><span class="p">);</span>
+<span class="n">pSource</span> <span class="o">+=</span> <span class="n">lookup</span><span class="p">.</span><span class="n">srcStep</span><span class="p">;</span>
+<span class="n">pDest</span> <span class="o">+=</span> <span class="n">lookup</span><span class="p">.</span><span class="n">dstStep</span><span class="p">;</span>
+</pre></div>
+
+
+<p>That's it!
+The code for converting valid input with any BMP characters from UTF-8 into UTF-16 is complete. In something about 15 instructions, it processes at least 14 bytes of input or 16 bytes of output. There are no branches involved.</p>
+<h2 id="validation"><a class="toclink" href="#validation">Validation</a></h2>
+<p>Of course, standard-compliant UTF-8 decoder must support four-byte characters and must check for invalid input, so we are not done yet. Four-byte characters will be processed in scalar slow path, and also slow path will perform full input validation. So in the fast path we only need to detect if something goes wrong and return error code in such case. For the sake of simplicity, we will consider four-byte long UTF-8 characters as wrong input in this section.</p>
+<p><strong>Wrong header.</strong>
+While we extracted the payload bits from input data, we never checked that the byte headers are correct. We need to check condition <code>(value &amp; mask == header)</code> for each byte of input consumed. Since the header has all bits set except the last one, it can be computed as <code>header = mask*2</code>.
+The <code>mask</code> is different for bytes of different type, so it is hard to compute directly. That's why we take <code>__m128i</code> value with all masks from the lookup table.</p>
+<div class="highlight"><pre><span></span><span class="kr">__m128i</span> <span class="n">byteMask</span> <span class="o">=</span> <span class="n">lookup</span><span class="p">.</span><span class="n">headerMask</span><span class="p">;</span>
+<span class="kr">__m128i</span> <span class="n">header</span> <span class="o">=</span> <span class="n">_mm_and_si128</span><span class="p">(</span><span class="n">reg</span><span class="p">,</span> <span class="n">byteMask</span><span class="p">);</span>
+<span class="kr">__m128i</span> <span class="n">hdrRef</span> <span class="o">=</span> <span class="n">_mm_add_epi8</span><span class="p">(</span><span class="n">byteMask</span><span class="p">,</span> <span class="n">byteMask</span><span class="p">);</span>
+<span class="kr">__m128i</span> <span class="n">hdrCorrect</span> <span class="o">=</span> <span class="n">_mm_cmpeq_epi8</span><span class="p">(</span><span class="n">header</span><span class="p">,</span> <span class="n">hdrRef</span><span class="p">);</span>
+</pre></div>
+
+
+<p>In the lookup table, each byte of <code>headerMask</code> has 1-4 high bits set, depending on the type of byte (<strong>1</strong>, <strong>c</strong>, <strong>2</strong>, or <strong>3</strong> respectively). For a few last bytes which do <strong>not</strong> constitute a complete code point yet, <code>headerMask</code> is set to zero. Zero value effectively disables the check.</p>
+<p><strong>Overlong encoding.</strong>
+Although it is possible to represent an ASCII character with two or three bytes in UTF-8, the standard explicitly forbids such overlong encodings for the sake of uniqueness of representation. Each code point must be encoded with minimum possible number of bytes.</p>
+<p>There are two cases of overlong encoding worth checking: when code point decoded from two-byte sequence is less than <code>0x80</code>, or when code point decoded from three-byte sequence is less than <code>0x800</code>. Since it is hard to see now which code points came from which byte lengths, we simply take <code>__m128i</code> value with the lower bounds from the lookup table:</p>
+<div class="highlight"><pre><span></span><span class="kr">__m128i</span> <span class="n">overlongSymbol</span> <span class="o">=</span> <span class="n">_mm_cmplt_epi16</span><span class="p">(</span><span class="n">_mm_xor_si128</span><span class="p">(</span><span class="n">sum</span><span class="p">,</span> <span class="n">_mm_set1_epi16</span><span class="p">(</span><span class="mh">0x8000U</span><span class="p">)),</span> <span class="n">lookup</span><span class="p">.</span><span class="n">minValues</span><span class="p">);</span>
+</pre></div>
+
+
+<p>Note that we need to perform unsigned comparison here, which is absent in SSE2. The standard workaround (as described <a href="https://fgiesen.wordpress.com/2016/04/03/sse-mind-the-gap/">here</a>) is to subtract <code>0x8000</code> from both values and compare in signed way.</p>
+<p><strong>Surrogate code point.</strong>
+The code points in range <code>[0xD800..U+E000)</code> are used for surrogates in UTF-16, and they are forbidden in a valid UTF-8 text. We can simply check if code point is within this range. In order to check it in one comparison, a signed variation of the <a href="https://stackoverflow.com/a/17095534/556899">well-known trick</a> can be used: we subtract a constant value in such way, that one of the range bounds coincides with the overflow boundary. In our case, subtracting <code>0x6000</code> from the right bound <code>0xE000</code> turns it into <code>0x8000</code>, so now any value greater or equal to <code>0x7800</code> is within the range.</p>
+<div class="highlight"><pre><span></span><span class="kr">__m128i</span> <span class="n">surrogate</span> <span class="o">=</span> <span class="n">_mm_cmpgt_epi16</span><span class="p">(</span><span class="n">_mm_sub_epi16</span><span class="p">(</span><span class="n">sum</span><span class="p">,</span> <span class="n">_mm_set1_epi16</span><span class="p">(</span><span class="mh">0x6000</span><span class="p">)),</span> <span class="n">_mm_set1_epi16</span><span class="p">(</span><span class="mh">0x77FF</span><span class="p">));</span>
+</pre></div>
+
+
+<p><strong>Combine.</strong>
+If any of the three checks fails, then input is wrong. Recall that the header check produces <code>0x00</code> bytes on fails, while the other checks produce <code>0xFF</code> bytes. Since all bits in a byte are either set or not set, using <code>_mm_movemask_epi8</code> suffices in the end.</p>
+<div class="highlight"><pre><span></span><span class="kr">__m128i</span> <span class="n">allCorr</span> <span class="o">=</span> <span class="n">_mm_andnot_si128</span><span class="p">(</span><span class="n">_mm_or_si128</span><span class="p">(</span><span class="n">overlongSymbol</span><span class="p">,</span> <span class="n">surrogate</span><span class="p">),</span> <span class="n">hdrCorrect</span><span class="p">);</span>
+<span class="k">if</span> <span class="p">(</span><span class="n">_mm_movemask_epi8</span><span class="p">(</span><span class="n">allCorr</span><span class="p">)</span> <span class="o">!=</span> <span class="mh">0xFFFF</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+</pre></div>
+
+
+<p><strong>Wrong LUT index.</strong>
+Finally, not every 16-bit mask used as LUT index corresponds to a valid UTF-8 sequence. For example, having three continuation bytes in a row is wrong, and getting such index is possible on wrong input.</p>
+<p>In order to make sure that getting wrong index produces an error, we fill every wrong LUT entry with special values, so that validation will fail regardless of the input data. One way to achieve it is:</p>
+<ol>
+<li>
+<p>Set <code>shufAB</code> and <code>shufC</code> to -1 (i.e. all bits set). It is easy to see <code>sum</code> will surely be zero in this case.</p>
+</li>
+<li>
+<p>Set <code>minValues</code> to <code>0x7FFF</code>. Then the check for overlong encoding will detect any value of <code>sum</code> except <code>0xFFFF</code> as wrong.</p>
+</li>
+</ol>
+<p>Clearly, <code>sum</code> cannot be zero and <code>0xFFFF</code> at once, so the validation will surely fail.</p>
+<h2 id="full-code"><a class="toclink" href="#full-code">Full code</a></h2>
+<p>Here is the full listing once again, with validation included:</p>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="kr">__m128i</span> <span class="n">reg</span> <span class="o">=</span> <span class="n">_mm_loadu_si128</span><span class="p">((</span><span class="kr">__m128i</span><span class="o">*</span><span class="p">)</span><span class="n">pSource</span><span class="p">);</span>
+
+<span class="c1">//decode input</span>
+<span class="kt">uint32_t</span> <span class="n">mask</span> <span class="o">=</span> <span class="n">_mm_movemask_epi8</span><span class="p">(</span><span class="n">_mm_cmplt_epi8</span><span class="p">(</span><span class="n">reg</span><span class="p">,</span> <span class="n">_mm_set1_epi8</span><span class="p">(</span><span class="mh">0xC0U</span><span class="p">)));</span>
+<span class="k">const</span> <span class="n">DecoderLutEntry</span> <span class="o">&amp;</span><span class="n">lookup</span> <span class="o">=</span> <span class="n">lutTable</span><span class="p">[</span><span class="n">mask</span><span class="p">];</span>
+<span class="kr">__m128i</span> <span class="n">Rab</span> <span class="o">=</span> <span class="n">_mm_shuffle_epi8</span><span class="p">(</span><span class="n">reg</span><span class="p">,</span> <span class="n">lookup</span><span class="p">.</span><span class="n">shufAB</span><span class="p">);</span>
+<span class="kr">__m128i</span> <span class="n">Rc</span> <span class="o">=</span> <span class="n">_mm_shuffle_epi8</span><span class="p">(</span><span class="n">reg</span><span class="p">,</span> <span class="n">lookup</span><span class="p">.</span><span class="n">shufC</span><span class="p">);</span>
+<span class="n">Rab</span> <span class="o">=</span> <span class="n">_mm_and_si128</span><span class="p">(</span><span class="n">Rab</span><span class="p">,</span> <span class="n">_mm_set1_epi16</span><span class="p">(</span><span class="mh">0x3F7F</span><span class="p">));</span>
+<span class="n">Rab</span> <span class="o">=</span> <span class="n">_mm_maddubs_epi16</span><span class="p">(</span><span class="n">Rab</span><span class="p">,</span> <span class="n">_mm_set1_epi16</span><span class="p">(</span><span class="mh">0x4001</span><span class="p">));</span>
+<span class="kr">__m128i</span> <span class="n">sum</span> <span class="o">=</span> <span class="n">_mm_add_epi16</span><span class="p">(</span><span class="n">Rab</span><span class="p">,</span> <span class="n">_mm_slli_epi16</span><span class="p">(</span><span class="n">Rc</span><span class="p">,</span> <span class="mi">12</span><span class="p">));</span>
+
+<span class="c1">//validate input</span>
+<span class="kr">__m128i</span> <span class="n">byteMask</span> <span class="o">=</span> <span class="n">lookup</span><span class="p">.</span><span class="n">headerMask</span><span class="p">;</span>
+<span class="kr">__m128i</span> <span class="n">header</span> <span class="o">=</span> <span class="n">_mm_and_si128</span><span class="p">(</span><span class="n">reg</span><span class="p">,</span> <span class="n">byteMask</span><span class="p">);</span>
+<span class="kr">__m128i</span> <span class="n">hdrRef</span> <span class="o">=</span> <span class="n">_mm_add_epi8</span><span class="p">(</span><span class="n">byteMask</span><span class="p">,</span> <span class="n">byteMask</span><span class="p">);</span>
+<span class="kr">__m128i</span> <span class="n">hdrCorrect</span> <span class="o">=</span> <span class="n">_mm_cmpeq_epi8</span><span class="p">(</span><span class="n">header</span><span class="p">,</span> <span class="n">hdrRef</span><span class="p">);</span>
+<span class="kr">__m128i</span> <span class="n">overlongSymbol</span> <span class="o">=</span> <span class="n">_mm_cmplt_epi16</span><span class="p">(</span><span class="n">_mm_xor_si128</span><span class="p">(</span><span class="n">sum</span><span class="p">,</span> <span class="n">_mm_set1_epi16</span><span class="p">(</span><span class="mh">0x8000U</span><span class="p">)),</span> <span class="n">lookup</span><span class="p">.</span><span class="n">minValues</span><span class="p">);</span>
+<span class="kr">__m128i</span> <span class="n">surrogate</span> <span class="o">=</span> <span class="n">_mm_cmpgt_epi16</span><span class="p">(</span><span class="n">_mm_sub_epi16</span><span class="p">(</span><span class="n">sum</span><span class="p">,</span> <span class="n">_mm_set1_epi16</span><span class="p">(</span><span class="mh">0x6000</span><span class="p">)),</span> <span class="n">_mm_set1_epi16</span><span class="p">(</span><span class="mh">0x77FF</span><span class="p">));</span>
+<span class="kr">__m128i</span> <span class="n">allCorr</span> <span class="o">=</span> <span class="n">_mm_andnot_si128</span><span class="p">(</span><span class="n">_mm_or_si128</span><span class="p">(</span><span class="n">overlongSymbol</span><span class="p">,</span> <span class="n">surrogate</span><span class="p">),</span> <span class="n">hdrCorrect</span><span class="p">);</span>
+<span class="k">if</span> <span class="p">(</span><span class="n">_mm_movemask_epi8</span><span class="p">(</span><span class="n">allCorr</span><span class="p">)</span> <span class="o">!=</span> <span class="mh">0xFFFF</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>   <span class="c1">//stop and report failure</span>
+
+<span class="c1">//advance</span>
+<span class="n">_mm_storeu_si128</span><span class="p">((</span><span class="kr">__m128i</span><span class="o">*</span><span class="p">)</span><span class="n">pDest</span><span class="p">,</span> <span class="n">sum</span><span class="p">);</span>
+<span class="n">pSource</span> <span class="o">+=</span> <span class="n">lookup</span><span class="p">.</span><span class="n">srcStep</span><span class="p">;</span>
+<span class="n">pDest</span> <span class="o">+=</span> <span class="n">lookup</span><span class="p">.</span><span class="n">dstStep</span><span class="p">;</span>
+</pre></div>
+</td></tr></table>
+
+<h2 id="lookup-table"><a class="toclink" href="#lookup-table">Lookup table</a></h2>
+<p>The lookup table eats quite a lot of space, which is not good. In the naive version described above, there are 65536 entries, each contains four <code>__m128i</code> values and two small integer values. Some space optimization would be handy.</p>
+<p><strong>Entry size optimization.</strong>
+First, we can reduce the size of one entry a bit. Notice that half of bytes in <code>shufC</code> control mask are always -1, because only lower halves are used in every 16-bit word of <code>Rc</code> value. If we remove half of bytes away, it turns out that <code>shufC</code> fits into 8 bytes instead of 16 bytes. The freed 8 bytes can be used to store <code>srcStep</code> and <code>dstStep</code> integers. Here is the resulting layout:</p>
+<div class="highlight"><pre><span></span><span class="k">struct</span> <span class="n">DecoderCoreInfo</span> <span class="p">{</span>
+    <span class="kr">__m128i</span> <span class="n">shufAB</span><span class="p">;</span>                     <span class="c1">//shuffling mask to get lower two bytes of symbols</span>
+    <span class="k">union</span> <span class="p">{</span>
+        <span class="kr">__m128i</span> <span class="n">shufC</span><span class="p">;</span>                  <span class="c1">//shuffling mask to get third bytes of symbols</span>
+        <span class="k">struct</span> <span class="p">{</span>
+            <span class="kt">uint32_t</span> <span class="n">_shufC_part0</span><span class="p">;</span>
+            <span class="kt">uint32_t</span> <span class="n">_shufC_part1</span><span class="p">;</span>
+            <span class="kt">uint32_t</span> <span class="n">srcStep</span><span class="p">;</span>           <span class="c1">//number of bytes processed in input buffer</span>
+            <span class="kt">uint32_t</span> <span class="n">dstStep</span><span class="p">;</span>           <span class="c1">//number of symbols produced in output buffer (doubled)</span>
+        <span class="p">};</span>
+    <span class="p">};</span>
+    <span class="kr">__m128i</span> <span class="n">headerMask</span><span class="p">;</span>                 <span class="c1">//mask of &quot;111..10&quot; bits required in each byte</span>
+    <span class="kr">__m128i</span> <span class="n">minValues</span><span class="p">;</span>                  <span class="c1">//minimal value allowed for not being overlong (sign-shifted, 16-bit)</span>
+<span class="p">};</span>
+</pre></div>
+
+
+<p>Of course, when we read <code>shufC</code> value from LUT, we have to unpack it. It does not matter what we shuffle into the higher halves of 16-bit words in <code>Rc</code>: the higher halves will be later removed by shifting anyway. That's why the following code can be used for unpacking:</p>
+<div class="highlight"><pre><span></span><span class="kr">__m128i</span> <span class="n">shufC</span> <span class="o">=</span> <span class="n">_mm_unpacklo_epi8</span><span class="p">(</span><span class="n">lookup</span><span class="p">.</span><span class="n">shufC</span><span class="p">,</span> <span class="n">lookup</span><span class="p">.</span><span class="n">shufC</span><span class="p">);</span>
+<span class="kr">__m128i</span> <span class="n">Rc</span> <span class="o">=</span> <span class="n">_mm_shuffle_epi8</span><span class="p">(</span><span class="n">reg</span><span class="p">,</span> <span class="n">shufC</span><span class="p">);</span>      <span class="c1">//line 7 of original algorithm</span>
+</pre></div>
+
+
+<p><strong>Entry count optimization.</strong>
+Given that input data is valid, the first byte on each iteration must be a starting byte of some character. Therefore, it cannot be a continuation byte, so the LUT index (i.e. <code>mask</code>) must be even. Hence all odd entries of the lookup table are invalid, and it is easy to remove them from the table.</p>
+<p>When accessing LUT without odd entries, we can use some rough type casting to avoid unnecessary division by two. Also, we should not forget that for validation purposes the algorithm must honestly check that the mask is even and report error otherwise.</p>
+<div class="highlight"><pre><span></span><span class="k">if</span> <span class="p">(</span><span class="n">mask</span> <span class="o">&amp;</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+<span class="k">const</span> <span class="n">DecoderLutEntry</span> <span class="o">&amp;</span><span class="n">lookup</span> <span class="o">=</span> <span class="o">*</span><span class="p">(</span><span class="n">DecoderLutEntry</span><span class="o">*</span><span class="p">)(</span>    <span class="c1">//replacing line 5 or original algorithm</span>
+    <span class="p">((</span><span class="kt">char</span><span class="o">*</span><span class="p">)</span><span class="n">lutTable</span><span class="p">)</span> <span class="o">+</span> <span class="n">mask</span> <span class="o">*</span> <span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="n">lutTable</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+<span class="p">);</span>
+</pre></div>
+
+
+<p>This leaves us with 32768 entries in the table, out of which 10609 entries are valid. While it looks like an opportunity for further optimization, it is very hard to use. The layout of invalid cells is likely very complicated, so direct transformation from mask to an index of smaller size won't be feasible.
+It is possible to use perfect hashing, but it won't help much. I tried to find 32-bit Knuth multiplicative hash for a table of size 16384, but it does not exist.
+Another idea is to use two-level lookup (like how <a href="https://en.wikipedia.org/wiki/Page_table#Multilevel_page_table">virtual memory addresses are translated</a>). It may probably save 50% of space, but it would add one more indirection.</p>
+<p><strong>Final memory usage.</strong>
+After the two optimizations presented above, the lookup table has 32768 entries with 64 bytes in each. This is whopping <strong>2 MB of lookup data</strong> (or half of that if validation is disabled). It fits well into L3 cache of modern CPUs, but does not fit into L2 cache unfortunately.
+Is this a big problem? Well, yes it is. At least, it is clearly the weakest point of the utf8lut algorithm.</p>
+<p>In fact, decoding performance depends on the distribution of code lengths in the input data. If one-byte, two-byte and three-byte characters are mixed randomly, then all the valid LUT entries will be used in random order. This is the worst-case scenario, but it is very unlikely to happen in the real world.
+The distribution of code lengths in the real data will likely show much less variation. If only one language is used, then the text will be almost pure mixture of either 1-byte and 2-byte (European) or 1-byte and 3-byte (Asian) characters. This greatly reduces the number of hot entries. In addition to that, not all combinations will be equally likely due to how words are composed, which will provide further benefit for CPU caching. All of this helps to remain optimistic about the issue.</p>
+<p><strong>Time/space tradeoff.</strong>
+One really effective way of reducing lookup table size is capping the number of input bytes processed per iteration. Imagine that input register is not 16 byte wide, but only (16-k) bytes wide. Generate lookup table with such assumption. In the decoding algorithm, remove the highest k bits of the <code>mask</code> by anding it with a constant.</p>
+<p>This approach makes lookup table smaller in 2^k times but slows down the algorithm by something like k/16*100%. For instance, if we disable highest 4 bits, then lookup table will have 2048 entries and total size 128 KB, but processing a fixed text will need about 33% more iterations.</p>
+<h2 id="utf8lut-code"><a class="toclink" href="#utf8lut-code">utf8lut code</a></h2>
+<p>The algorithm described above is used at the "core" of the utf8lut library. The relevant files are:</p>
+<ul>
+<li><a href="https://bitbucket.org/stgatilov/utf8lut/src/default/src/core/DecoderProcess.h">core/DecoderProcess.h</a>: the algorithm for decoding UTF-8</li>
+<li><a href="https://bitbucket.org/stgatilov/utf8lut/src/default/src/core/DecoderLut.h">core/DecoderLut.h</a>: lookup table data types</li>
+<li><a href="https://bitbucket.org/stgatilov/utf8lut/src/default/src/core/DecoderLut.cpp">core/DecoderLut.cpp</a>: lookup table generation code</li>
+</ul>
+<p>The code samples provided in this article are describing only the most powerful version of the fast path: decoding up to three-byte long characters with full validation. The library code also works for simpler cases: it is possible to disable validation and/or to reduce maximum supported byte-length of characters.</p>
+          <div class="series-neighbors">
+        <p class="series-prev">
+            <span class="arrow-left"></span>
+            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-introduction.html'>
+                Part 1: Introduction
+            </a>
+        </p>
+        <p class="series-next">
+            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-encoding-utf-8.html'>
+                Part 3: Encoding UTF-8
+            </a>
+            <span class="arrow-right"></span>
+        </p>
+    </div>
+
+    </div><!-- /.entry-content -->
+    
+    			<!--<script type="text/javascript" src="http://code.jquery.com/jquery-2.1.4.min.js"></script>-->
+		<script src="https://dirtyhandscoding.github.io/theme/js/jquery.min.js"></script>
+	<script type="text/javascript" src="https://dirtyhandscoding.github.io/theme/pelican_comment_system/comments.js"></script>
+	<script type="text/javascript">
+		$(document).ready(function() {
+			CommentSystem.email_user   = "itiswrongemail";
+			CommentSystem.email_domain = "outlook.com";
+
+			$('#pcs-comment-form').on("submit",
+				function( event )
+				{
+					event.preventDefault();
+					$(location).attr('href', CommentSystem.getMailtoLink("utf8lut-vectorized-utf-8-converter-decoding-utf-8"));
+				}
+			);
+		});
+	</script>
+
+    	<section>
+	<div id="pcs-comments-header" class="inline-menu">
+	<header>
+		<div>Comments (0)</div>
+		<button type="button" title="Expand or collapse the comments section" class="icon-label" id="pcs-comments-collapse-button" onclick="CommentSystem.collapsible($('#pcs-comments'), $(this));">
+			<span class="nocss">expand</span>
+		</button>
+			<a href="https://dirtyhandscoding.github.io/feeds/comment.utf8lut-vectorized-utf-8-converter-decoding-utf-8.atom.xml" class="icon-label">atom feed: comments</a>
+	</header>
+	</div>
+	<div id="pcs-comments">
+		<p>There are no comments yet.</p>
+	<section>
+	<div display="none" id="pcs-comment-notreply-helper" />
+	<form id="pcs-comment-form" action="#">
+		<fieldset>
+		<legend>Add a Comment</legend>
+		<div id="pcs-comment-tab-inputs">
+			<input type="hidden" id="pcs-comment-form-input-replyto"/>
+			<label for="pcs-comment-form-input-name">Name</label>
+			<input  id="pcs-comment-form-input-name" type="text" size="40" placeholder="Enter your name or nickname" />
+			<br/>
+			<label for="pcs-comment-form-input-website">Website</label>
+			<input  id="pcs-comment-form-input-website" type="text" size="40" placeholder="Enter your website (optional)" />
+			<br/>
+			<label for="pcs-comment-form-input-empty">Empty</label>
+			<input  id="pcs-comment-form-input-empty" type="text" size="30" placeholder="Do NOT enter anything here!" />
+			<label   for="pcs-comment-form-input-textarea">Your Comment</label>
+			<br/>
+			<textarea id="pcs-comment-form-input-textarea" rows="7" cols="40" placeholder="Enter your comment (markdown is allowed)"></textarea>
+		</div>
+		<div id="pcs-comment-tab-message" style="display:none">
+			<textarea readonly rows="10" cols="40"></textarea>
+		</div>
+
+		<button type="submit"
+				id="pcs-comment-form-button-submit"
+				title="Create mailto link and open it in default email client &#10;Note: you have to send the email to post comment"
+				>Post via email</button>
+		<button type="button"
+				id="pcs-comment-form-button-message"
+				title="See the text of email message to be sent &#10;Note: you can copy it and send manually"
+				onclick="CommentSystem.viewEmail(&quot;utf8lut-vectorized-utf-8-converter-decoding-utf-8&quot;);"
+				>View email text</button>
+		<a target="_blank"
+				id="pcs-comment-gmail-config-help"
+				title="How to configure Chrome to open mailto links in Gmail..."
+				href="https://productforums.google.com/forum/#!topic/gmail/JtWVPbUfh-o"
+				>?</a>
+		</fieldset>
+
+		<!--			<a href="https://dirtyhandscoding.github.io/feeds/comment.utf8lut-vectorized-utf-8-converter-decoding-utf-8.atom.xml">
+				Comment Atom Feed
+			</a>
+-->
+	</form>
+	<script>CommentSystem.displayReplyTo();</script>
+</section>
+
+	</div>
+	<script>
+		$('#pcs-comments').css({display: "none"});
+		$('#pcs-comments-collapse-button').addClass('collapsed');
+	</script>
+</section>
+
+  </article>
+</section>
+        <section id="extras" class="body">
+                <div class="social">
+                        <h2>social</h2>
+                        <ul>
+                            <li><a href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate">atom feed</a></li>
+                            <li><a href="/feeds/all.rss.xml" type="application/rss+xml" rel="alternate">rss feed</a></li>
+
+                        </ul>
+                </div><!-- /.social -->
+        </section><!-- /#extras -->
+
+        <footer id="contentinfo" class="body">
+                <p>Powered by <a href="http://getpelican.com/">Pelican</a>. Theme <a href="https://github.com/blueicefield/pelican-blueidea/">blueidea</a>, customized to personal taste.</p>
+        </footer><!-- /#contentinfo -->
+
+</body>
+</html>

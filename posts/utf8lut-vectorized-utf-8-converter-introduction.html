@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <!-- load favicon from /images -->
+        <link rel="icon" type="image/png" href="/images/favicon.png" />
+        <!-- stgatilov: properly detect device width on a mobile -->
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/> 
+
+        <meta charset="utf-8" />
+        <title>utf8lut: Vectorized UTF-8 converter. Introduction</title>
+        <link rel="stylesheet" href="https://dirtyhandscoding.github.io/theme/css/main.css" />
+        <link href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Dirty hands coding Atom Feed" />
+        <link href="/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="Dirty hands coding RSS Feed" />
+
+        <!--[if IE]>
+            <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+        <![endif]-->
+</head>
+
+<body id="index" class="home">
+        <header id="banner" class="body">
+                <h1><a href="https://dirtyhandscoding.github.io/">Dirty hands coding </a></h1>
+                <nav><ul>
+                    <li><a href="/archives.html">ARCHIVES</a></li>
+                    <li><a href="/categories.html">CATEGORIES</a></li>
+                    <li><a href="/tags.html">TAGS</a></li>
+                    <li><a href="/pages/contact.html">CONTACT</a></li>
+                </ul>
+<form class="navbar-search" action="https://dirtyhandscoding.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);">
+                        <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input">
+                    </form>
+                </nav>
+<div id="submenu">
+                    <ul>
+                            <li class="active"><a href="https://dirtyhandscoding.github.io/category/high-performance.html">High performance</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/off-topic.html">Off-topic</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/the-dark-mod.html">The Dark Mod</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/uncategorized.html">Uncategorized</a></li>
+                    </ul>
+                <div>
+        </header><!-- /#banner -->
+<section id="content" class="body">
+  <article>
+    <header>
+      <h1 class="entry-title">
+        <a href="https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-introduction.html" rel="bookmark"
+           title="Permalink to utf8lut: Vectorized UTF-8 converter. Introduction">utf8lut: Vectorized UTF-8 converter. Introduction</a></h1>
+    </header>
+
+    <div class="entry-content">
+<footer class="post-info">
+        <span>04 August 2019</span>
+	        <span>| in <a href="https://dirtyhandscoding.github.io/category/high-performance.html">High performance</a></span>
+<span>| tags: <a href="https://dirtyhandscoding.github.io/tag/unicode.html">unicode</a><a href="https://dirtyhandscoding.github.io/tag/simd.html">simd</a><a href="https://dirtyhandscoding.github.io/tag/lut.html">lut</a></span>
+</footer><!-- /.post-info -->          <div class="series-summary series-in-article">
+        <p>This article is part 1 of the <span class="series-name">utf8lut: Vectorized UTF-8 converter</span> series:</p>
+            <ol class="parts">
+        <li class="active">
+            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-introduction.html'>Introduction</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-decoding-utf-8.html'>Decoding UTF-8</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-encoding-utf-8.html'>Encoding UTF-8</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-technical-details.html'>Technical details</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-test-results.html'>Test results</a>
+        </li>
+    </ol>
+
+    </div>
+
+      <p>Some time ago I wrote <a href="https://stackoverflow.com/a/31683632/556899">a surprising answer</a> to stackoverflow question "Fastest way to get IPv4 address from string". At that very moment I discovered that <a href="https://msdn.microsoft.com/en-us/library/bb531427(v=vs.120).aspx">_mm_shuffle_epi8</a> instruction combined with sufficiently large lookup-table can do wonders. Actually, this exact methodology was used to implement vectorized merging algorithm in <a href="https://dirtyhandscoding.github.io/posts/vectorizing-stdmerge-with-vpermd-from-avx2-and-lookup-table.html">one of my previous blog posts</a>.</p>
+<p>Inspired by the new discovery, I tried to apply this LUT + shuffle idea to some well-known and moderately generic problem. I tried to apply the idea to accelerate conversion from UTF-8 to UTF-16 and was successful. Initially, I had to postpone all efforts on the problem due to PhD-related activities. After that I thought that I would write a scientific article on the topic. When it became clear that I don't want to lose time on anything like that anymore, I decided to write about it in a blog. As a result, almost three years after the initial work (update: it is four years already), I finally managed to write this report, describing the algorithm and the <strong>utf8lut</strong> library.</p>
+
+
+<h2 id="previous-work"><a class="toclink" href="#previous-work">Previous work</a></h2>
+<p>Converting UTF-8 to UTF-16 is a well-known problem. The most elegant and also quite efficient solution to UTF-8 decoding was presented by Bjoern Hoehrmann in <a href="http://bjoern.hoehrmann.de/utf-8/decoder/dfa/">his article</a>.
+While there are plenty of approaches and libraries to do this simple conversion, there are not so many attempts at vectorizing this process. This is not surprising, because UTF-8 is essentially a variable length encoding, and dealing with dynamic data layout in SSE/AVX is a huge problem.
+I'll briefly describe here all the attempts at UTF-8 vectorization that I've heard of. In fact, utf8lut is based on many ideas which were already used in these solutions.</p>
+<h4 id="rob-d-cameron-u8u16-2007"><a class="toclink" href="#rob-d-cameron-u8u16-2007">Rob D. Cameron: u8u16 (2007)</a></h4>
+<p>This library used to have a <a href="http://u8u16.costar.sfu.ca/">website</a> (currently offline). It is best described in a technical article <a href="https://www.researchgate.net/publication/266472021_u8u16_-A_High-Speed_UTF-8_to_UTF-16_Transcoder_Using_Parallel_Bit_Streams">u8u16 - A High-Speed UTF-8 to UTF-16 Transcoder Using Parallel Bit Streams</a>.</p>
+<p>The whole idea of vectorization is based on the so-called "parallel bit streams". Imagine that each byte is a struct with eight fields, each field being a single bit. When programs receives an array of bytes, it efficiently receives array of eight-bit structs, e.g. data in <a href="https://en.wikipedia.org/wiki/AOS_and_SOA">AoS layout</a>. It is well-known that this layout is not convenient for vectorization, the SoA layout is much more convenient. If we convert the data to SoA, we will get eight separate arrays of bits: one will have exactly all the 0-th bits of bytes, one will have exactly all the 1-st bits of bytes, ..., the last one will have all the 7-th (last) bits of the bytes. Each such array of bits is called a bit stream, and there are eight bit streams in total.</p>
+<p>In each processing step, u8u16 first loads next 1024 bits of input data as eight <code>__m128i</code> values (AoS layout). Then it converts these values into eight bit streams (SoA layout), each bit stream has 128 bits exactly fitting into a <code>__m128i</code> value. So there is one <code>__m128i</code> containing 0-th bit of all the 128 bytes read, one <code>__m128i</code> containing 1-st bits of all the 128 bytes read, etc. The actual UTF-8 decoding operates on these bit streams by performing trivial bitwise operations on them, like: and, andnot, or, xor. For any arbitrary condition, you can obtain a bitmask showing which bytes satisfy it. Using this methodology, 16 bit streams (note: the number has doubled) are computed for the UTF-16 code units. In UTF-16 streams, not all the 128 positions have meaningful data: usually the 16-bit code unit is attached to the position of the last byte in its UTF-8 encoding. The unused positions must be removed from the bit streams, so stream compaction algorithm is run. Then the 16 compacted bit streams are converted back into sequence of byte pairs (AoS layout), the code units are written to output and stream pointers are advanced forward.</p>
+<p>The good point of this approach is that the middle part of the algorithm is perfectly vectorized: 128 bits are processed in one instruction, using very cheap bitwise logical operations. Also, most of the algorithm is branchless, including even the stream compaction. However, converting into bit stream representation and back takes time. Also, the bit streams methodology does not solve the problem of data moving dynamically between positions. This problem is localized to the stream compaction of bit streams, which looks rather heavy.</p>
+<h4 id="olivier-goffart-utf8sse4-2012"><a class="toclink" href="#olivier-goffart-utf8sse4-2012">Olivier Goffart: utf8sse4 (2012)</a></h4>
+<p>This algorithm was described in article <a href="https://woboq.com/blog/utf-8-processing-using-simd.html">UTF-8 processing using SIMD</a>, which was posted on Woboq's website. This code is also <a href="https://github.com/woboq/utf8sse4">available on GitHub</a>. It was born due to an attempt to accelerate <code>QString::fromUtf8</code> function in Qt5, but it turned out that in the real world negligible portion of input strings are long/hard enough to benefit from acceleration.</p>
+<p>The algorithm uses direct approach, and processes 14-16 bytes simultaneously in one step. To avoid complexity of surrogate pairs, non-BMP characters are handled outside of vectorized code path (just like in utf8lut). Immediately after reading 16 bytes of input, the algorithm classifies all the bytes into the leading bytes and the continuation bytes, and for each leading byte, the length of the corresponding code point is determined (4 classes in total). After that, 16-bit unicode values are calculated. Similar to u8u16, each obtained unicode value is attached to position where the last byte of its UTF-8 encoding is located. One <code>__m128i</code> contains high bytes of these 16-bit values, and the other contains low bytes of them. Just like in u8u16, empty positions must be removed using stream compaction algorithm. But the stream compaction algorithm itself is closer to one used in utf8lut: single instruction <code>_mm_shuffle_epi8</code> is used to do the compaction itself. But unlike utf8lut, considerable number of instructions is spent on computing the shuffle mask.</p>
+<p>Since only 16 bytes of data are processed at once (not 128 bytes like in u8u16), the whole algorithm is much more compact. It is branchless, except for a bit of conditional at the very end for advancing the source pointer. However, this algorithm uses quite a lot of instructions. Often it has to compute some value 3-4 times (once per each class of bytes) and blend the results together based on the mask of classes. Also, it recklessly uses a few string instructions from SSE 4.2 in validation, which are known to be slow. On the bonus side, it does not use CPU cache for anything, unlike utf8lut.</p>
+<h4 id="hiroshi-inoue-2008"><a class="toclink" href="#hiroshi-inoue-2008">Hiroshi Inoue (2008)</a></h4>
+<p>This algorithm was probably presented in a conference according to slides <a href="https://researcher.watson.ibm.com/researcher/files/jp-INOUEHRS/IPSJPRO2008_SIMDdecoding.pdf">Accelerating UTF-8 Decoding using SIMD Instructions</a>. Since this work was done in IBM research, it was applied only to PowerPC with its AltiVec instructions. IBM probably explains why the author follows the shitty practice of <a href="https://researcher.watson.ibm.com/researcher/view_person_pubs.php?person=jp-INOUEHRS&amp;t=2">filing US patents</a> "like hotcakes", including the <a href="https://patents.google.com/patent/US7394411">US7394411 patent</a> on the UTF-8 decoding algorithm.</p>
+<p>The single step of the algorithm works as follows. First, information about the next 8 code points is gathered from the input byte array: the lengths of these eight code points are determined and combined into a single integer number. The information is gathered by scalar traversal of corresponding leading bytes without any vectorization, but the traversal is done in branchless fashion. The obtained integer number ranges from 0 to 6560, and it serves as index in 6561-entry lookup table. For each configuration of code points, the LUT contains some bitmasks, and most importantly, the shuffling mask. This data is enough to shuffle data into desired position and to produce the UTF-16 data for exactly the next 16 bytes.</p>
+<p>The algorithm is very similar to utf8lut. It uses shuffling by mask generated during runtime in order to cope with the problem of dynamic movement of bytes in the vectors. The shuffling mask and the auxiliary data are also taken from lookup table. The main difference is how the LUT index is computed: utf8lut uses suitable SSE2 operations to get the index, while the algorithm by Inoue uses scalar instructions (quite a lot of them actually). Aside from that, the presentation is less detailed: it omits validation, encoding problem (UTF-16 to UTF-8). Finally, it uses AltiVec, while utf8lut is implemented exclusively for SSSE3. One positive side of the Inoue's algorithm is that its LUT is more compact than in utf8lut.</p>
+          <div class="series-neighbors">
+        <p class="series-next">
+            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-decoding-utf-8.html'>
+                Part 2: Decoding UTF-8
+            </a>
+            <span class="arrow-right"></span>
+        </p>
+    </div>
+
+    </div><!-- /.entry-content -->
+    <section>
+        <div id="post-share-links" class="inline-menu">
+            <div>Share on:</div>
+            <a href="https://twitter.com/intent/tweet?text=utf8lut%3A%20Vectorized%20UTF-8%20converter.%20Introduction&url=https%3A//dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-introduction.html" target="_blank" class="icon-label" title="Share on Twitter">Twitter</a><!--
+            --><a href="http://www.facebook.com/sharer/sharer.php?u=https%3A//dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-introduction.html" target="_blank" class="icon-label" title="Share on Facebook">Facebook</a><!--
+            --><a href="https://plus.google.com/share?url=https%3A//dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-introduction.html" target="_blank" class="icon-label" title="Share on Google Plus">Google+</a><!--
+            --><a href="https://sharetodiaspora.github.io/?title=utf8lut%3A%20Vectorized%20UTF-8%20converter.%20Introduction&url=https%3A//dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-introduction.html" target="_blank" class="icon-label" title="Share on Diaspora">Diaspora*</a><!--
+            --><a href="https://news.ycombinator.com/submitlink?t=utf8lut%3A%20Vectorized%20UTF-8%20converter.%20Introduction&u=https%3A//dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-introduction.html" target="_blank" class="icon-label" title="Share on HackerNews">HackerNews</a><!--
+            --><a href="mailto:?subject=utf8lut%3A%20Vectorized%20UTF-8%20converter.%20Introduction&amp;body=https%3A//dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-introduction.html" target="_blank" class="icon-label" title="Share via Email">Email</a>
+        </div>
+    </section>
+    
+    			<!--<script type="text/javascript" src="http://code.jquery.com/jquery-2.1.4.min.js"></script>-->
+		<script src="https://dirtyhandscoding.github.io/theme/js/jquery.min.js"></script>
+	<script type="text/javascript" src="https://dirtyhandscoding.github.io/theme/pelican_comment_system/comments.js"></script>
+	<script type="text/javascript">
+		$(document).ready(function() {
+			CommentSystem.email_user   = "itiswrongemail";
+			CommentSystem.email_domain = "outlook.com";
+
+			$('#pcs-comment-form').on("submit",
+				function( event )
+				{
+					event.preventDefault();
+					$(location).attr('href', CommentSystem.getMailtoLink("utf8lut-vectorized-utf-8-converter-introduction"));
+				}
+			);
+		});
+	</script>
+
+    	<section>
+	<div id="pcs-comments-header" class="inline-menu">
+	<header>
+		<div>Comments (0)</div>
+		<button type="button" title="Expand or collapse the comments section" class="icon-label" id="pcs-comments-collapse-button" onclick="CommentSystem.collapsible($('#pcs-comments'), $(this));">
+			<span class="nocss">expand</span>
+		</button>
+			<a href="https://dirtyhandscoding.github.io/feeds/comment.utf8lut-vectorized-utf-8-converter-introduction.atom.xml" class="icon-label">atom feed: comments</a>
+	</header>
+	</div>
+	<div id="pcs-comments">
+		<p>There are no comments yet.</p>
+	<section>
+	<div display="none" id="pcs-comment-notreply-helper" />
+	<form id="pcs-comment-form" action="#">
+		<fieldset>
+		<legend>Add a Comment</legend>
+		<div id="pcs-comment-tab-inputs">
+			<input type="hidden" id="pcs-comment-form-input-replyto"/>
+			<label for="pcs-comment-form-input-name">Name</label>
+			<input  id="pcs-comment-form-input-name" type="text" size="40" placeholder="Enter your name or nickname" />
+			<br/>
+			<label for="pcs-comment-form-input-website">Website</label>
+			<input  id="pcs-comment-form-input-website" type="text" size="40" placeholder="Enter your website (optional)" />
+			<br/>
+			<label for="pcs-comment-form-input-empty">Empty</label>
+			<input  id="pcs-comment-form-input-empty" type="text" size="30" placeholder="Do NOT enter anything here!" />
+			<label   for="pcs-comment-form-input-textarea">Your Comment</label>
+			<br/>
+			<textarea id="pcs-comment-form-input-textarea" rows="7" cols="40" placeholder="Enter your comment (markdown is allowed)"></textarea>
+		</div>
+		<div id="pcs-comment-tab-message" style="display:none">
+			<textarea readonly rows="10" cols="40"></textarea>
+		</div>
+
+		<button type="submit"
+				id="pcs-comment-form-button-submit"
+				title="Create mailto link and open it in default email client &#10;Note: you have to send the email to post comment"
+				>Post via email</button>
+		<button type="button"
+				id="pcs-comment-form-button-message"
+				title="See the text of email message to be sent &#10;Note: you can copy it and send manually"
+				onclick="CommentSystem.viewEmail(&quot;utf8lut-vectorized-utf-8-converter-introduction&quot;);"
+				>View email text</button>
+		<a target="_blank"
+				id="pcs-comment-gmail-config-help"
+				title="How to configure Chrome to open mailto links in Gmail..."
+				href="https://productforums.google.com/forum/#!topic/gmail/JtWVPbUfh-o"
+				>?</a>
+		</fieldset>
+
+		<!--			<a href="https://dirtyhandscoding.github.io/feeds/comment.utf8lut-vectorized-utf-8-converter-introduction.atom.xml">
+				Comment Atom Feed
+			</a>
+-->
+	</form>
+	<script>CommentSystem.displayReplyTo();</script>
+</section>
+
+	</div>
+	<script>
+		$('#pcs-comments').css({display: "none"});
+		$('#pcs-comments-collapse-button').addClass('collapsed');
+	</script>
+</section>
+
+  </article>
+</section>
+        <section id="extras" class="body">
+                <div class="social">
+                        <h2>social</h2>
+                        <ul>
+                            <li><a href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate">atom feed</a></li>
+                            <li><a href="/feeds/all.rss.xml" type="application/rss+xml" rel="alternate">rss feed</a></li>
+
+                        </ul>
+                </div><!-- /.social -->
+        </section><!-- /#extras -->
+
+        <footer id="contentinfo" class="body">
+                <p>Powered by <a href="http://getpelican.com/">Pelican</a>. Theme <a href="https://github.com/blueicefield/pelican-blueidea/">blueidea</a>, customized to personal taste.</p>
+        </footer><!-- /#contentinfo -->
+
+</body>
+</html>

@@ -52,7 +52,8 @@
         <span>13 May 2018</span>
 	        <span>| in <a href="https://dirtyhandscoding.github.io/category/uncategorized.html">Uncategorized</a></span>
 <span>| tags: <a href="https://dirtyhandscoding.github.io/tag/cpp.html">cpp</a><a href="https://dirtyhandscoding.github.io/tag/bloat.html">bloat</a><a href="https://dirtyhandscoding.github.io/tag/build.html">build</a><a href="https://dirtyhandscoding.github.io/tag/msvc.html">msvc</a></span>
-</footer><!-- /.post-info -->      <p>The C++ language is known for its slow build times. This problem is not present in the world of pure C, which might give a hint that the problem is caused by some C++ feature. In fact, it is caused by bad habit or writing code in headers, severely worsened by C++ templates and inspired by STL itself.</p>
+</footer><!-- /.post-info -->      
+      <p>The C++ language is known for its slow build times. This problem is not present in the world of pure C, which might give a hint that the problem is caused by some C++ feature. In fact, it is caused by bad habit or writing code in headers, severely worsened by C++ templates and inspired by STL itself.</p>
 
 
 <h2 id="headers"><a class="toclink" href="#headers">Headers</a></h2>
@@ -125,6 +126,7 @@ The latest draft (<a href="http://open-std.org/JTC1/SC22/WG21/docs/papers/2015/n
 <p>The problem of C++ code bloat is so severe today, that vast majority of build time is wasted on unnecessary duplicates instead of any useful compiling. And the duplication is caused by C++ object model not being respected. Any code present in a source file won't cause problems, but every function defined in header is a candidate for unlimited duplication. The templates are especially harmful, since they generate code bloat across two dimensions: across template parameters and across translation units.</p>
 <p>In my opinion, the overuse of templates today is caused by modern trends in C++. Moreover, these trends have organically grown up from the Standard Template Library itself, which by the way typically causes a lot of code bloat in any project. Given that rare project is brave enough to throw STL away, it means that code bloat will almost certainly stay with us. Gamedev is perhaps one of the largest areas with enough distrust towards STL, let's hope they will not fall to the trend.</p>
 <p>As of now, we can only learn how compilation works and try to avoid too much code bloat. Define stuff in source files as much as possible and prefer virtual methods or type erasure over templates when performance is not critical. If you are still not convinced that the issue is serious, please review the <a href="https://www.chromium.org/developers/coding-style/cpp-dos-and-donts">C++ recommendations in Chromium project</a>, the first half of which is solely dedicated to the "don't define stuff in headers" mantra.</p>
+      
     </div><!-- /.entry-content -->
     <section>
         <div id="post-share-links" class="inline-menu">

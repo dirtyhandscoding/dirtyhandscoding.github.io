@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <!-- load favicon from /images -->
+        <link rel="icon" type="image/png" href="/images/favicon.png" />
+        <!-- stgatilov: properly detect device width on a mobile -->
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/> 
+
+        <meta charset="utf-8" />
+        <title>utf8lut: Vectorized UTF-8 converter. Technical details</title>
+        <link rel="stylesheet" href="https://dirtyhandscoding.github.io/theme/css/main.css" />
+        <link href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Dirty hands coding Atom Feed" />
+        <link href="/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="Dirty hands coding RSS Feed" />
+
+        <!--[if IE]>
+            <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+        <![endif]-->
+</head>
+
+<body id="index" class="home">
+        <header id="banner" class="body">
+                <h1><a href="https://dirtyhandscoding.github.io/">Dirty hands coding </a></h1>
+                <nav><ul>
+                    <li><a href="/archives.html">ARCHIVES</a></li>
+                    <li><a href="/categories.html">CATEGORIES</a></li>
+                    <li><a href="/tags.html">TAGS</a></li>
+                    <li><a href="/pages/contact.html">CONTACT</a></li>
+                </ul>
+<form class="navbar-search" action="https://dirtyhandscoding.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);">
+                        <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input">
+                    </form>
+                </nav>
+<div id="submenu">
+                    <ul>
+                            <li class="active"><a href="https://dirtyhandscoding.github.io/category/high-performance.html">High performance</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/off-topic.html">Off-topic</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/the-dark-mod.html">The Dark Mod</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/uncategorized.html">Uncategorized</a></li>
+                    </ul>
+                <div>
+        </header><!-- /#banner -->
+<section id="content" class="body">
+  <article>
+    <header>
+      <h1 class="entry-title">
+        <a href="https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-technical-details.html" rel="bookmark"
+           title="Permalink to utf8lut: Vectorized UTF-8 converter. Technical details">utf8lut: Vectorized UTF-8 converter. Technical details</a></h1>
+    </header>
+
+    <div class="entry-content">
+<footer class="post-info">
+        <span>04 August 2019</span>
+	        <span>| in <a href="https://dirtyhandscoding.github.io/category/high-performance.html">High performance</a></span>
+<span>| tags: <a href="https://dirtyhandscoding.github.io/tag/unicode.html">unicode</a><a href="https://dirtyhandscoding.github.io/tag/simd.html">simd</a><a href="https://dirtyhandscoding.github.io/tag/lut.html">lut</a></span>
+</footer><!-- /.post-info -->          <div class="series-summary series-in-article">
+        <p>This article is part 4 of the <span class="series-name">utf8lut: Vectorized UTF-8 converter</span> series:</p>
+            <ol class="parts">
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-introduction.html'>Introduction</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-decoding-utf-8.html'>Decoding UTF-8</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-encoding-utf-8.html'>Encoding UTF-8</a>
+        </li>
+        <li class="active">
+            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-technical-details.html'>Technical details</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-test-results.html'>Test results</a>
+        </li>
+    </ol>
+
+    </div>
+
+      <p>Having described how both <a href="https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-decoding-utf-8.html">decoding</a> and <a href="https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-encoding-utf-8.html">encoding</a> of UTF-8 can be vectorized with lookup tables,
+now it is time to look into various technical difficulties and implementation details.</p>
+<!--more-->
+
+<h2 id="on-c-templates"><a class="toclink" href="#on-c-templates">On C++ Templates</a></h2>
+<p>While I am heavily leaning towards C-style programming in performance-critical code, I still prefer C++ language over pure C. One of the features which makes life in C++ so much better for a high-performance project is C++ templates. When used properly, this feature makes wonderful things in simple and efficient way. It is a pity that templates are more often misused (or better to say: "overused"), leading to <a href="https://dirtyhandscoding.github.io/posts/on-cpp-code-bloat.html">build time headache</a>.</p>
+<p>For utf8lut library, I wanted to allow user to configure the converter. Here is the list of parameters which can be tweaked:</p>
+<ul>
+<li><strong>Maximum length</strong> in UTF-8 of characters which are supported by fast path: <strong>3</strong>, <strong>2</strong>, <strong>1</strong>, or even <strong>0</strong>. Someone might want to lower this value for faster processing, depending on input data.</li>
+<li><strong>Error-checking mode</strong>, being one of:<ol>
+<li>Fully validate input data, switch to slow path when necessary.</li>
+<li>Assume input to be valid UTF-8 and don't validate it, but check for character lengths and switch to slow path when necessary.</li>
+<li>No checks and no slow path. Input data is assumed to be valid UTF-8 with characters being no longer than the specified maximum length (in UTF-8). The fastest mode, but it cannot work with unicode supplementary planes at all.</li>
+</ol>
+</li>
+<li><strong>Decoded width</strong>: UTF-16 or UTF-32. Conversion is done from UTF-8 to this encoding or vice versa.</li>
+<li><strong>Multistreaming</strong>: increase core utilization using software emulation of hyperthreading (see below).</li>
+</ul>
+<p>To achieve this level of configurability, the core function is made template with all the parameters being template arguments. So the user may specify whatever settings he wants, and the compiler would generate and optimize this specific version of the algorithm. Obviously, all the compile-time constant checks are removed, along with any dead code they surround. The user can also use this function with different parameters at different places in a simple way.</p>
+<p>As the result, the <a href="https://bitbucket.org/stgatilov/utf8lut/src/default/src/core/DecoderProcess.h">core of decoder</a> looks like this:</p>
+<div class="highlight"><pre><span></span><span class="cm">/* Template params:</span>
+<span class="cm"> *   MaxBytes = 1, 2, 3</span>
+<span class="cm"> *   CheckExceed = false, true</span>
+<span class="cm"> *   Validate = false, true</span>
+<span class="cm"> *   OutputType = 2, 4        //UTF16/32</span>
+<span class="cm"> */</span>
+<span class="k">template</span><span class="o">&lt;</span><span class="kt">int</span> <span class="n">MaxBytes</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">CheckExceed</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">Validate</span><span class="p">,</span> <span class="kt">int</span> <span class="n">OutputType</span><span class="o">&gt;</span>
+<span class="k">struct</span> <span class="n">DecoderCore</span> <span class="p">{</span>
+    <span class="n">FORCEINLINE</span> <span class="kt">bool</span> <span class="k">operator</span><span class="p">()(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*&amp;</span><span class="n">ptrSource</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*&amp;</span><span class="n">ptrDest</span><span class="p">,</span> <span class="k">const</span> <span class="n">DecoderLutEntry</span><span class="o">&lt;</span><span class="n">Validate</span><span class="o">&gt;</span> <span class="o">*</span><span class="n">RESTRICT</span> <span class="n">lutTable</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">static_assert</span><span class="p">(</span><span class="o">!</span><span class="n">Validate</span> <span class="o">||</span> <span class="n">CheckExceed</span><span class="p">,</span> <span class="s">&quot;Validate core mode requires CheckExceed enabled&quot;</span><span class="p">);</span>
+        <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">RESTRICT</span> <span class="n">pSource</span> <span class="o">=</span> <span class="n">ptrSource</span><span class="p">;</span>
+        <span class="kt">char</span> <span class="o">*</span><span class="n">RESTRICT</span> <span class="n">pDest</span> <span class="o">=</span> <span class="n">ptrDest</span><span class="p">;</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">MaxBytes</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+            <span class="p">...</span> <span class="c1">//simple code for ASCII to UTF-16 or UTF-32 conversion</span>
+            <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="k">else</span> <span class="p">{</span>  <span class="c1">//MaxBytes = 2 or 3</span>
+            <span class="kr">__m128i</span> <span class="n">reg</span> <span class="o">=</span> <span class="n">_mm_loadu_si128</span><span class="p">((</span><span class="kr">__m128i</span><span class="o">*</span><span class="p">)</span><span class="n">pSource</span><span class="p">);</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">CheckExceed</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">Validate</span><span class="p">)</span> <span class="p">{</span>
+                <span class="kr">__m128i</span> <span class="n">pl</span> <span class="o">=</span> <span class="n">_mm_xor_si128</span><span class="p">(</span><span class="n">reg</span><span class="p">,</span> <span class="n">_mm_set1_epi8</span><span class="p">(</span><span class="mh">0x80U</span><span class="p">));</span>  <span class="c1">//_mm_sub_epi8</span>
+                <span class="kr">__m128i</span> <span class="n">cmpRes</span> <span class="o">=</span> <span class="n">_mm_cmpgt_epi8</span><span class="p">(</span><span class="n">pl</span><span class="p">,</span> <span class="n">_mm_set1_epi8</span><span class="p">(</span><span class="n">MaxBytes</span> <span class="o">==</span> <span class="mi">3</span> <span class="o">?</span> <span class="mh">0x6F</span> <span class="o">:</span> <span class="mh">0x5F</span><span class="p">));</span>
+                <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">_mm_cmp_allzero</span><span class="p">(</span><span class="n">cmpRes</span><span class="p">))</span>
+                    <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="kt">uint32_t</span> <span class="n">mask</span> <span class="o">=</span> <span class="n">_mm_movemask_epi8</span><span class="p">(</span><span class="n">_mm_cmplt_epi8</span><span class="p">(</span><span class="n">reg</span><span class="p">,</span> <span class="n">_mm_set1_epi8</span><span class="p">(</span><span class="mh">0xC0U</span><span class="p">)));</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">Validate</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="n">mask</span> <span class="o">&amp;</span> <span class="mi">1</span><span class="p">))</span>
+                <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+            <span class="c1">//note: optimized half-index access</span>
+            <span class="k">const</span> <span class="n">DecoderLutEntry</span><span class="o">&lt;</span><span class="n">Validate</span><span class="o">&gt;</span> <span class="o">*</span><span class="n">RESTRICT</span> <span class="n">lookup</span> <span class="o">=</span> <span class="n">TPNT</span><span class="p">(</span><span class="n">lutTable</span><span class="p">,</span> <span class="n">DecoderLutEntry</span><span class="o">&lt;</span><span class="n">Validate</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">mask</span> <span class="o">*</span> <span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="n">lutTable</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span><span class="p">));</span>
+
+            <span class="kr">__m128i</span> <span class="n">Rab</span> <span class="o">=</span> <span class="n">_mm_shuffle_epi8</span><span class="p">(</span><span class="n">reg</span><span class="p">,</span> <span class="n">lookup</span><span class="o">-&gt;</span><span class="n">shufAB</span><span class="p">);</span>
+            <span class="n">Rab</span> <span class="o">=</span> <span class="n">_mm_and_si128</span><span class="p">(</span><span class="n">Rab</span><span class="p">,</span> <span class="n">_mm_set1_epi16</span><span class="p">(</span><span class="mh">0x3F7F</span><span class="p">));</span>
+            <span class="n">Rab</span> <span class="o">=</span> <span class="n">_mm_maddubs_epi16</span><span class="p">(</span><span class="n">Rab</span><span class="p">,</span> <span class="n">_mm_set1_epi16</span><span class="p">(</span><span class="mh">0x4001</span><span class="p">));</span>
+            <span class="kr">__m128i</span> <span class="n">sum</span> <span class="o">=</span> <span class="n">Rab</span><span class="p">;</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="n">MaxBytes</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)</span> <span class="p">{</span>
+                <span class="kr">__m128i</span> <span class="n">shufC</span> <span class="o">=</span> <span class="n">_mm_unpacklo_epi8</span><span class="p">(</span><span class="n">lookup</span><span class="o">-&gt;</span><span class="n">shufC</span><span class="p">,</span> <span class="n">lookup</span><span class="o">-&gt;</span><span class="n">shufC</span><span class="p">);</span>
+                <span class="kr">__m128i</span> <span class="n">Rc</span> <span class="o">=</span> <span class="n">_mm_shuffle_epi8</span><span class="p">(</span><span class="n">reg</span><span class="p">,</span> <span class="n">shufC</span><span class="p">);</span>
+                <span class="n">Rc</span> <span class="o">=</span> <span class="n">_mm_slli_epi16</span><span class="p">(</span><span class="n">Rc</span><span class="p">,</span> <span class="mi">12</span><span class="p">);</span>
+                <span class="n">sum</span> <span class="o">=</span> <span class="n">_mm_add_epi16</span><span class="p">(</span><span class="n">sum</span><span class="p">,</span> <span class="n">Rc</span><span class="p">);</span>
+            <span class="p">}</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="n">Validate</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">const</span> <span class="n">DecoderLutEntry</span><span class="o">&lt;</span><span class="nb">true</span><span class="o">&gt;</span> <span class="o">*</span><span class="n">RESTRICT</span> <span class="n">lookupX</span> <span class="o">=</span> <span class="p">(</span><span class="k">const</span> <span class="n">DecoderLutEntry</span><span class="o">&lt;</span><span class="nb">true</span><span class="o">&gt;</span> <span class="o">*</span><span class="p">)</span><span class="n">lookup</span><span class="p">;</span>
+                <span class="kr">__m128i</span> <span class="n">byteMask</span> <span class="o">=</span> <span class="n">lookupX</span><span class="o">-&gt;</span><span class="n">headerMask</span><span class="p">;</span>
+                <span class="kr">__m128i</span> <span class="n">header</span> <span class="o">=</span> <span class="n">_mm_and_si128</span><span class="p">(</span><span class="n">reg</span><span class="p">,</span> <span class="n">byteMask</span><span class="p">);</span>
+                <span class="kr">__m128i</span> <span class="n">hdrRef</span> <span class="o">=</span> <span class="n">_mm_add_epi8</span><span class="p">(</span><span class="n">byteMask</span><span class="p">,</span> <span class="n">byteMask</span><span class="p">);</span>
+                <span class="kr">__m128i</span> <span class="n">hdrCorrect</span> <span class="o">=</span> <span class="n">_mm_cmpeq_epi8</span><span class="p">(</span><span class="n">header</span><span class="p">,</span> <span class="n">hdrRef</span><span class="p">);</span>
+                <span class="kr">__m128i</span> <span class="n">overlongSymbol</span> <span class="o">=</span> <span class="n">_mm_cmplt_epi16</span><span class="p">(</span><span class="n">_mm_xor_si128</span><span class="p">(</span><span class="n">sum</span><span class="p">,</span> <span class="n">_mm_set1_epi16</span><span class="p">(</span><span class="mh">0x8000U</span><span class="p">)),</span> <span class="n">lookupX</span><span class="o">-&gt;</span><span class="n">minValues</span><span class="p">);</span>
+                <span class="kr">__m128i</span> <span class="n">surrogate</span> <span class="o">=</span> <span class="n">_mm_cmpgt_epi16</span><span class="p">(</span><span class="n">_mm_sub_epi16</span><span class="p">(</span><span class="n">sum</span><span class="p">,</span> <span class="n">_mm_set1_epi16</span><span class="p">(</span><span class="mh">0x6000</span><span class="p">)),</span> <span class="n">_mm_set1_epi16</span><span class="p">(</span><span class="mh">0x77FF</span><span class="p">));</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">MaxBytes</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="kr">__m128i</span> <span class="n">shufC</span> <span class="o">=</span> <span class="n">_mm_unpacklo_epi8</span><span class="p">(</span><span class="n">lookupX</span><span class="o">-&gt;</span><span class="n">shufC</span><span class="p">,</span> <span class="n">lookupX</span><span class="o">-&gt;</span><span class="n">shufC</span><span class="p">);</span>
+                    <span class="n">hdrCorrect</span> <span class="o">=</span> <span class="n">_mm_and_si128</span><span class="p">(</span><span class="n">hdrCorrect</span><span class="p">,</span> <span class="n">shufC</span><span class="p">);</span> <span class="c1">//forbid 3-byte symbols</span>
+                <span class="p">}</span>
+                <span class="kr">__m128i</span> <span class="n">allCorr</span> <span class="o">=</span> <span class="n">_mm_andnot_si128</span><span class="p">(</span><span class="n">_mm_or_si128</span><span class="p">(</span><span class="n">overlongSymbol</span><span class="p">,</span> <span class="n">surrogate</span><span class="p">),</span> <span class="n">hdrCorrect</span><span class="p">);</span>
+                <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">_mm_cmp_allone</span><span class="p">(</span><span class="n">allCorr</span><span class="p">))</span>
+                    <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="n">OutputType</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>
+                <span class="n">_mm_storeu_si128</span><span class="p">((</span><span class="kr">__m128i</span><span class="o">*</span><span class="p">)</span><span class="n">pDest</span><span class="p">,</span> <span class="n">sum</span><span class="p">);</span>
+            <span class="k">else</span> <span class="p">{</span>
+                <span class="kr">__m128i</span> <span class="n">zero</span> <span class="o">=</span> <span class="n">_mm_setzero_si128</span><span class="p">();</span>
+                <span class="n">_mm_storeu_si128</span><span class="p">((</span><span class="kr">__m128i</span><span class="o">*</span><span class="p">)</span><span class="n">pDest</span> <span class="o">+</span> <span class="mi">0</span><span class="p">,</span> <span class="n">_mm_unpacklo_epi16</span><span class="p">(</span><span class="n">sum</span><span class="p">,</span> <span class="n">zero</span><span class="p">));</span>
+                <span class="n">_mm_storeu_si128</span><span class="p">((</span><span class="kr">__m128i</span><span class="o">*</span><span class="p">)</span><span class="n">pDest</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">_mm_unpackhi_epi16</span><span class="p">(</span><span class="n">sum</span><span class="p">,</span> <span class="n">zero</span><span class="p">));</span>
+            <span class="p">}</span>
+            <span class="n">ptrSource</span> <span class="o">+=</span> <span class="n">lookup</span><span class="o">-&gt;</span><span class="n">srcStep</span><span class="p">;</span>
+            <span class="n">ptrDest</span> <span class="o">+=</span> <span class="n">lookup</span><span class="o">-&gt;</span><span class="n">dstStep</span> <span class="o">*</span> <span class="p">(</span><span class="n">OutputType</span><span class="o">/</span><span class="mi">2</span><span class="p">);</span>
+
+            <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">};</span>
+</pre></div>
+
+
+<p>There are many if-s, but most of them are compile-time constant and are wiped out by compiler. Obviously, writing all of the cases separately would cause a huge pain in maintainability. Indeed, one can port it to <a href="https://stackoverflow.com/questions/16522341/pseudo-generics-in-c">pseudo-templates in pure C</a>, but it would be much more clumsy.</p>
+<p>You have probably noticed that template arguments of <code>DecoderCore</code> struct are different from the parameters listed above. This is because many things like slow path and multistreaming are handled on the upper level. That is the level of processing a "buffer" of reasonable size, and there those exact parameters can be seen:</p>
+<div class="highlight"><pre><span></span><span class="k">enum</span> <span class="n">DecoderMode</span> <span class="p">{</span>
+    <span class="n">dmFast</span><span class="p">,</span>     <span class="c1">//decode only byte lengths under limit, no checks</span>
+    <span class="n">dmFull</span><span class="p">,</span>     <span class="c1">//decode any UTF-8 chars (with fallback to slow version)</span>
+    <span class="n">dmValidate</span><span class="p">,</span> <span class="c1">//decode any UTF-8 chars, validate input</span>
+    <span class="n">dmAllCount</span><span class="p">,</span> <span class="c1">//helper</span>
+<span class="p">};</span>
+<span class="cm">/* Params:</span>
+<span class="cm"> *   MaxBytes = 0, 1, 2, 3</span>
+<span class="cm"> *   StreamsNum = 1, 4</span>
+<span class="cm"> *   Mode = fast, full, validate</span>
+<span class="cm"> *   OutputType = 2, 4</span>
+<span class="cm"> */</span>
+<span class="k">template</span><span class="o">&lt;</span><span class="kt">int</span> <span class="n">MaxBytes</span><span class="p">,</span> <span class="kt">int</span> <span class="n">OutputType</span><span class="p">,</span> <span class="kt">int</span> <span class="n">Mode</span><span class="p">,</span> <span class="kt">int</span> <span class="n">StreamsNum</span><span class="o">&gt;</span>
+<span class="k">class</span> <span class="nc">BufferDecoder</span> <span class="o">:</span> <span class="k">public</span> <span class="n">BaseBufferProcessor</span> <span class="p">{</span>
+    <span class="p">...</span>
+<span class="p">};</span>
+</pre></div>
+
+
+<h2 id="slow-path"><a class="toclink" href="#slow-path">Slow path</a></h2>
+<p>The fast path supports characters of limited byte length, up to the whole basic multilingual plane. However, the text may contain some characters from supplementary planes, although it is unlikely that there are many of them. To make converters universally applicable, a fully scalar slow path is plugged into both decoder and encoder. The innermost loop can dynamically switch between the fast and the slow path, so a few supplementaries won't negatively affect overall performance.</p>
+<div class="highlight"><pre><span></span><span class="kt">bool</span> <span class="nf">ProcessSimple</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*&amp;</span><span class="n">inputPtr</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">inputEnd</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*&amp;</span><span class="n">outputPtr</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">isLastBlock</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kt">bool</span> <span class="n">ok</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+    <span class="k">while</span> <span class="p">(</span><span class="n">inputPtr</span> <span class="o">&lt;=</span> <span class="n">inputEnd</span> <span class="o">-</span> <span class="mi">16</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">ok</span> <span class="o">=</span> <span class="n">DecoderCore</span><span class="o">&lt;</span><span class="p">...</span><span class="o">&gt;</span><span class="p">()(</span><span class="n">inputPtr</span><span class="p">,</span> <span class="n">outputPtr</span><span class="p">,</span> <span class="n">ptrTable</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">ok</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">ok</span> <span class="o">=</span> <span class="n">DecodeTrivial</span><span class="p">(</span><span class="n">inputPtr</span><span class="p">,</span> <span class="n">inputPtr</span> <span class="o">+</span> <span class="mi">16</span><span class="p">,</span> <span class="n">outputPtr</span><span class="p">);</span>
+            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">ok</span><span class="p">)</span> <span class="k">break</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">isLastBlock</span><span class="p">)</span>
+        <span class="n">ok</span> <span class="o">=</span> <span class="n">DecodeTrivial</span><span class="p">(</span><span class="n">inputPtr</span><span class="p">,</span> <span class="n">inputEnd</span><span class="p">,</span> <span class="n">outputPtr</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">ok</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>The decoder's slow path consists of the excellent <a href="http://bjoern.hoehrmann.de/utf-8/decoder/dfa/">DFA-based algorithm by Bjoern Hoehrmann</a> and a bit of post processing: checking when new character is ready and writing it as one word or as two surrogates. Ironically, the DFA-based algorithm also heavily relies on a lookup table, just like the vectorized fast path. The encoder's slow path is custom-made. First it converts a surrogate pair into a full code point, then checks byte length and writes out bytes. The corresponding code can be found in <a href="https://bitbucket.org/stgatilov/utf8lut/src/default/src/core/ProcessTrivial.h">ProcessTrivial.h</a>.</p>
+<h2 id="critical-path-and-hyperthreading"><a class="toclink" href="#critical-path-and-hyperthreading">Critical path and Hyperthreading</a></h2>
+<p>One major difference between encoding and decoding algorithms is how they advance pointers. Here are excerpts from the corresponding sections (<a href="https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-decoding-utf-8.html#advance-pointers">decode</a>, <a href="https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-encoding-utf-8.html#advance-pointers">encode</a>):</p>
+<div class="highlight"><pre><span></span><span class="c1">//decoding</span>
+<span class="n">_mm_storeu_si128</span><span class="p">((</span><span class="kr">__m128i</span><span class="o">*</span><span class="p">)</span><span class="n">pDest</span><span class="p">,</span> <span class="n">sum</span><span class="p">);</span>
+<span class="n">pSource</span> <span class="o">+=</span> <span class="n">lookup</span><span class="p">.</span><span class="n">srcStep</span><span class="p">;</span>
+<span class="n">pDest</span> <span class="o">+=</span> <span class="n">lookup</span><span class="p">.</span><span class="n">dstStep</span><span class="p">;</span>
+</pre></div>
+
+
+<!---->
+
+<div class="highlight"><pre><span></span><span class="c1">//encoding</span>
+<span class="n">_mm_storeu_si128</span><span class="p">((</span><span class="kr">__m128i</span> <span class="o">*</span><span class="p">)</span><span class="n">pDest</span><span class="p">,</span> <span class="n">res</span><span class="p">);</span>
+<span class="n">pDest</span> <span class="o">+=</span> <span class="n">lookup</span><span class="p">.</span><span class="n">dstStep</span><span class="p">;</span>
+<span class="n">pSource</span> <span class="o">+=</span> <span class="mi">16</span><span class="p">;</span>
+</pre></div>
+
+
+<p>Why did we prefer using fixed input step in encoding? We could use dynamic step just like we did in decoding, then we could get rid of <a href="https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-encoding-utf-8.html#three-byte-characters">processing two halves separately</a>, probably using less instructions on average.</p>
+<p>Maybe it does not immediately catch attention, but fixed input step makes a huge difference in the performance characteristics of a loop. The difference stems from the fact that modern CPUs are essentially superscalar and perform out-of-order execution. Obviously, the more instructions CPU can do in parallel, the faster our loop will be on average, so it makes perfect sense for the CPU to execute several consecutive iterations of the whole loop in parallel. With fixed input step, the next iteration can be started immediately after the input pointer is advanced, which can be done before doing anything else inside the loop. The critical path of the loop body consists merely of moving input pointer by 16 (actually, moving output pointer has to be done sequentially too). So CPU can easily execute many iterations in parallel, without having to wait for anything. Whenever it stops on some high-latency instruction, it can simply pick up more instructions from the future and start working on them.</p>
+<div class="center-content">
+    <img src="https://dirtyhandscoding.github.io/images/8_utf8lut_4_technical/encoder_dependencies.svg" class="w700"/>
+</div>
+
+<p>Now let's return to the decoding algorithm, where input step is dynamic. In order to execute something on the current iteration, one has to load 16 bytes of input data first. In order to load them, the address must be known beforehand, which is computed by adding <code>lookup.srcStep</code> to the address from the previous iteration. To obtain the step value, one has to load an entry of LUT first, for which the index <code>mask</code> has to be already computed. It turns out that loading input data, computing LUT index, loading LUT entry, and advancing <code>pSource</code> comprises a critical path, which must be done sequentially across iterations. The other processing may overlap with this path and be done in parallel. The worst part of this loop is loading the LUT entry, which is a random access into 2 MB table. Given that L2 cache is still 512 KB per core, one may expect 10-40 cycles wasted on it, which means low utilization of CPU core.</p>
+<div class="center-content">
+    <img src="https://dirtyhandscoding.github.io/images/8_utf8lut_4_technical/decoder_dependencies.svg" class="w700"/>
+</div>
+
+<p>The only way to hide latency of the memory load is to do more work in parallel. This approach is taken to the extreme by GPUs, who easily hide the huge latency of RAM access by switching between insane number of lightweight threads. Unfortunately, it is more complicated on a CPU. One possible approach to improve core utilization is to execute two parallel threads on one core. This is known as "Hyperthreading" or "Simultaneous multithreading", and is supported on many modern x86 CPUs. Unfortunately, Intel is known for removing this feature from some of its processors, and it is still limited to two threads per CPU core. Another way to improve utilization is to emulate hyperthreading in software: interleave the code for several independent loops. This is what I'll call "<strong>multistreaming</strong>", to differentiate it from "multithreading", since no physical threads are created.</p>
+<div class="center-content">
+    <img src="https://dirtyhandscoding.github.io/images/8_utf8lut_4_technical/multistreaming.svg" class="w700"/>
+</div>
+
+<p>Here is how 4x multistreaming works. When user asks to convert a memory buffer (e.g. of size 64 KB), first of all we split this buffer into four equal parts. The splits are adjusted slightly, so that no UTF-8 character spans across several parts (it can be easily done thanks to self-synchronizing property of UTF-8). Initialize four input and four output pointers: one for each stream. Then write the main loop, inside which one conversion step is performed for every stream. Due to these streams being completely independent, CPU is free to reorder the streams processing relative to each other as it sees fit, thus hiding memory latency.</p>
+<div class="highlight"><pre><span></span><span class="c1">//split input buffer into four parts</span>
+<span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">splits</span><span class="p">[</span><span class="mi">5</span><span class="p">];</span>
+<span class="n">SplitRange</span><span class="p">(</span><span class="n">inputBuffer</span><span class="p">,</span> <span class="n">inputSize</span><span class="p">,</span> <span class="n">splits</span><span class="p">);</span>
+<span class="c1">//init input/output pointers</span>
+<span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">inputPtr0</span> <span class="o">=</span> <span class="n">splits</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">*</span><span class="n">inputEnd0</span> <span class="o">=</span> <span class="n">splits</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span>
+<span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">inputPtr1</span> <span class="o">=</span> <span class="n">splits</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="o">*</span><span class="n">inputEnd1</span> <span class="o">=</span> <span class="n">splits</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+<span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">inputPtr2</span> <span class="o">=</span> <span class="n">splits</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="o">*</span><span class="n">inputEnd2</span> <span class="o">=</span> <span class="n">splits</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span>
+<span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">inputPtr3</span> <span class="o">=</span> <span class="n">splits</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="o">*</span><span class="n">inputEnd3</span> <span class="o">=</span> <span class="n">splits</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>
+<span class="kt">char</span> <span class="o">*</span><span class="n">outputPtr0</span> <span class="o">=</span> <span class="n">outputBuffer</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>
+<span class="kt">char</span> <span class="o">*</span><span class="n">outputPtr1</span> <span class="o">=</span> <span class="n">outputBuffer</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span>
+<span class="kt">char</span> <span class="o">*</span><span class="n">outputPtr2</span> <span class="o">=</span> <span class="n">outputBuffer</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+<span class="kt">char</span> <span class="o">*</span><span class="n">outputPtr3</span> <span class="o">=</span> <span class="n">outputBuffer</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span>
+<span class="k">while</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">//check if any pointer has reached the end of its part</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">inputPtr0</span> <span class="o">&gt;</span> <span class="n">inputEnd0</span> <span class="o">-</span> <span class="mi">16</span><span class="p">)</span> <span class="k">break</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">inputPtr1</span> <span class="o">&gt;</span> <span class="n">inputEnd1</span> <span class="o">-</span> <span class="mi">16</span><span class="p">)</span> <span class="k">break</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">inputPtr2</span> <span class="o">&gt;</span> <span class="n">inputEnd2</span> <span class="o">-</span> <span class="mi">16</span><span class="p">)</span> <span class="k">break</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">inputPtr3</span> <span class="o">&gt;</span> <span class="n">inputEnd3</span> <span class="o">-</span> <span class="mi">16</span><span class="p">)</span> <span class="k">break</span><span class="p">;</span>
+    <span class="c1">//perform one iteration of decoding on every stream (the code is inlined here)</span>
+    <span class="kt">bool</span> <span class="n">ok0</span> <span class="o">=</span> <span class="n">DecoderCore</span><span class="o">&lt;</span><span class="p">...</span><span class="o">&gt;</span><span class="p">()(</span><span class="n">inputPtr0</span><span class="p">,</span> <span class="n">outputPtr0</span><span class="p">,</span> <span class="n">ptrTable</span><span class="p">);</span>
+    <span class="kt">bool</span> <span class="n">ok1</span> <span class="o">=</span> <span class="n">DecoderCore</span><span class="o">&lt;</span><span class="p">...</span><span class="o">&gt;</span><span class="p">()(</span><span class="n">inputPtr1</span><span class="p">,</span> <span class="n">outputPtr1</span><span class="p">,</span> <span class="n">ptrTable</span><span class="p">);</span>
+    <span class="kt">bool</span> <span class="n">ok2</span> <span class="o">=</span> <span class="n">DecoderCore</span><span class="o">&lt;</span><span class="p">...</span><span class="o">&gt;</span><span class="p">()(</span><span class="n">inputPtr2</span><span class="p">,</span> <span class="n">outputPtr2</span><span class="p">,</span> <span class="n">ptrTable</span><span class="p">);</span>
+    <span class="kt">bool</span> <span class="n">ok3</span> <span class="o">=</span> <span class="n">DecoderCore</span><span class="o">&lt;</span><span class="p">...</span><span class="o">&gt;</span><span class="p">()(</span><span class="n">inputPtr3</span><span class="p">,</span> <span class="n">outputPtr3</span><span class="p">,</span> <span class="n">ptrTable</span><span class="p">);</span>
+    <span class="c1">//if some stream failed with fast path, try slow path instead</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">ok0</span><span class="p">)</span> <span class="n">ok0</span> <span class="o">=</span> <span class="n">DecodeTrivial</span><span class="p">(</span><span class="n">inputPtr0</span><span class="p">,</span> <span class="n">inputPtr0</span> <span class="o">+</span> <span class="mi">16</span><span class="p">,</span> <span class="n">outputPtr0</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">ok1</span><span class="p">)</span> <span class="n">ok1</span> <span class="o">=</span> <span class="n">DecodeTrivial</span><span class="p">(</span><span class="n">inputPtr1</span><span class="p">,</span> <span class="n">inputPtr1</span> <span class="o">+</span> <span class="mi">16</span><span class="p">,</span> <span class="n">outputPtr1</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">ok2</span><span class="p">)</span> <span class="n">ok2</span> <span class="o">=</span> <span class="n">DecodeTrivial</span><span class="p">(</span><span class="n">inputPtr2</span><span class="p">,</span> <span class="n">inputPtr2</span> <span class="o">+</span> <span class="mi">16</span><span class="p">,</span> <span class="n">outputPtr2</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">ok3</span><span class="p">)</span> <span class="n">ok3</span> <span class="o">=</span> <span class="n">DecodeTrivial</span><span class="p">(</span><span class="n">inputPtr3</span><span class="p">,</span> <span class="n">inputPtr3</span> <span class="o">+</span> <span class="mi">16</span><span class="p">,</span> <span class="n">outputPtr3</span><span class="p">);</span>
+    <span class="c1">//if even slow path cannot process data, then input data is invalid</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">ok0</span> <span class="o">||</span> <span class="o">!</span><span class="n">ok1</span> <span class="o">||</span> <span class="o">!</span><span class="n">ok2</span> <span class="o">||</span> <span class="o">!</span><span class="n">ok3</span><span class="p">)</span> <span class="k">break</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="c1">//finish converting the bytes assigned to every stream</span>
+<span class="kt">bool</span> <span class="n">ok0</span> <span class="o">=</span> <span class="n">ProcessSimple</span><span class="p">(</span><span class="n">inputPtr0</span><span class="p">,</span> <span class="n">inputEnd0</span><span class="p">,</span> <span class="n">outputPtr0</span><span class="p">,</span> <span class="nb">true</span><span class="p">);</span>
+<span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">ok0</span><span class="p">)</span> <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+<span class="kt">bool</span> <span class="n">ok1</span> <span class="o">=</span> <span class="n">ProcessSimple</span><span class="p">(</span><span class="n">inputPtr1</span><span class="p">,</span> <span class="n">inputEnd1</span><span class="p">,</span> <span class="n">outputPtr1</span><span class="p">,</span> <span class="nb">true</span><span class="p">);</span>
+<span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">ok1</span><span class="p">)</span> <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+<span class="kt">bool</span> <span class="n">ok2</span> <span class="o">=</span> <span class="n">ProcessSimple</span><span class="p">(</span><span class="n">inputPtr2</span><span class="p">,</span> <span class="n">inputEnd2</span><span class="p">,</span> <span class="n">outputPtr2</span><span class="p">,</span> <span class="nb">true</span><span class="p">);</span>
+<span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">ok2</span><span class="p">)</span> <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+<span class="kt">bool</span> <span class="n">ok3</span> <span class="o">=</span> <span class="n">ProcessSimple</span><span class="p">(</span><span class="n">inputPtr3</span><span class="p">,</span> <span class="n">inputEnd3</span><span class="p">,</span> <span class="n">outputPtr3</span><span class="p">,</span> <span class="nb">true</span><span class="p">);</span>
+<span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">ok3</span><span class="p">)</span> <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+</pre></div>
+
+
+<p>The loop should be terminated when at least one of the pointers hits its end. After that we have to finish the remaining work of every stream sequentially. Here we hope that the text is relatively uniform in terms of byte lengths, so all the parts are processed at approximately the same average speed (measuring in bytes per iteration). Then the portion of data which will be processed without multistreaming will be rather small.</p>
+<p>The above code sample is somewhat simplified, you can see the actual code of multistreaming at the beginning of <code>_Process</code> method in <a href="https://bitbucket.org/stgatilov/utf8lut/src/default/src/buffer/BufferDecoder.h">BufferDecoder.h</a>. The performance measurements with and without multistreaming are available at the <a href="https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-test-results.html#performance-evaluation">end of this article</a>. Of course, such multistreaming improvement is useless for our encoding algorithm.</p>
+<h2 id="upper-levels"><a class="toclink" href="#upper-levels">Upper levels</a></h2>
+<p>The utf8lut library is organized in three levels:</p>
+<ul>
+<li><strong>Core</strong>: template functions to perform one iteration of conversion, LUT precomputation.</li>
+<li><strong>Buffer</strong>: classes for converting a chunk/buffer of data, helpers for passing input and getting output, helper for setting template arguments.</li>
+<li><strong>Message</strong>: functions for performing end-user conversion: either convert a buffer in memory or a file.</li>
+</ul>
+<p>The Buffer level is the largest and probably the most important one. It has several base classes:</p>
+<ul>
+<li><strong>BaseBufferProcessor</strong> (in <a href="https://bitbucket.org/stgatilov/utf8lut/src/default/src/buffer/BaseBufferProcessor.h">BaseBufferProcessor.h</a>): represents a data processor which converts a chunk of data according to some conventions. It unifies the interface of template classes <strong>BufferDecoder&lt;...&gt;</strong> and <strong>BufferEncoder&lt;...&gt;</strong>, allowing to build any higher-level code without templates. Such higher-level code performs virtual calls to the actual implementation methods, but it is done only a few times per chunk (which is usually 64 KB), so it does not decrease performance.</li>
+<li><strong>InputPlugin</strong> and <strong>OutputPlugin</strong> (in <a href="https://bitbucket.org/stgatilov/utf8lut/src/default/src/buffer/ProcessorPlugins.h">ProcessorPlugins.h</a>): represent helpers for automatically pushing input data into a buffer processor and pulling output data out of it. Plugins are attached to buffer processor at runtime. For both input and output, two plugins are provided:<ul>
+<li><strong>Contiguous</strong> plugin assumes that the whole input/output data is stored in a long contiguous array, so it installs consecutive chunks of this array into processor as input/output buffer. Useful for memory-to-memory conversion: user no longer has to follow all the pointers.</li>
+<li><strong>Interactive</strong> plugin creates a buffer for input/output, and expects user to fill it with data or get the data out of it after every chunk is processed. This is useful for streaming conversion, for instance file-to-file conversion: there is no need to read the whole file into memory. User reads a chunk into input buffer, performs chunk conversion, then writes a chunk out of output buffer, repeat.</li>
+</ul>
+</li>
+</ul>
+<div class="center-content">
+    <img src="https://dirtyhandscoding.github.io/images/8_utf8lut_4_technical/levels_and_classes.svg" class="w700"/>
+</div>
+
+<p>It is worth noting that multistreaming had large impact on this architecture. For instance, in ordinary single-stream mode, one can perform memory-to-memory conversion completely in-place, without any additional buffers. This is how <a href="http://man7.org/linux/man-pages/man3/iconv.3.html">iconv interface</a> works. With multiple streams however, there are several independent output buffers, so 1) the output data must be copied from these buffers, and 2) the input has to be split into chunks to keep additional memory requirements low. To avoid forcing this mess into user, plugins were created, which wrap these differences into relatively uniform manner. By the way, <a href="https://bitbucket.org/stgatilov/utf8lut/src/default/src/iconv/iconv.h">iconv interface is also provided</a>, but with some quirks.</p>
+<p>Finally, there is <strong>ProcessorSelector</strong> template class on the Buffer level (in <a href="https://bitbucket.org/stgatilov/utf8lut/src/default/src/buffer/ProcessorSelector.h">ProcessorSelector.h</a>), which simplifies creation of a buffer processor. It also supports some error correction (unless multistreaming is enabled). Here is how creating a processor with the selector looks like:</p>
+<div class="highlight"><pre><span></span><span class="c1">//type of UTF-8 to UTF-16 processor, with full validation and BMP plane support in fast path</span>
+<span class="k">typedef</span> <span class="n">ProcessorSelector</span><span class="o">&lt;</span><span class="n">dfUtf8</span><span class="p">,</span> <span class="n">dfUtf16</span><span class="o">&gt;::</span><span class="n">WithOptions</span><span class="o">&lt;</span><span class="n">cmValidate</span><span class="p">,</span> <span class="mi">3</span><span class="o">&gt;::</span><span class="n">Processor</span> <span class="n">MyProcessor</span><span class="p">;</span>
+<span class="c1">//create new processor with error correction enabled</span>
+<span class="kt">int</span> <span class="n">errorsCount</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="n">BaseBufferProcessor</span> <span class="o">*</span><span class="n">processor</span> <span class="o">=</span> <span class="n">MyProcessor</span><span class="o">::</span><span class="n">Create</span><span class="p">(</span><span class="o">&amp;</span><span class="n">errorsCount</span><span class="p">);</span>
+</pre></div>
+
+
+<p>This processor can later be passed into various Message-level conversion functions (memory-to-memory or file-to-file conversion), or user can attach the plugins he wants and drive the conversion process manually.</p>
+          <div class="series-neighbors">
+        <p class="series-prev">
+            <span class="arrow-left"></span>
+            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-encoding-utf-8.html'>
+                Part 3: Encoding UTF-8
+            </a>
+        </p>
+        <p class="series-next">
+            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-test-results.html'>
+                Part 5: Test results
+            </a>
+            <span class="arrow-right"></span>
+        </p>
+    </div>
+
+    </div><!-- /.entry-content -->
+    
+    			<!--<script type="text/javascript" src="http://code.jquery.com/jquery-2.1.4.min.js"></script>-->
+		<script src="https://dirtyhandscoding.github.io/theme/js/jquery.min.js"></script>
+	<script type="text/javascript" src="https://dirtyhandscoding.github.io/theme/pelican_comment_system/comments.js"></script>
+	<script type="text/javascript">
+		$(document).ready(function() {
+			CommentSystem.email_user   = "itiswrongemail";
+			CommentSystem.email_domain = "outlook.com";
+
+			$('#pcs-comment-form').on("submit",
+				function( event )
+				{
+					event.preventDefault();
+					$(location).attr('href', CommentSystem.getMailtoLink("utf8lut-vectorized-utf-8-converter-technical-details"));
+				}
+			);
+		});
+	</script>
+
+    	<section>
+	<div id="pcs-comments-header" class="inline-menu">
+	<header>
+		<div>Comments (0)</div>
+		<button type="button" title="Expand or collapse the comments section" class="icon-label" id="pcs-comments-collapse-button" onclick="CommentSystem.collapsible($('#pcs-comments'), $(this));">
+			<span class="nocss">expand</span>
+		</button>
+			<a href="https://dirtyhandscoding.github.io/feeds/comment.utf8lut-vectorized-utf-8-converter-technical-details.atom.xml" class="icon-label">atom feed: comments</a>
+	</header>
+	</div>
+	<div id="pcs-comments">
+		<p>There are no comments yet.</p>
+	<section>
+	<div display="none" id="pcs-comment-notreply-helper" />
+	<form id="pcs-comment-form" action="#">
+		<fieldset>
+		<legend>Add a Comment</legend>
+		<div id="pcs-comment-tab-inputs">
+			<input type="hidden" id="pcs-comment-form-input-replyto"/>
+			<label for="pcs-comment-form-input-name">Name</label>
+			<input  id="pcs-comment-form-input-name" type="text" size="40" placeholder="Enter your name or nickname" />
+			<br/>
+			<label for="pcs-comment-form-input-website">Website</label>
+			<input  id="pcs-comment-form-input-website" type="text" size="40" placeholder="Enter your website (optional)" />
+			<br/>
+			<label for="pcs-comment-form-input-empty">Empty</label>
+			<input  id="pcs-comment-form-input-empty" type="text" size="30" placeholder="Do NOT enter anything here!" />
+			<label   for="pcs-comment-form-input-textarea">Your Comment</label>
+			<br/>
+			<textarea id="pcs-comment-form-input-textarea" rows="7" cols="40" placeholder="Enter your comment (markdown is allowed)"></textarea>
+		</div>
+		<div id="pcs-comment-tab-message" style="display:none">
+			<textarea readonly rows="10" cols="40"></textarea>
+		</div>
+
+		<button type="submit"
+				id="pcs-comment-form-button-submit"
+				title="Create mailto link and open it in default email client &#10;Note: you have to send the email to post comment"
+				>Post via email</button>
+		<button type="button"
+				id="pcs-comment-form-button-message"
+				title="See the text of email message to be sent &#10;Note: you can copy it and send manually"
+				onclick="CommentSystem.viewEmail(&quot;utf8lut-vectorized-utf-8-converter-technical-details&quot;);"
+				>View email text</button>
+		<a target="_blank"
+				id="pcs-comment-gmail-config-help"
+				title="How to configure Chrome to open mailto links in Gmail..."
+				href="https://productforums.google.com/forum/#!topic/gmail/JtWVPbUfh-o"
+				>?</a>
+		</fieldset>
+
+		<!--			<a href="https://dirtyhandscoding.github.io/feeds/comment.utf8lut-vectorized-utf-8-converter-technical-details.atom.xml">
+				Comment Atom Feed
+			</a>
+-->
+	</form>
+	<script>CommentSystem.displayReplyTo();</script>
+</section>
+
+	</div>
+	<script>
+		$('#pcs-comments').css({display: "none"});
+		$('#pcs-comments-collapse-button').addClass('collapsed');
+	</script>
+</section>
+
+  </article>
+</section>
+        <section id="extras" class="body">
+                <div class="social">
+                        <h2>social</h2>
+                        <ul>
+                            <li><a href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate">atom feed</a></li>
+                            <li><a href="/feeds/all.rss.xml" type="application/rss+xml" rel="alternate">rss feed</a></li>
+
+                        </ul>
+                </div><!-- /.social -->
+        </section><!-- /#extras -->
+
+        <footer id="contentinfo" class="body">
+                <p>Powered by <a href="http://getpelican.com/">Pelican</a>. Theme <a href="https://github.com/blueicefield/pelican-blueidea/">blueidea</a>, customized to personal taste.</p>
+        </footer><!-- /#contentinfo -->
+
+</body>
+</html>

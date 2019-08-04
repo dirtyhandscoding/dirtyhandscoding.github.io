@@ -426,6 +426,53 @@ img.left, figure.left {float: left; margin: 0 2em 2em 0;}
 }
 
 /*
+    Series
+*****************/
+div.series-summary {
+    padding-left: 4%;
+    font-style: italic;
+}
+div.series-in-article {
+    margin-bottom: 50px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid;
+}
+div.series-summary ol {
+    margin-left: 6%;
+}
+div.series-summary li {
+    margin-top: 0.2em;
+}
+div.series-summary.series-in-article li.active {
+    background-color: #bbbbbb;
+}
+div.series-summary.series-in-article li.active a {
+    color: #000305;
+    padding-right: 1em;
+}
+span.series-name {
+    text-decoration: underline;
+    font-size: 1.2em;
+}
+.series-prev, .series-next {
+    margin-bottom: 3em;
+}
+.series-prev { float: left; }
+.series-next { float: right; }
+.series-neighbors .arrow-left,
+.series-neighbors .arrow-right {
+    display: inline-block;
+    vertical-align: middle;
+    width: 12px;
+    height: 12px;
+    border-bottom: 5px solid #000;
+    border-right: 5px solid #000;
+    margin: 8px;
+}
+.arrow-left { transform: rotate(135deg); }
+.arrow-right { transform: rotate(-45deg); }
+
+/*
     Extras
 *****************/
 #extras {
@@ -574,7 +621,10 @@ img.left, figure.left {float: left; margin: 0 2em 2em 0;}
     padding-bottom: 0.5em;
     margin-bottom: 5.0em;
 }
-li:last-child .hentry, #content > .hentry {border: 0; margin: 0;}
+li:last-child .hentry, #content > .hentry {
+    border: 0;
+    margin: 0 0 2.5em 0;
+}
 #content > .hentry {padding: 1em 0;}
 .hentry img{display : none ;}
 .entry-title {font-size: 3em; margin-bottom: 10px; margin-top: 0;}
@@ -824,6 +874,10 @@ img.bordered {
     border:1px solid #021a40;
 }
 /* display one image full size */
+.w400 {
+    width:100%;
+    max-width:400px;
+}
 .w450 {
     width:100%;
     max-width:450px;
@@ -860,8 +914,18 @@ img.bordered {
 /*
     Tables
 *****************/
-table.solid-cells,
 .solid-cells tr th,
 .solid-cells tr td {
     border: 1px solid black;
+}
+table.centered-cells {
+    text-align: center;
+}
+table.nowrap-cells {
+    white-space: nowrap;
+}
+table.imagelike {
+    display: inline-block;
+    margin-left: 20px;
+    margin-right: 20px;
 }

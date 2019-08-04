@@ -52,7 +52,8 @@
         <span>19 July 2017</span>
 	        <span>| in <a href="https://dirtyhandscoding.github.io/category/the-dark-mod.html">The Dark Mod</a></span>
 <span>| tags: <a href="https://dirtyhandscoding.github.io/tag/idtech4.html">idtech4</a><a href="https://dirtyhandscoding.github.io/tag/memory-debugging.html">memory debugging</a></span>
-</footer><!-- /.post-info -->      <p>Although Doom 3 was released 13 years ago, there is still of lot of interesting stuff to find in it. The main reason for that is: it was developed in the time of changes. The ID software team had just moved from C to C++ (using Visual C++ 6). Graphic cards were moving from fixed pipeline to programming pipeline, CPUs were getting SIMD extensions. All of this caused a lot of diversity in the code: crazy mix of C++/C/asm code, several renderer backends, code acceleration for MMX/SSE/AltiVec (yeah, Macs used PowerPC at that time). Not to mention tons of scripts and defs, including C++-like scripting language, and in-game GUI system.</p>
+</footer><!-- /.post-info -->      
+      <p>Although Doom 3 was released 13 years ago, there is still of lot of interesting stuff to find in it. The main reason for that is: it was developed in the time of changes. The ID software team had just moved from C to C++ (using Visual C++ 6). Graphic cards were moving from fixed pipeline to programming pipeline, CPUs were getting SIMD extensions. All of this caused a lot of diversity in the code: crazy mix of C++/C/asm code, several renderer backends, code acceleration for MMX/SSE/AltiVec (yeah, Macs used PowerPC at that time). Not to mention tons of scripts and defs, including C++-like scripting language, and in-game GUI system.</p>
 <p>I have to deal with Doom 3 engine in the context of <a href="http://www.thedarkmod.com">The Dark Mod</a> (TDM for short).</p>
 <p>This article is about <strong>memory debugging</strong> configuration in Doom 3 SDK (more precisely, "Debug with inlines and memory log").</p>
 
@@ -665,6 +666,7 @@ When this memory is freed, <em>size</em> data member is used to update allocatio
 <h3 id="conclusion"><a class="toclink" href="#conclusion">Conclusion</a></h3>
 <p>So all of this was about a tiny little part of Doom 3 source code: memory debugging and typeinfo processing. It is worth noting that typeinfo stuff was completely removed by ID from Doom3 BFG (it is missing in the sources). Most likely this is because of the maintenance burden it causes. You can read more about the issues caused by all this hackery in the corresponding <a href="http://wiki.thedarkmod.com/index.php?title=TypeInfo_and_Memory_debugging_configuration">TDM wiki article</a>.</p>
 <p>Speaking of TDM, now we have to understand how much value this system has. The first moves would be to fix all the issues detected currently, and to add support for some new data structures (include STL stuff). The TypeInfo system would either give some benefit or be removed, and it is not clear yet which path would be taken.</p>
+      
     </div><!-- /.entry-content -->
     <section>
         <div id="post-share-links" class="inline-menu">

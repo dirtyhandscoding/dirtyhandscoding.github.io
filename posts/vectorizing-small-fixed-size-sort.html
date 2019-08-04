@@ -52,7 +52,8 @@
         <span>05 January 2018</span>
 	        <span>| in <a href="https://dirtyhandscoding.github.io/category/high-performance.html">High performance</a></span>
 <span>| tags: <a href="https://dirtyhandscoding.github.io/tag/cmov.html">cmov</a><a href="https://dirtyhandscoding.github.io/tag/simd.html">simd</a><a href="https://dirtyhandscoding.github.io/tag/sort.html">sort</a></span>
-</footer><!-- /.post-info -->      <p>After a long break, I can finally return to the topic which was started in the <a href="https://dirtyhandscoding.github.io/posts/performance-comparison-linear-search-vs-binary-search.html">previous blog post</a>. </p>
+</footer><!-- /.post-info -->      
+      <p>After a long break, I can finally return to the topic which was started in the <a href="https://dirtyhandscoding.github.io/posts/performance-comparison-linear-search-vs-binary-search.html">previous blog post</a>. </p>
 <p>Imagine that we have a small array of compile-time constant size with integers. For instance, N = 32. And we want to sort it as fast as possible. What is the best solution for this problem?</p>
 <p>The wisest of you would suggest simply using std::sort, because every modern implementation of it is well-optimized and contains special handling of small subarrays to accelerate the generic quicksort algorithm. The ones who don't trust libraries would suggest using insertion sort: this is the algorithm usually used to handle small cases in std::sort. The performance geeks and regular stackoverflow visitors would definitely point to sorting networks: every question like "the fastest way to sort K integers" ends up with a solution based on them (<a href="https://stackoverflow.com/questions/2786899/fastest-sort-of-fixed-length-6-int-array">N=6</a>, <a href="https://stackoverflow.com/questions/32172144/fastest-way-to-sort-10-numbers-numbers-are-32-bit">N=10</a>, <a href="https://stackoverflow.com/questions/19790522/very-fast-sorting-of-fixed-length-arrays-using-comparator-networks">what</a>, <a href="https://stackoverflow.com/questions/3901079/how-does-a-sorting-network-beat-generic-sorting-algorithms">why</a>). I'm going to present a much less known way to sort small arrays of 32-bit keys, with performance comparable to sorting networks.</p>
 
@@ -323,6 +324,7 @@ The performance impact is most likely minimal, but it is still strange to see su
 <p>As usual, all the materials and all the C++ code is available in <a href="https://github.com/stgatilov/position-counting-sort">position-counting-sort</a> repo on GitHub.</p>
 <h2 id="conclusion"><a class="toclink" href="#conclusion">Conclusion</a></h2>
 <p>The position-counting sorting algorithm is rather unknown, although it yields performance comparable to that of optimal sorting networks (which are well-known for their speed). It works in plain O(N^2) time, while sorting networks have to do somewhere between O(N log N) and O(N log^2 N) work. Having worse asymptotic complexity, it manages to be so fast only because it is vectorized very efficiently. So it can serve as a good alternative for sorting networks in some cases.</p>
+      
     </div><!-- /.entry-content -->
     <section>
         <div id="post-share-links" class="inline-menu">

@@ -5,28 +5,28 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
 <url>
 <loc>https://dirtyhandscoding.github.io/</loc>
-<lastmod>2019-07-14T12:45:47-00:00</lastmod>
+<lastmod>2019-08-04T15:59:50-00:00</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
 
 <url>
 <loc>https://dirtyhandscoding.github.io/archives.html</loc>
-<lastmod>2019-07-14T12:45:47-00:00</lastmod>
+<lastmod>2019-08-04T15:59:50-00:00</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
 
 <url>
 <loc>https://dirtyhandscoding.github.io/tags.html</loc>
-<lastmod>2019-07-14T12:45:47-00:00</lastmod>
+<lastmod>2019-08-04T15:59:50-00:00</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
 
 <url>
 <loc>https://dirtyhandscoding.github.io/categories.html</loc>
-<lastmod>2019-07-14T12:45:47-00:00</lastmod>
+<lastmod>2019-08-04T15:59:50-00:00</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
@@ -36,6 +36,13 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <lastmod>2018-05-01T00:20:00+07:00</lastmod>
 <changefreq>monthly</changefreq>
 <priority>0.3</priority>
+</url>
+
+<url>
+<loc>https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-introduction.html</loc>
+<lastmod>2019-08-04T15:31:00+07:00</lastmod>
+<changefreq>monthly</changefreq>
+<priority>0.7</priority>
 </url>
 
 <url>
@@ -96,7 +103,7 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
 <url>
 <loc>https://dirtyhandscoding.github.io/category/high-performance.html</loc>
-<lastmod>2018-01-05T23:26:00+05:32</lastmod>
+<lastmod>2019-08-04T15:31:00+05:32</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
@@ -118,6 +125,27 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url>
 <loc>https://dirtyhandscoding.github.io/category/uncategorized.html</loc>
 <lastmod>2018-05-27T00:09:00+05:32</lastmod>
+<changefreq>daily</changefreq>
+<priority>0.3</priority>
+</url>
+
+<url>
+<loc>https://dirtyhandscoding.github.io/tag/unicode.html</loc>
+<lastmod>2019-08-04T15:31:00+05:32</lastmod>
+<changefreq>daily</changefreq>
+<priority>0.3</priority>
+</url>
+
+<url>
+<loc>https://dirtyhandscoding.github.io/tag/simd.html</loc>
+<lastmod>2019-08-04T15:31:00+05:32</lastmod>
+<changefreq>daily</changefreq>
+<priority>0.3</priority>
+</url>
+
+<url>
+<loc>https://dirtyhandscoding.github.io/tag/lut.html</loc>
+<lastmod>2019-08-04T15:31:00+05:32</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
@@ -179,13 +207,6 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 </url>
 
 <url>
-<loc>https://dirtyhandscoding.github.io/tag/simd.html</loc>
-<lastmod>2018-01-05T23:26:00+05:32</lastmod>
-<changefreq>daily</changefreq>
-<priority>0.3</priority>
-</url>
-
-<url>
 <loc>https://dirtyhandscoding.github.io/tag/sort.html</loc>
 <lastmod>2018-01-05T23:26:00+05:32</lastmod>
 <changefreq>daily</changefreq>
@@ -225,6 +246,34 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <lastmod>2017-07-19T10:49:00+05:32</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
+</url>
+
+<url>
+<loc>https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-decoding-utf-8.html</loc>
+<lastmod>2019-08-04T15:32:00+07:00</lastmod>
+<changefreq>monthly</changefreq>
+<priority>0.7</priority>
+</url>
+
+<url>
+<loc>https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-encoding-utf-8.html</loc>
+<lastmod>2019-08-04T15:33:00+07:00</lastmod>
+<changefreq>monthly</changefreq>
+<priority>0.7</priority>
+</url>
+
+<url>
+<loc>https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-technical-details.html</loc>
+<lastmod>2019-08-04T15:34:00+07:00</lastmod>
+<changefreq>monthly</changefreq>
+<priority>0.7</priority>
+</url>
+
+<url>
+<loc>https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-test-results.html</loc>
+<lastmod>2019-08-04T15:35:00+07:00</lastmod>
+<changefreq>monthly</changefreq>
+<priority>0.7</priority>
 </url>
 
 </urlset>

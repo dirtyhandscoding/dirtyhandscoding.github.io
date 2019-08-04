@@ -44,6 +44,45 @@
                     <ol id="posts-list" class="hfeed" start="2">
             <li><article class="hentry">
                 <header>
+                    <h1><a href="https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-introduction.html" rel="bookmark"
+                           title="Permalink to utf8lut: Vectorized UTF-8 converter. Introduction">utf8lut: Vectorized UTF-8 converter</a></h1>
+                </header>
+
+                <div class="entry-content">
+<footer class="post-info">
+        <span>04 August 2019</span>
+	        <span>| in <a href="https://dirtyhandscoding.github.io/category/high-performance.html">High performance</a></span>
+<span>| tags: <a href="https://dirtyhandscoding.github.io/tag/unicode.html">unicode</a><a href="https://dirtyhandscoding.github.io/tag/simd.html">simd</a><a href="https://dirtyhandscoding.github.io/tag/lut.html">lut</a></span>
+</footer><!-- /.post-info -->                <p>Some time ago I wrote <a href="https://stackoverflow.com/a/31683632/556899">a surprising answer</a> to stackoverflow question "Fastest way to get IPv4 address from string". At that very moment I discovered that <a href="https://msdn.microsoft.com/en-us/library/bb531427(v=vs.120).aspx">_mm_shuffle_epi8</a> instruction combined with sufficiently large lookup-table can do wonders. Actually, this exact methodology was used to implement vectorized merging algorithm in <a href="{filename}1_avx2_merge.md">one of my previous blog posts</a>.</p>
+<p>Inspired by the new discovery, I tried to apply this LUT + shuffle idea to some well-known and moderately generic problem. I tried to apply the idea to accelerate conversion from UTF-8 to UTF-16 and was successful. Initially, I had to postpone all efforts on the problem due to PhD-related activities. After that I thought that I would write a scientific article on the topic. When it became clear that I don't want to lose time on anything like that anymore, I decided to write about it in a blog. As a result, almost three years after the initial work (update: it is four years already), I finally managed to write this report, describing the algorithm and the <strong>utf8lut</strong> library.</p>
+                    <div class="series-summary">
+        <p>This article consists of many parts:</p>
+            <ol class="parts">
+        <li class="active">
+            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-introduction.html'>Introduction</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-decoding-utf-8.html'>Decoding UTF-8</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-encoding-utf-8.html'>Encoding UTF-8</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-technical-details.html'>Technical details</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-test-results.html'>Test results</a>
+        </li>
+    </ol>
+
+    </div>
+
+                <a class="readmore" href="https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-introduction.html">read more</a>
+                </div><!-- /.entry-content -->
+            </article></li>
+
+            <li><article class="hentry">
+                <header>
                     <h1><a href="https://dirtyhandscoding.github.io/posts/improvements-to-symbolsort-tool-for-c-code-bloat-analysis.html" rel="bookmark"
                            title="Permalink to Improvements to SymbolSort tool for C++ code bloat analysis">Improvements to SymbolSort tool for C++ code bloat analysis</a></h1>
                 </header>
@@ -56,6 +95,7 @@
 </footer><!-- /.post-info -->                <p>It is known that code bloat <a href="https://dirtyhandscoding.github.io/posts/on-cpp-code-bloat.html">significantly increases build times in C++</a>. The question is: how can we quantify code bloat? How can we see things which are compiled too many times or the things which generate too much object code? How can we know which places would benefit most from improvement efforts?</p>
 <p>This article is about an excellent tool called <a href="https://github.com/adrianstone55/SymbolSort">SymbolSort</a>, which produces useful code bloat statistics in a project of any size. In particular, the article describes a few improvements which I have implemented recently to provide more useful analysis.</p>
 
+                
                 <a class="readmore" href="https://dirtyhandscoding.github.io/posts/improvements-to-symbolsort-tool-for-c-code-bloat-analysis.html">read more</a>
                 </div><!-- /.entry-content -->
             </article></li>
@@ -73,27 +113,8 @@
 <span>| tags: <a href="https://dirtyhandscoding.github.io/tag/cpp.html">cpp</a><a href="https://dirtyhandscoding.github.io/tag/bloat.html">bloat</a><a href="https://dirtyhandscoding.github.io/tag/build.html">build</a><a href="https://dirtyhandscoding.github.io/tag/msvc.html">msvc</a></span>
 </footer><!-- /.post-info -->                <p>The C++ language is known for its slow build times. This problem is not present in the world of pure C, which might give a hint that the problem is caused by some C++ feature. In fact, it is caused by bad habit or writing code in headers, severely worsened by C++ templates and inspired by STL itself.</p>
 
+                
                 <a class="readmore" href="https://dirtyhandscoding.github.io/posts/on-cpp-code-bloat.html">read more</a>
-                </div><!-- /.entry-content -->
-            </article></li>
-
-            <li><article class="hentry">
-                <header>
-                    <h1><a href="https://dirtyhandscoding.github.io/posts/blog-migrated-to-pelican-and-github-pages.html" rel="bookmark"
-                           title="Permalink to Blog migrated to Pelican and GitHub pages">Blog migrated to Pelican and GitHub pages</a></h1>
-                </header>
-
-                <div class="entry-content">
-<footer class="post-info">
-        <span>02 May 2018</span>
-	        <span>| in <a href="https://dirtyhandscoding.github.io/category/off-topic.html">Off-topic</a></span>
-<span>| tags: <a href="https://dirtyhandscoding.github.io/tag/blog.html">blog</a><a href="https://dirtyhandscoding.github.io/tag/pelican.html">pelican</a><a href="https://dirtyhandscoding.github.io/tag/gh-pages.html">gh-pages</a></span>
-</footer><!-- /.post-info -->                <p>This article is a sort of report about blog migration.</p>
-<h2 id="on-wordpresscom"><a class="toclink" href="#on-wordpresscom">On wordpress.com</a></h2>
-<p>Initially, I started <a href="http://dirtyhandscoding.wordpress.com">this blog on wordpress.com</a>. I chose wordpress.com thinking that I only need a small personal blog and I can easily live without any advanced features. I was pretty sure that I will post only technical articles, and do so quite rarely, so I searched for a free solution and wordpress.com was a good fit. And the experience was quite good in general: I did not have to configure anything, just choose a classic theme and go on writing.</p>
-<p>A problem which I noticed rather quickly is that the width of the text in my blog was way too small. The amount of text fitting into one line was small, and it was especially ugly for source code fragments. When I wanted to post a piece of code from somewhere, I had to add split lines into pieces, so that the whole code fits and no scroll bar appears.</p>
-
-                <a class="readmore" href="https://dirtyhandscoding.github.io/posts/blog-migrated-to-pelican-and-github-pages.html">read more</a>
                 </div><!-- /.entry-content -->
             </article></li>
             </ol><!-- /#posts-list -->

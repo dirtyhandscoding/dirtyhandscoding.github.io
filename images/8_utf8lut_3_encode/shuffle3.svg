@@ -1,0 +1,225 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="150" viewBox="0 0 132.292 39.688">
+  <defs>
+    <marker id="a" orient="auto" overflow="visible">
+      <path d="M-5.231-2.42L1.324-.01-5.23 2.401c1.047-1.423 1.041-3.37 0-4.821z" fill-rule="evenodd" stroke="#000" stroke-width=".375" stroke-linejoin="round"/>
+    </marker>
+    <marker id="b" orient="auto" overflow="visible">
+      <path d="M-5.231-2.42L1.324-.01-5.23 2.401c1.047-1.423 1.041-3.37 0-4.821z" fill-rule="evenodd" stroke="#000" stroke-width=".375" stroke-linejoin="round"/>
+    </marker>
+    <marker id="c" orient="auto" overflow="visible">
+      <path d="M-5.231-2.42L1.324-.01-5.23 2.401c1.047-1.423 1.041-3.37 0-4.821z" fill-rule="evenodd" stroke="#000" stroke-width=".375" stroke-linejoin="round"/>
+    </marker>
+    <marker id="d" orient="auto" overflow="visible">
+      <path d="M-5.231-2.42L1.324-.01-5.23 2.401c1.047-1.423 1.041-3.37 0-4.821z" fill-rule="evenodd" stroke="#000" stroke-width=".375" stroke-linejoin="round"/>
+    </marker>
+    <marker id="e" orient="auto" overflow="visible">
+      <path d="M-5.231-2.42L1.324-.01-5.23 2.401c1.047-1.423 1.041-3.37 0-4.821z" fill-rule="evenodd" stroke="#000" stroke-width=".375" stroke-linejoin="round"/>
+    </marker>
+    <marker id="f" orient="auto" overflow="visible">
+      <path d="M-5.231-2.42L1.324-.01-5.23 2.401c1.047-1.423 1.041-3.37 0-4.821z" fill-rule="evenodd" stroke="#000" stroke-width=".375" stroke-linejoin="round"/>
+    </marker>
+    <marker id="g" orient="auto" overflow="visible">
+      <path d="M-5.231-2.42L1.324-.01-5.23 2.401c1.047-1.423 1.041-3.37 0-4.821z" fill-rule="evenodd" stroke="#000" stroke-width=".375" stroke-linejoin="round"/>
+    </marker>
+    <marker id="h" orient="auto" overflow="visible">
+      <path d="M-5.231-2.42L1.324-.01-5.23 2.401c1.047-1.423 1.041-3.37 0-4.821z" fill-rule="evenodd" stroke="#000" stroke-width=".375" stroke-linejoin="round"/>
+    </marker>
+    <marker id="i" orient="auto" overflow="visible">
+      <path d="M-5.231-2.42L1.324-.01-5.23 2.401c1.047-1.423 1.041-3.37 0-4.821z" fill-rule="evenodd" stroke="#000" stroke-width=".375" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+  <g transform="translate(0 -257.313)" stroke="#000">
+    <rect width="6.615" height="6.615" x="25.803" y="262.604" ry="0" fill="#faa" stroke-width=".661" stroke-linecap="round"/>
+    <rect ry="0" y="262.604" x="32.418" height="6.615" width="6.615" fill="#faa" stroke-width=".661" stroke-linecap="round"/>
+    <rect width="6.615" height="6.615" x="19.189" y="262.604" ry="0" fill="#acf" stroke-width=".661" stroke-linecap="round"/>
+    <rect ry="0" y="262.604" x="72.106" height="6.615" width="6.615" fill="#acf" stroke-width=".661" stroke-linecap="round"/>
+    <rect width="6.615" height="6.615" x="78.72" y="262.604" ry="0" fill="#faa" stroke-width=".661" stroke-linecap="round"/>
+    <rect width="6.615" height="6.615" x="98.564" y="262.604" ry="0" fill="#acf" stroke-width=".661" stroke-linecap="round"/>
+    <path d="M53.915 259.297l-1.653 3.307-1.654-3.307m3.307 13.229l-1.653-3.307-1.654 3.307m-9.922-13.229l-1.653 3.307-1.654-3.307m3.307 13.229l-1.653-3.307-1.654 3.307m-9.922-13.229l-1.654 3.307-1.653-3.307m3.307 13.229l-1.654-3.307-1.653 3.307m42.995-13.229l-1.654 3.307-1.654-3.307m3.308 13.229l-1.654-3.307-1.654 3.307m16.537-13.229l-1.654 3.307-1.654-3.307m3.308 13.229l-1.654-3.307-1.654 3.307m16.537-13.229l-1.654 3.307-1.653-3.307m3.307 13.229l-1.654-3.307-1.653 3.307m16.536-13.229l-1.654 3.307-1.653-3.307m3.307 13.229l-1.654-3.307-1.653 3.307" stroke-width=".496" fill="none"/>
+    <rect ry="0" y="262.604" x="12.574" height="6.615" width="6.615" fill="#acf" stroke-width=".661" stroke-linecap="round"/>
+    <rect width="6.615" height="6.615" x="45.647" y="262.604" ry="0" fill="#acf" stroke-width=".661" stroke-linecap="round"/>
+    <rect ry="0" y="262.604" x="39.033" height="6.615" width="6.615" fill="#acf" stroke-width=".661" stroke-linecap="round"/>
+    <rect ry="0" y="262.604" x="65.491" height="6.615" width="6.615" fill="#acf" stroke-width=".661" stroke-linecap="round"/>
+    <rect width="6.615" height="6.615" x="58.876" y="262.604" ry="0" fill="#e5ff80" stroke-width=".661" stroke-linecap="round"/>
+    <rect width="6.615" height="6.615" x="52.262" y="262.604" ry="0" fill="#e5ff80" stroke-width=".661" stroke-linecap="round"/>
+    <rect width="6.615" height="6.615" x="85.335" y="262.604" ry="0" fill="#faa" stroke-width=".661" stroke-linecap="round"/>
+    <rect width="6.615" height="6.615" x="91.949" y="262.604" ry="0" fill="#acf" stroke-width=".661" stroke-linecap="round"/>
+    <rect ry="0" y="262.604" x="111.793" height="6.615" width="6.615" fill="#e5ff80" stroke-width=".661" stroke-linecap="round"/>
+    <rect ry="0" y="262.604" x="105.179" height="6.615" width="6.615" fill="#e5ff80" stroke-width=".661" stroke-linecap="round"/>
+    <rect width="6.615" height="6.615" x="111.793" y="279.802" ry="0" fill="none" stroke-width=".661" stroke-linecap="round"/>
+    <rect ry="0" y="279.802" x="118.408" height="6.615" width="6.615" fill="none" stroke-width=".661" stroke-linecap="round"/>
+    <rect ry="0" y="279.802" x="125.022" height="6.615" width="6.615" fill="none" stroke-width=".661" stroke-linecap="round"/>
+    <rect ry="0" y="279.802" x="105.179" height="6.615" width="6.615" fill="none" stroke-width=".661" stroke-linecap="round"/>
+    <rect ry="0" y="289.063" x="111.793" height="6.615" width="6.615" fill="none" stroke-width=".661" stroke-linecap="round"/>
+    <rect width="6.615" height="6.615" x="118.408" y="289.063" ry="0" fill="none" stroke-width=".661" stroke-linecap="round"/>
+    <rect width="6.615" height="6.615" x="125.022" y="289.063" ry="0" fill="none" stroke-width=".661" stroke-linecap="round"/>
+    <rect width="6.615" height="6.615" x="105.179" y="289.063" ry="0" fill="none" stroke-width=".661" stroke-linecap="round"/>
+    <rect ry="0" y="279.802" x="32.418" height="6.615" width="6.615" fill="#acf" stroke-width=".661" stroke-linecap="round"/>
+    <rect ry="0" y="279.802" x="25.803" height="6.615" width="6.615" fill="#acf" stroke-width=".661" stroke-linecap="round"/>
+    <rect width="6.615" height="6.615" x="45.647" y="279.802" ry="0" fill="#faa" stroke-width=".661" stroke-linecap="round"/>
+    <rect width="6.615" height="6.615" x="52.262" y="279.802" ry="0" fill="#acf" stroke-width=".661" stroke-linecap="round"/>
+    <rect width="6.615" height="6.615" x="58.876" y="279.802" ry="0" fill="#acf" stroke-width=".661" stroke-linecap="round"/>
+    <rect width="6.615" height="6.615" x="91.949" y="279.802" ry="0" fill="none" stroke-width=".661" stroke-linecap="round"/>
+    <rect ry="0" y="279.802" x="98.564" height="6.615" width="6.615" fill="none" stroke-width=".661" stroke-linecap="round"/>
+    <rect ry="0" y="279.802" x="85.335" height="6.615" width="6.615" fill="none" stroke-width=".661" stroke-linecap="round"/>
+    <rect width="6.615" height="6.615" x="91.949" y="289.063" ry="0" fill="none" stroke-width=".661" stroke-linecap="round"/>
+    <rect ry="0" y="289.063" x="98.564" height="6.615" width="6.615" fill="none" stroke-width=".661" stroke-linecap="round"/>
+    <rect ry="0" y="289.063" x="85.335" height="6.615" width="6.615" fill="none" stroke-width=".661" stroke-linecap="round"/>
+    <rect ry="0" y="279.802" x="65.491" height="6.615" width="6.615" fill="#acf" stroke-width=".661" stroke-linecap="round"/>
+    <rect width="6.615" height="6.615" x="78.72" y="279.802" ry="0" fill="#e5ff80" stroke-width=".661" stroke-linecap="round"/>
+    <rect ry="0" y="279.802" x="72.105" height="6.615" width="6.615" fill="#e5ff80" stroke-width=".661" stroke-linecap="round"/>
+    <rect ry="0" y="289.063" x="39.033" height="6.615" width="6.615" fill="#acf" stroke-width=".661" stroke-linecap="round"/>
+    <rect width="6.615" height="6.615" x="32.418" y="289.063" ry="0" fill="#acf" stroke-width=".661" stroke-linecap="round"/>
+    <rect ry="0" y="289.063" x="25.804" height="6.615" width="6.615" fill="#acf" stroke-width=".661" stroke-linecap="round"/>
+    <rect width="6.615" height="6.615" x="45.647" y="289.063" ry="0" fill="#faa" stroke-width=".661" stroke-linecap="round"/>
+    <rect width="6.615" height="6.615" x="52.262" y="289.063" ry="0" fill="#acf" stroke-width=".661" stroke-linecap="round"/>
+    <rect width="6.615" height="6.615" x="58.876" y="289.063" ry="0" fill="#acf" stroke-width=".661" stroke-linecap="round"/>
+    <rect ry="0" y="289.063" x="65.491" height="6.615" width="6.615" fill="#acf" stroke-width=".661" stroke-linecap="round"/>
+    <rect width="6.615" height="6.615" x="78.72" y="289.063" ry="0" fill="#e5ff80" stroke-width=".661" stroke-linecap="round"/>
+    <rect ry="0" y="289.063" x="72.106" height="6.615" width="6.615" fill="#e5ff80" stroke-width=".661" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(0 -257.313)">
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x=".155" y="267.183" font-weight="400" font-size="3.704" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".265">
+      <tspan x=".155" y="267.183">levels1</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="13.637" y="267.427" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan x="13.637" y="267.427" style="-inkscape-font-specification:'Trebuchet MS'">02</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="40.26" y="267.462" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan x="40.26" y="267.462" style="-inkscape-font-specification:'Trebuchet MS'">64</tspan>
+    </text>
+    <text y="267.462" x="59.766" style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan style="-inkscape-font-specification:'Trebuchet MS'" y="267.462" x="59.766">00</tspan>
+    </text>
+    <text y="267.347" x="73.1" style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan style="-inkscape-font-specification:'Trebuchet MS'" y="267.347" x="73.1">00</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="79.792" y="267.32" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan x="79.792" y="267.32" style="-inkscape-font-specification:'Trebuchet MS'">01</tspan>
+    </text>
+    <text y="267.462" x="93.01" style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan style="-inkscape-font-specification:'Trebuchet MS'" y="267.462" x="93.01">89</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="112.665" y="267.509" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan x="112.665" y="267.509" style="-inkscape-font-specification:'Trebuchet MS'">00</tspan>
+    </text>
+    <text y="267.246" x="20.469" style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan style="-inkscape-font-specification:'Trebuchet MS'" y="267.246" x="20.469">02</tspan>
+    </text>
+    <text y="267.29" x="26.848" style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan style="-inkscape-font-specification:'Trebuchet MS'" y="267.29" x="26.848">74</tspan>
+    </text>
+    <text y="267.432" x="33.415" style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan style="-inkscape-font-specification:'Trebuchet MS'" y="267.432" x="33.415">00</tspan>
+    </text>
+    <text y="267.367" x="46.733" style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan style="-inkscape-font-specification:'Trebuchet MS'" y="267.367" x="46.733">02</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="53.246" y="267.367" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan x="53.246" y="267.367" style="-inkscape-font-specification:'Trebuchet MS'">B2</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="67.03" y="267.352" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan x="67.03" y="267.352" style="-inkscape-font-specification:'Trebuchet MS'">88</tspan>
+    </text>
+    <text y="267.273" x="86.17" style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan style="-inkscape-font-specification:'Trebuchet MS'" y="267.273" x="86.17">00</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="99.625" y="267.32" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan x="99.625" y="267.32" style="-inkscape-font-specification:'Trebuchet MS'">00</tspan>
+    </text>
+    <text y="267.556" x="106.287" style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan style="-inkscape-font-specification:'Trebuchet MS'" y="267.556" x="106.287">0E</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="17.639" y="283.94" font-weight="400" font-size="3.704" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".265">
+      <tspan x="17.639" y="283.94">res1</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="34.415" y="293.858" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan x="34.415" y="293.858" style="-inkscape-font-specification:'Trebuchet MS'">8</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="54.34" y="293.779" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan x="54.34" y="293.779" style="-inkscape-font-specification:'Trebuchet MS'">5</tspan>
+    </text>
+    <text y="293.826" x="59.955" style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan style="-inkscape-font-specification:'Trebuchet MS'" y="293.826" x="59.955">12</tspan>
+    </text>
+    <text y="293.852" x="67.761" style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan style="-inkscape-font-specification:'Trebuchet MS'" y="293.852" x="67.761">4</tspan>
+    </text>
+    <text y="293.811" x="28.083" style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan style="-inkscape-font-specification:'Trebuchet MS'" y="293.811" x="28.083">1</tspan>
+    </text>
+    <text y="293.796" x="41.163" style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan style="-inkscape-font-specification:'Trebuchet MS'" y="293.796" x="41.163">0</tspan>
+    </text>
+    <text y="293.731" x="47.867" style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan style="-inkscape-font-specification:'Trebuchet MS'" y="293.731" x="47.867">2</tspan>
+    </text>
+    <text y="293.731" x="72.941" style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan style="-inkscape-font-specification:'Trebuchet MS'" y="293.731" x="72.941">14</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="80.915" y="293.779" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan x="80.915" y="293.779" style="-inkscape-font-specification:'Trebuchet MS'">6</tspan>
+    </text>
+    <text y="293.873" x="106.618" style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan style="-inkscape-font-specification:'Trebuchet MS'" y="293.873" x="106.618">-1</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="113.374" y="293.778" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan x="113.374" y="293.778" style="-inkscape-font-specification:'Trebuchet MS'">-1</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="119.706" y="293.873" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan x="119.706" y="293.873" style="-inkscape-font-specification:'Trebuchet MS'">-1</tspan>
+    </text>
+    <text y="293.778" x="126.462" style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan style="-inkscape-font-specification:'Trebuchet MS'" y="293.778" x="126.462">-1</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="3.019" y="293.614" font-weight="400" font-size="3.704" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".265">
+      <tspan x="3.019" y="293.614">lookup1.shuf</tspan>
+    </text>
+    <path d="M68.944 269.22c2.23 12.197-28.535-2.144-33.257 10.047" fill="none" stroke="#000" stroke-width=".397" marker-end="url(#a)"/>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="26.866" y="284.625" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan x="26.866" y="284.625" style="-inkscape-font-specification:'Trebuchet MS'">02</tspan>
+    </text>
+    <path d="M22.474 269.263c-.841 5.86 4.55 4.944 6.598 10.271" fill="none" stroke="#000" stroke-width=".397" marker-end="url(#b)"/>
+    <path d="M15.93 269.308c3.856 7.799 23.808 1.198 26.276 10.137" fill="none" stroke="#000" stroke-width=".397" marker-end="url(#c)"/>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="33.673" y="284.645" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan x="33.673" y="284.645" style="-inkscape-font-specification:'Trebuchet MS'">88</tspan>
+    </text>
+    <path d="M29.29 269.298c4.793 4.67 14 3.857 19.827 10.238" fill="none" stroke="#000" stroke-width=".397" marker-end="url(#d)"/>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="66.718" y="284.66" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan x="66.718" y="284.66" style="-inkscape-font-specification:'Trebuchet MS'">64</tspan>
+    </text>
+    <path d="M95.127 269.226c5.527 11.454-28.728-1.85-32.824 10.238" fill="none" stroke="#000" stroke-width=".397" marker-end="url(#e)"/>
+    <path d="M42.614 269.164c5.365 6.532 19.463 2.739 26.576 10.305" fill="none" stroke="#000" stroke-width=".397" marker-end="url(#f)"/>
+    <path d="M48.933 269.153c1.062 3.741.824 7.808 6.598 10.371" fill="none" stroke="#000" stroke-width=".397" marker-end="url(#g)"/>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="79.704" y="284.565" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan x="79.704" y="284.565" style="-inkscape-font-specification:'Trebuchet MS'">B2</tspan>
+    </text>
+    <text y="284.754" x="73.214" style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan style="-inkscape-font-specification:'Trebuchet MS'" y="284.754" x="73.214">0E</tspan>
+    </text>
+    <path d="M108.253 269.125c6.437 9.295-25.448 2.556-33.023 10.266" fill="none" stroke="#000" stroke-width=".397" marker-end="url(#h)"/>
+    <path d="M55.62 269.409c3.758 7.138 20.302 2.985 26.32 10.03" fill="none" stroke="#000" stroke-width=".397" marker-end="url(#i)"/>
+    <text y="284.488" x="46.691" style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan style="-inkscape-font-specification:'Trebuchet MS'" y="284.488" x="46.691">74</tspan>
+    </text>
+    <text y="284.565" x="53.347" style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan style="-inkscape-font-specification:'Trebuchet MS'" y="284.565" x="53.347">02</tspan>
+    </text>
+    <text y="284.66" x="59.937" style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan style="-inkscape-font-specification:'Trebuchet MS'" y="284.66" x="59.937">89</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="86.585" y="293.873" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan x="86.585" y="293.873" style="-inkscape-font-specification:'Trebuchet MS'">-1</tspan>
+    </text>
+    <text y="293.778" x="93.342" style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan style="-inkscape-font-specification:'Trebuchet MS'" y="293.778" x="93.342">-1</tspan>
+    </text>
+    <text y="293.873" x="99.673" style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan style="-inkscape-font-specification:'Trebuchet MS'" y="293.873" x="99.673">-1</tspan>
+    </text>
+    <rect width="6.615" height="6.615" x="39.033" y="279.802" ry="0" fill="#acf" stroke="#000" stroke-width=".661" stroke-linecap="round"/>
+    <text y="284.444" x="40.312" style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" font-weight="400" font-size="4.233" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".165">
+      <tspan style="-inkscape-font-specification:'Trebuchet MS'" y="284.444" x="40.312">02</tspan>
+    </text>
+  </g>
+</svg>

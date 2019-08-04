@@ -52,7 +52,8 @@
         <span>25 August 2017</span>
 	        <span>| in <a href="https://dirtyhandscoding.github.io/category/high-performance.html">High performance</a></span>
 <span>| tags: <a href="https://dirtyhandscoding.github.io/tag/binary-search.html">binary search</a><a href="https://dirtyhandscoding.github.io/tag/cmov.html">cmov</a><a href="https://dirtyhandscoding.github.io/tag/iaca.html">iaca</a><a href="https://dirtyhandscoding.github.io/tag/simd.html">simd</a></span>
-</footer><!-- /.post-info -->      <p>While working on an implementation of merge sort promised in <a href="https://dirtyhandscoding.github.io/posts/vectorizing-stdmerge-with-vpermd-from-avx2-and-lookup-table.html">the previous article</a>, I realized that I'd like to use one neat little thing, which is worth its own post. It is a simple strategy for sorting or doing comparison-based tasks, which works wonderfully when input data is small enough.</p>
+</footer><!-- /.post-info -->      
+      <p>While working on an implementation of merge sort promised in <a href="https://dirtyhandscoding.github.io/posts/vectorizing-stdmerge-with-vpermd-from-avx2-and-lookup-table.html">the previous article</a>, I realized that I'd like to use one neat little thing, which is worth its own post. It is a simple strategy for sorting or doing comparison-based tasks, which works wonderfully when input data is small enough.</p>
 <p>Suppose that we have a very small array and we want to sort it as fast as possible. Indeed, applying some fancy <em>O(N log N)</em> algorithm is not a good idea: although it has optimal asymptotic performance, its logic is too complicated to outperform simple bubble-sort-like algorithms which take <em>O(N^2)</em> time instead. That's why every well-optimized sorting algorithm based on quicksort (e.g. std::sort) or mergesort includes some simple quadratic algorithm which is run for sufficiently small subarrays like N &lt;= 32.</p>
 <p>What exactly should we strive for to get an algorithm efficient for small N? Here is the list of things to look for:
 <ol>
@@ -515,6 +516,7 @@ These images can be helpful to estimate the cost of single step of a binary sear
 <p>I decided to keep all the additional information about this article in a separate blog post. You may find more information in <a href="https://dirtyhandscoding.github.io/posts/addendum-to-performance-comparison-linear-search-vs-binary-search.html">the addendum</a>, including some more implementations and extended performance comparison.</p>
 <h2 id="reddit"><a class="toclink" href="#reddit">Reddit</a></h2>
 <p>This article is discussed on reddit <a href="https://www.reddit.com/r/programming/comments/6w103l/performance_comparison_linear_search_vs_binary/">here</a>.</p>
+      
     </div><!-- /.entry-content -->
     <section>
         <div id="post-share-links" class="inline-menu">

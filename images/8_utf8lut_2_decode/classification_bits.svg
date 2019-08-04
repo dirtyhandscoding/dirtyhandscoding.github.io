@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="450" height="125" viewBox="0 0 119.062 33.073">
+  <g transform="translate(0 -263.927)" stroke="#000" stroke-width=".265" stroke-linecap="round" stroke-dasharray=".13229167,.13229167">
+    <rect width="5.292" height="5.292" x="5.292" y="289.063" ry="0" fill="#caf"/>
+    <rect ry="0" y="289.063" x="10.583" height="5.292" width="5.292" fill="#ececec"/>
+    <rect width="5.292" height="5.292" x="15.875" y="289.063" ry="0" fill="#ececec"/>
+    <rect ry="0" y="289.063" x="21.167" height="5.292" width="5.292" fill="#ececec"/>
+    <rect ry="0" y="282.448" x="5.292" height="5.292" width="5.292" fill="#acf"/>
+    <rect width="5.292" height="5.292" x="10.583" y="282.448" ry="0" fill="#ececec"/>
+    <rect ry="0" y="282.448" x="15.875" height="5.292" width="5.292" fill="#ececec"/>
+    <rect width="5.292" height="5.292" x="21.167" y="282.448" ry="0" fill="none"/>
+    <rect width="5.292" height="5.292" x="5.292" y="275.833" ry="0" fill="#e5ff80"/>
+    <rect ry="0" y="275.833" x="10.583" height="5.292" width="5.292" fill="#ececec"/>
+    <rect width="5.292" height="5.292" x="15.875" y="275.833" ry="0" fill="none"/>
+    <rect ry="0" y="275.833" x="21.167" height="5.292" width="5.292" fill="none"/>
+    <rect ry="0" y="269.219" x="5.292" height="5.292" width="5.292" fill="#faa"/>
+    <rect width="5.292" height="5.292" x="10.583" y="269.219" ry="0" fill="none"/>
+    <rect ry="0" y="269.219" x="15.875" height="5.292" width="5.292" fill="none"/>
+    <rect width="5.292" height="5.292" x="21.167" y="269.219" ry="0" fill="none"/>
+    <rect width="5.292" height="5.292" x="5.292" y="269.219" ry="0" fill="#faa"/>
+    <rect width="5.292" height="5.292" x="78.052" y="289.063" ry="0" fill="#caf"/>
+    <rect ry="0" y="283.771" x="78.052" height="5.292" width="5.292" fill="#acf"/>
+    <rect width="5.292" height="5.292" x="78.052" y="278.479" ry="0" fill="#e5ff80"/>
+    <rect width="5.292" height="5.292" x="78.052" y="267.896" ry="0" fill="#faa"/>
+    <rect ry="0" y="273.188" x="78.052" height="5.292" width="5.292" fill="#ececec"/>
+  </g>
+  <g font-weight="400" font-family="Trebuchet MS" letter-spacing="0" word-spacing="0" stroke-width=".265">
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="88.65" y="287.823" font-size="4.939" transform="translate(0 -263.927)">
+      <tspan x="88.65" y="287.823" style="-inkscape-font-specification:'Courier New'" font-family="Courier New">1110xxxx</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="88.918" y="282.45" font-size="4.939" transform="translate(0 -263.927)">
+      <tspan x="88.918" y="282.45" style="-inkscape-font-specification:'Courier New'" font-family="Courier New">110xxxxx</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="88.951" y="277.092" font-size="4.939" transform="translate(0 -263.927)">
+      <tspan x="88.951" y="277.092" style="-inkscape-font-specification:'Courier New'" font-family="Courier New">10xxxxxx</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="88.943" y="272.021" font-size="4.939" transform="translate(0 -263.927)">
+      <tspan x="88.943" y="272.021" style="-inkscape-font-specification:'Courier New'" font-family="Courier New">0xxxxxxx</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="88.555" y="293.294" font-size="4.939" transform="translate(0 -263.927)">
+      <tspan x="88.555" y="293.294" style="-inkscape-font-specification:'Courier New'" font-family="Courier New">11110xxx</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="79.497" y="272.121" font-size="4.233" transform="translate(0 -263.927)">
+      <tspan x="79.497" y="272.121" style="-inkscape-font-specification:'Trebuchet MS'">1</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="79.544" y="277.018" font-size="4.233" transform="translate(0 -263.927)">
+      <tspan x="79.544" y="277.018" style="-inkscape-font-specification:'Trebuchet MS'">c</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="79.609" y="282.434" font-size="4.233" transform="translate(0 -263.927)">
+      <tspan x="79.609" y="282.434" style="-inkscape-font-specification:'Trebuchet MS'">2</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="79.604" y="287.881" font-size="4.233" transform="translate(0 -263.927)">
+      <tspan x="79.604" y="287.881" style="-inkscape-font-specification:'Trebuchet MS'">3</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="79.427" y="293.14" font-size="4.233" transform="translate(0 -263.927)">
+      <tspan x="79.427" y="293.14" style="-inkscape-font-specification:'Trebuchet MS'">4</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="6.948" y="286.722" font-size="4.233" transform="translate(0 -263.927)">
+      <tspan x="6.948" y="286.722" style="-inkscape-font-specification:'Trebuchet MS'">3</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="12.071" y="286.214" font-size="4.233" transform="translate(0 -263.927)">
+      <tspan x="12.071" y="286.214" style="-inkscape-font-specification:'Trebuchet MS'">c</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="6.825" y="273.294" font-size="4.233" transform="translate(0 -263.927)">
+      <tspan x="6.825" y="273.294" style="-inkscape-font-specification:'Trebuchet MS'">1</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="6.934" y="280.096" font-size="4.233" transform="translate(0 -263.927)">
+      <tspan x="6.934" y="280.096" style="-inkscape-font-specification:'Trebuchet MS'">2</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="12.247" y="279.485" font-size="4.233" transform="translate(0 -263.927)">
+      <tspan x="12.247" y="279.485" style="-inkscape-font-specification:'Trebuchet MS'">c</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="6.761" y="292.968" font-size="4.233" transform="translate(0 -263.927)">
+      <tspan x="6.761" y="292.968" style="-inkscape-font-specification:'Trebuchet MS'">4</tspan>
+    </text>
+    <text y="286.261" x="17.503" style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" font-size="4.233" transform="translate(0 -263.927)">
+      <tspan style="-inkscape-font-specification:'Trebuchet MS'" y="286.261" x="17.503">c</tspan>
+    </text>
+    <text y="292.842" x="12.071" style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" font-size="4.233" transform="translate(0 -263.927)">
+      <tspan style="-inkscape-font-specification:'Trebuchet MS'" y="292.842" x="12.071">c</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="17.403" y="292.796" font-size="4.233" transform="translate(0 -263.927)">
+      <tspan x="17.403" y="292.796" style="-inkscape-font-specification:'Trebuchet MS'">c</tspan>
+    </text>
+    <text y="292.796" x="22.689" style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" font-size="4.233" transform="translate(0 -263.927)">
+      <tspan style="-inkscape-font-specification:'Trebuchet MS'" y="292.796" x="22.689">c</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="31.295" y="272.924" font-size="3.704" transform="translate(0 -263.927)">
+      <tspan x="31.295" y="272.924">[U+0000 .. U+007F]</tspan>
+    </text>
+    <text y="279.58" x="31.411" style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" font-size="3.704" transform="translate(0 -263.927)">
+      <tspan y="279.58" x="31.411">[U+0080 .. U+07FF]</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="31.411" y="286.194" font-size="3.704" transform="translate(0 -263.927)">
+      <tspan x="31.411" y="286.194">[U+0800 .. U+FFFF]</tspan>
+    </text>
+    <text y="292.856" x="31.442" style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" font-size="3.704" transform="translate(0 -263.927)">
+      <tspan y="292.856" x="31.442">[U+10000 .. max ]</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="3.836" y="267.102" font-size="2.822" transform="translate(0 -263.927)">
+      <tspan x="3.836" y="267.102" style="-inkscape-font-specification:'Trebuchet MS'">byte representation:</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="33.817" y="267.168" font-size="2.822" transform="translate(0 -263.927)">
+      <tspan x="33.817" y="267.168" style="-inkscape-font-specification:'Trebuchet MS'">code point (in range):</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="73.93" y="266.735" font-size="3.704" transform="translate(0 -263.927)">
+      <tspan x="73.93" y="266.735" style="-inkscape-font-specification:'Trebuchet MS'" font-size="2.822">byte type:</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="89.406" y="266.876" font-size="2.822" transform="translate(0 -263.927)">
+      <tspan x="89.406" y="266.876" style="-inkscape-font-specification:'Trebuchet MS'">bit representation:</tspan>
+    </text>
+    <text style="line-height:1.25;-inkscape-font-specification:'Trebuchet MS'" x="88.248" y="296.603" font-size="2.822" transform="translate(0 -263.927)">
+      <tspan x="88.248" y="296.603" style="-inkscape-font-specification:'Trebuchet MS'">(high)..........(low)</tspan>
+    </text>
+  </g>
+</svg>

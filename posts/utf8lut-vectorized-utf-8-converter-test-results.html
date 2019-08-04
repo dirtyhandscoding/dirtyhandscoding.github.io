@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <!-- load favicon from /images -->
+        <link rel="icon" type="image/png" href="/images/favicon.png" />
+        <!-- stgatilov: properly detect device width on a mobile -->
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/> 
+
+        <meta charset="utf-8" />
+        <title>utf8lut: Vectorized UTF-8 converter. Test results</title>
+        <link rel="stylesheet" href="https://dirtyhandscoding.github.io/theme/css/main.css" />
+        <link href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Dirty hands coding Atom Feed" />
+        <link href="/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="Dirty hands coding RSS Feed" />
+
+        <!--[if IE]>
+            <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+        <![endif]-->
+</head>
+
+<body id="index" class="home">
+        <header id="banner" class="body">
+                <h1><a href="https://dirtyhandscoding.github.io/">Dirty hands coding </a></h1>
+                <nav><ul>
+                    <li><a href="/archives.html">ARCHIVES</a></li>
+                    <li><a href="/categories.html">CATEGORIES</a></li>
+                    <li><a href="/tags.html">TAGS</a></li>
+                    <li><a href="/pages/contact.html">CONTACT</a></li>
+                </ul>
+<form class="navbar-search" action="https://dirtyhandscoding.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);">
+                        <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input">
+                    </form>
+                </nav>
+<div id="submenu">
+                    <ul>
+                            <li class="active"><a href="https://dirtyhandscoding.github.io/category/high-performance.html">High performance</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/off-topic.html">Off-topic</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/the-dark-mod.html">The Dark Mod</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/uncategorized.html">Uncategorized</a></li>
+                    </ul>
+                <div>
+        </header><!-- /#banner -->
+<section id="content" class="body">
+  <article>
+    <header>
+      <h1 class="entry-title">
+        <a href="https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-test-results.html" rel="bookmark"
+           title="Permalink to utf8lut: Vectorized UTF-8 converter. Test results">utf8lut: Vectorized UTF-8 converter. Test results</a></h1>
+    </header>
+
+    <div class="entry-content">
+<footer class="post-info">
+        <span>04 August 2019</span>
+	        <span>| in <a href="https://dirtyhandscoding.github.io/category/high-performance.html">High performance</a></span>
+<span>| tags: <a href="https://dirtyhandscoding.github.io/tag/unicode.html">unicode</a><a href="https://dirtyhandscoding.github.io/tag/simd.html">simd</a><a href="https://dirtyhandscoding.github.io/tag/lut.html">lut</a></span>
+</footer><!-- /.post-info -->          <div class="series-summary series-in-article">
+        <p>This article is part 5 of the <span class="series-name">utf8lut: Vectorized UTF-8 converter</span> series:</p>
+            <ol class="parts">
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-introduction.html'>Introduction</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-decoding-utf-8.html'>Decoding UTF-8</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-encoding-utf-8.html'>Encoding UTF-8</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-technical-details.html'>Technical details</a>
+        </li>
+        <li class="active">
+            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-test-results.html'>Test results</a>
+        </li>
+    </ol>
+
+    </div>
+
+      <p>This final part of the article is dedicated to evaluation of the utf8lut library.
+It explains how the library was tested for correctness, and shows detailed performance data.</p>
+<!--more-->
+
+<h2 id="fuzz-testing"><a class="toclink" href="#fuzz-testing">Fuzz-testing</a></h2>
+<p>Unlike typical scalar conversion, utf8lut converts data in 16-byte pieces, and uses a lookup table with thousands of entries. Moreover, some corner effects may happen rarely on the Buffer level (e.g. near chunk boundaries). The important question is: how to test all of this and make sure there are no bugs?</p>
+<p>Fuzz-testing is the best answer (also called "stress-testing"). This is a technique when input data for testing is generated automatically (usually randomly) and output data is also checked for correctness automatically, which allows running thousands or millions of randomized tests per second. In fact, fuzz-testing has already been applied to UTF-8 decoders, see e.g. <a href="http://www.serpentine.com/blog/2013/12/30/testing-a-utf-8-decoder-with-vigour/">article by Bryan O'Sullivan</a> or <a href="https://github.com/andrewffff/utf8fuzz">utf8fuzz project by Andrew Francis</a>.</p>
+<p>Checking output in case of UTF conversion is easy, provided that a separate supposedly bug-free implementation is available. The hardest part is generating random input data. The quality of testing heavily depends on how well input generator works, especially for a vectorized code. Plain random sequence of bytes will be detected as invalid too early, without any chance to uncover bugs happening after the first 16 bytes of input data. While such simple cases like random data or randomly shuffled characters are used in utf8lut fuzzing, the fuzz-testing mainly relies on the following procedure:</p>
+<ol>
+<li>Choose which UTF-8 byte lengths are allowed: any of 16 subsets of {1, 2, 3, 4}.</li>
+<li>Choose how many characters to generate: ranges from 0 to 1000000 (higher numbers are unlikely to be chosen).</li>
+<li>Generate random unicode characters with properties chosen during the first two steps.</li>
+<li>Choose one of the three encodings (UTF-8, UTF-16, or UTF-32) and encode the generated characters into it.</li>
+<li>Apply 1-10 random mutations to this sequence of bytes. There are 10 types of mutations, most of them affect only a few bytes (up to 10). Multiple mutations are very likely to be applied near each other.</li>
+<li>Run every type of processor with every set of settings on this input, excluding processors with incomplete validation if input is known to be invalid. Compare produced output to the result of independent reference converter.</li>
+</ol>
+<p>Using fuzz-testing, I have found 8 different bugs in the library itself (including 1 bug in the slow path and 1 bug in memory-to-memory converter), and even 1 bug in the reference implementation that I checked against =)
+The bug which took most fuzzing time (a few seconds) to find was happening at split point in multistreaming UTF-8 decoder: the case when a part of buffer ends with incomplete character was handled incorrectly.</p>
+<p>I have also tried to plug utf8lut decoder into <a href="https://github.com/andrewffff/utf8fuzz">utf8fuzz</a> testing framework. Unfortunately, it does not validate the converted output, but only looks at the final verdict: whether input data is valid or invalid. Not surprisingly, utf8lut passes all of its tests: both simple and random ones. As for the ability to find previous bugs of utf8lut, utf8fuzz is not very powerful. Among three decoder bugs affecting validation, it finds only the simplest one (almost non-working check for overlong encodings). More complicated cases, including the aforementioned split bug, where not found even after 5 minutes of random testing (10000 tests). I have no idea why it is so weak.</p>
+<h2 id="performance-evaluation"><a class="toclink" href="#performance-evaluation">Performance evaluation</a></h2>
+<p>All the data samples used for testing are described below. For each sample: a name is given, the number of bytes in UTF-8 / UTF-16 representations, and how many characters of each byte length it contains.</p>
+<ul>
+<li>
+<p><strong>[rnd1111:400000]</strong> is 999198 bytes in UTF-8 and 999302 bytes in UTF-16, byte length counts are 100124 / 100205 / 100020 / 99651. This is a random sequence of characters. Each character may have length 1, 2, 3, or 4 bytes in UTF-8 representation, and every of the four cases is equiprobable. Within any particular byte length, every character is also chosen with equal probability. This is the hardest sample for any converter, and the fast path of utf8lut does not work on this sample at all.</p>
+</li>
+<li>
+<p><strong>[rnd1110:500000]</strong> is 999553 bytes in UTF-8 and 1000000 bytes in UTF-16, byte length counts are 166877 / 166693 / 166430 / 0. It is also a random sequence, but each character may have length 1, 2, or 3 bytes in UTF-8 representation (all three cases equiprobable). This is the hardest test limited to BMP, and it is supported by fast path of utf8lut, as well as other implementations.</p>
+</li>
+<li>
+<p><strong>chinese</strong> is 493413 bytes in UTF-8 and 349442 bytes in UTF-16, byte length counts are 15375 / 0 / 159346 / 0. This is <a href="https://www.gutenberg.org/files/24264/24264-0.txt">A Dream Of Red Mansions by Xueqin Cao</a> in text format and in Chinese language. 90% of characters are 3 bytes long in UTF-8, all the rest is ASCII.</p>
+</li>
+<li>
+<p><strong>russian</strong> is 3448147 bytes in UTF-8 and 3918582 bytes in UTF-16, byte length counts are 470435 / 1488856 / 0 / 0. This is <a href="http://az.lib.ru/t/tolstoj_lew_nikolaewich/tolstoj_lew_nikolaewich-text_0073.fb2.zip">War and Peace by Leo Tolstoy</a> in FB2 format and in Russian language. While byte length never exceeds 2, the distribution of 1-byte vs 2-bytes is 1 : 3.</p>
+</li>
+<li>
+<p><strong>english</strong> is 204888 bytes in UTF-8 and 404760 bytes in UTF-16, byte length counts are 201125 / 2 / 1253 / 0. This is <a href="http://www.gutenberg.org/files/1524/1524-0.txt">Hamlet by William Shakespeare</a> in text format and in English. It is almost completely ASCII, with less than 1% of other byte lengths.</p>
+</li>
+<li>
+<p><strong>unicode</strong> is 171494 bytes in UTF-8 and 340712 bytes in UTF-16, byte length counts are 169575 / 412 / 357 / 6. This is a web page containing a table of unicode characters, stored in HTML format. Mostly consists of ASCII again, but contains a few characters from supplementary MP. Allows to check how well slow path works.</p>
+</li>
+</ul>
+<p>The following implementations were tested:</p>
+<ul>
+<li>
+<p><strong>trivial</strong> is this library without fast path. Only simple scalar conversion is used. Compiled with Visual C++ 2017 x64.</p>
+</li>
+<li>
+<p><strong>utf8lut:1S</strong> is this library with the following settings: maximum byte length 3, full validation mode, single stream. Compiled with Visual C++ 2017 x64.</p>
+</li>
+<li>
+<p><strong>utf8lut:4S</strong> is this library with the following settings: maximum byte length 3, full validation mode, <strong>4x multistreaming</strong>. In case of UTF-8 encoder, it is 4x manual unrolling instead of multistreaming. Compiled with Visual C++ 2017 x64.</p>
+</li>
+<li>
+<p><strong>u8u16</strong> is the <a href="https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-introduction.html#rob-d-cameron-u8u16-2007">library by Robert Cameron</a> based on Parallel Bit Streams. Works only as decoder. Compiled with MinGW-W64 GCC 8.1.0 x64 in SSSE3 mode.</p>
+</li>
+<li>
+<p><strong>utf8sse4</strong> is the <a href="https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-introduction.html#olivier-goffart-utf8sse4-2012">code by Olivier Goffart</a>. Works only as decoder. Compiled with Visual C++ 2017 x64 with SSE4.1 and SSE4.2 enabled.</p>
+</li>
+</ul>
+<p>The benchmarking codes of both u8u16 and utf8sse4 were modified to run the same memory-to-memory conversion specified number of times. Their own benchmarks operate in other ways.</p>
+<p>Finally, there are different machines to test on. A lot of performance testing and tuning was done when I started working on utf8lut, which was four years ago. At that moment Intel Core 2 (Allendale) was the main target CPU, which I no longer have at my disposal. All the benchmarking was done on a single core of:</p>
+<ul>
+<li>
+<p><strong>Ryzen5</strong> is AMD Ryzen 5 1600 at base frequency 3.2 GHz. It might be worth mentioning that dual-channel DDR4 memory clocked at 3066 MHz is used.</p>
+</li>
+<li>
+<p><strong>i3-5005U</strong> is Intel i3-5005U at frequency 2.0 GHz (Broadwell architecture).</p>
+</li>
+</ul>
+<h4 id="repeated-runs"><a class="toclink" href="#repeated-runs">Repeated runs</a></h4>
+<p>Measuring performance of code like utf8lut is not an easy task. First, we will start with a typical benchmark, which in some sense measures the best-case scenario. In this benchmark, conversion is performed from one memory buffer into another one. In order to lower the influence of overhead and measure steady performance, the <strong>same conversion is run many times</strong>. The memory buffers will stay the same every run, no relocation done. Given that decoder uses a lookup table with 10609/32768 entries, the data sample being converted should be large enough to hit most of the necessary entries.</p>
+<p>Performance is reported in CPU cycles spent per input byte. There are two ways to measure this quantity:</p>
+<ol>
+<li>
+<p>Use rdtsc repeatedly to measure only cycles spent inside the main conversion loop. Accumulate it over the whole run, then divide by the total number of bytes consumed. This excludes various overhead like memory copying and file I/O. Given that utf8lut fiercely uses CPU cache, such measurements are not entirely fair.</p>
+</li>
+<li>
+<p>Measure with rdstc how many cycles passed between the start and the end of the program, then divide total number of input bytes. This includes all the overhead, memory copying and buffer-related activities. It includes even file I/O and LUT creation (although they are done only once).</p>
+</li>
+</ol>
+<p>In the tables below, every cell contains the result measured both ways, unless the benchmarked solution does not implement measurement for one of them. Every data sample was normalized by truncation or repetition to the size of 1 MB. The conversion was performed 10000 times in a row during program run.</p>
+<div class="center-content">
+<table class="w700 solid-cells centered-cells nowrap-cells">
+<caption>UTF-8 decoding on <b>Ryzen5</b> (lower is better)</caption>  
+<tr>
+  <th></th>
+  <th>trivial</th>
+  <th>utf8lut:1S</th>
+  <th>utf8lut:4S</th>
+  <th>u8u16</th>
+  <th>utf8sse4</th>
+</tr>
+<tr>
+  <th>[rnd1111:400000]</th>
+  <td>14.33 / 14.33</td>
+  <td>14.75 / 14.76</td>
+  <td>16.14 / 16.25</td>
+  <td>4.31 / 4.55</td>
+  <td>??? / 14.70</td>
+</tr>
+<tr>
+  <th>[rnd1110:500000]</th>
+  <td>14.82 / 14.83</td>
+  <td>3.19 / 3.20</td>
+  <td>1.56 / 1.67</td>
+  <td>4.06 / 4.30</td>
+  <td>??? / 15.78</td>
+</tr>
+<tr>
+  <th>chinese</th>
+  <td>6.28 / 6.28</td>
+  <td>1.28 / 1.28</td>
+  <td>0.78 / 0.86</td>
+  <td>4.13 / 4.29</td>
+  <td>??? / 2.94</td>
+</tr>
+<tr>
+  <th>russian</th>
+  <td>8.64 / 8.65</td>
+  <td>1.78 / 1.78</td>
+  <td>0.99 / 1.11</td>
+  <td>3.59 / 3.86</td>
+  <td>??? / 3.80</td>
+</tr>
+<tr>
+  <th>english</th>
+  <td>6.01 / 6.02</td>
+  <td>2.46 / 2.46</td>
+  <td>1.38 / 1.59</td>
+  <td>2.00 / 2.26</td>
+  <td>??? / 1.76</td>
+</tr>
+<tr>
+  <th>unicode</th>
+  <td>5.99 / 5.99</td>
+  <td>2.46 / 2.47</td>
+  <td>1.38 / 1.59</td>
+  <td>1.63 / 1.96</td>
+  <td>??? / 12.39</td>
+</tr>
+</table>
+</div>
+
+<div class="center-content">
+<table class="w700 solid-cells centered-cells nowrap-cells">
+<caption>UTF-8 decoding on <b>i3-5005U</b> (lower is better)</caption>  
+<tr>
+  <th></th>
+  <th>trivial</th>
+  <th>utf8lut:1S</th>
+  <th>utf8lut:4S</th>
+  <th>u8u16</th>
+  <th>utf8sse4</th>
+</tr>
+<tr>
+  <th>[rnd1111:400000]</th>
+  <td>15.92 / 15.93</td>
+  <td>16.89 / 16.89</td>
+  <td>18.11 / 18.37</td>
+  <td>4.40 / 4.69</td>
+  <td>??? / 16.07</td>
+</tr>
+<tr>
+  <th>[rnd1110:500000]</th>
+  <td>16.43 / 16.44</td>
+  <td>4.02 / 4.03</td>
+  <td>1.99 / 2.23</td>
+  <td>3.94 / 4.40</td>
+  <td>??? / 16.71</td>
+</tr>
+<tr>
+  <th>chinese</th>
+  <td>7.55 / 7.56</td>
+  <td>1.61 / 1.61</td>
+  <td>1.10 / 1.23</td>
+  <td>3.98 / 4.22</td>
+  <td>??? / 4.28</td>
+</tr>
+<tr>
+  <th>russian</th>
+  <td>10.16 / 10.16</td>
+  <td>2.23 / 2.23</td>
+  <td>1.42 / 1.64</td>
+  <td>3.52 / 3.85</td>
+  <td>??? / 4.77</td>
+</tr>
+<tr>
+  <th>english</th>
+  <td>7.25 / 7.25</td>
+  <td>2.93 / 2.93</td>
+  <td>2.01 / 2.42</td>
+  <td>1.90 / 2.40</td>
+  <td>??? / 1.18</td>
+</tr>
+<tr>
+  <th>unicode</th>
+  <td>7.21 / 7.21</td>
+  <td>2.95 / 2.96</td>
+  <td>2.02 / 2.43</td>
+  <td>1.62 / 2.10</td>
+  <td>??? / 6.04</td>
+</tr>
+</table>
+</div>
+
+<p>A few things to note from the timings of decoding:</p>
+<ol>
+<li>
+<p>u8u16 is the only solution which supports characters from supplementary planes on fast path. All the rest fall back to trivial conversion. It is obvious from the results on [random1111:400000] data sample.</p>
+</li>
+<li>
+<p>The two timings differ for utf8lut:4S and u8u16, because these solutions perform memcpy on the data. In case of multistreaming utf8lut, it is necessary because the output for every input chunk goes into four separate buffers. The solutions trivial and utf8lut:1S perform all the work in-place without any temporary storage and copies.</p>
+</li>
+<li>
+<p>utf8sse4 falls back to slow path (scalar conversion) as soon as it meets the first character from supplementary plane, without ever returning back to fast path. This is clearly seen from its bad results on the unicode data sample.</p>
+</li>
+<li>
+<p>utf8sse4 has a special code path for ASCII data source, which is enabled whenever 16 input characters in a row are ASCII. The algorithm turns back to general code later if needed, so it is quite robust, unlike its handling of non-BMP characters. Thanks to this special path this solution works much faster on english and unicode data samples. u8u16 solution also has such optimization, while utf8lut does not.</p>
+</li>
+<li>
+<p>Quite unexpectedly, utf8sse4 does not work well on the sample [random1110:500000], which consists only of BMP characters. After debugging the case, it turned out that utf8sse4 considers the <a href="https://stackoverflow.com/questions/5188679/whats-the-purpose-of-the-noncharacters-ufdd0-to-ufdef">noncharacters U+FFFE-U+FFFF and U+FDD0-U+FDEF</a> as invalid input. So it switches to scalar processing (never switching back), and converts them into replacement characters.</p>
+</li>
+<li>
+<p>Multistreaming version of decoder (utf8lut:4S) is faster than the simple version (utf8lut:1S), up to 2x in best cases. This confirms the idea that the decoding algorithm needs additional techniques for latency hiding.</p>
+</li>
+<li>
+<p>Under these benchmarking conditions, utf8lut is significantly faster than other solutions, unless input data is mostly ASCII or has too many supplementaries. Looking at tests [random1110:500000], chinese, and russian, it is at least 2-2.5 times faster. I guess adding all-ASCII acceleration to utf8lut would allow it to catch up on the mostly-ASCII tests too.</p>
+</li>
+<li>
+<p>As for the trivial solution, branch mispredictions waste about half of its runtime. It is clearly visible from the variance in timing across tests. Data samples like chinese, english, unicode mostly contain characters of same byte length, making it possible for branch predictor to handle the branches. The russian data sample has 1:3 ratio of 1-byte and 2-byte chars, and performance degrades slightly. Random data samples are much worse, and they make trivial solution 2-2.5 slower than it is in easily predicted cases. Vectorized solutions have no such problem.</p>
+</li>
+</ol>
+<div class="center-content">
+<table class="w700 solid-cells centered-cells nowrap-cells">
+<caption>UTF-8 encoding on <b>Ryzen5</b> (lower is better)</caption>  
+<tr>
+  <th></th>
+  <th>trivial</th>
+  <th>utf8lut:1S</th>
+  <th>utf8lut:4S</th>
+</tr>
+<tr>
+  <th>[rnd1111:400000]</th>
+  <td>9.73 / 9.73</td>
+  <td>10.43 / 10.43</td>
+  <td>10.31 / 10.31</td>
+</tr>
+<tr>
+  <th>[rnd1110:500000]</th>
+  <td>10.40 / 10.40</td>
+  <td>??1.50??</td>
+  <td>??1.50??</td>
+</tr>
+<tr>
+  <th>chinese</th>
+  <td>4.18 / 4.18</td>
+  <td>??1.50??</td>
+  <td>??1.50??</td>
+</tr>
+<tr>
+  <th>russian</th>
+  <td>4.86 / 4.86</td>
+  <td>??1.50??</td>
+  <td>??1.50??</td>
+</tr>
+<tr>
+  <th>english</th>
+  <td>1.95 / 1.95</td>
+  <td>??1.50??</td>
+  <td>??1.50??</td>
+</tr>
+<tr>
+  <th>unicode</th>
+  <td>1.93 / 1.94</td>
+  <td>??1.50??</td>
+  <td>??1.50??</td>
+</tr>
+</table>
+</div>
+
+<div class="center-content">
+<table class="w700 solid-cells centered-cells nowrap-cells">
+<caption>UTF-8 encoding on <b>i3-5005U</b> (lower is better)</caption>  
+<tr>
+  <th></th>
+  <th>trivial</th>
+  <th>utf8lut:1S</th>
+  <th>utf8lut:4S</th>
+</tr>
+<tr>
+  <th>[rnd1111:400000]</th>
+  <td>9.36 / 9.36</td>
+  <td>10.03 / 10.03</td>
+  <td>9.98 / 9.99</td>
+</tr>
+<tr>
+  <th>[rnd1110:500000]</th>
+  <td>9.80 / 9.81</td>
+  <td>0.86 / 0.86</td>
+  <td>0.85 / 0.85</td>
+</tr>
+<tr>
+  <th>chinese</th>
+  <td>4.22 / 4.23</td>
+  <td>0.85 / 0.86</td>
+  <td>0.83 / 0.84</td>
+</tr>
+<tr>
+  <th>russian</th>
+  <td>4.78 / 4.79</td>
+  <td>0.86 / 0.86</td>
+  <td>0.84 / 0.84</td>
+</tr>
+<tr>
+  <th>english</th>
+  <td>1.64 / 1.64</td>
+  <td>0.86 / 0.86</td>
+  <td>0.84 / 0.84</td>
+</tr>
+<tr>
+  <th>unicode</th>
+  <td>1.59 / 1.60</td>
+  <td>0.86 / 0.86</td>
+  <td>0.85 / 0.85</td>
+</tr>
+</table>
+</div>
+
+<p>It is important to note:</p>
+<ol>
+<li>
+<p>utf8lut fast path encoding has unstable performance on Ryzen5, jumping randomly from 0.6 to 1.5 cycles per byte. This is the reason for putting ??1.50?? in the corresponding cells. I tried to isolate the problem: it happens both on VC++ and GCC, both on Windows and in Linux VM. I set realtime priority, disabled ASLR, and preallocated all memory chunks as global arrays. Nothing helped. The problem does not happen on Intel CPU. It seems that some random condition heavily harms performance of encoder on Ryzen, and it sticks to the process until the process terminates.</p>
+</li>
+<li>
+<p>Obviously, 4x unrolling does not change anything: timings are same for utf8lut:1S and utf8lut:4S. Most likely, the CPU manages to run several consecutive iterations of the main loop</p>
+</li>
+<li>
+<p>It seems that performance of trivial implementation does not depend on branches the same way as in decoding. Fully random tests are still very slow, but this time russian sample is no harder than chinese sample. Also it is worth noting how fast the trivial solution is on mostly-ASCII samples, reducing vectorization speedup to mere +85%.</p>
+</li>
+</ol>
+<h4 id="large-files"><a class="toclink" href="#large-files">Large files</a></h4>
+<p>The above benchmark has one major problem: it is not clear how well it reflects behavior in the real-world usage. The same conversion is run thousands of times, meaning that most of this time is wasted on useless work.</p>
+<p>In order to make time measurements convincing, there must be no repetition in the converted data. On the other hand, there is no point in measuring conversions taking microseconds, so the amount of data should be large. Given that converters work at speed of several gigabytes per second, it means that the data sample should have gigabyte size itself. Suppose that we have a gigabyte input file, run conversion on it once, and get a gigabyte output file. In such case even human can see which solution does the job faster. However, with such approach the speed of I/O becomes an issue.</p>
+<p>A typical HDD has sequential read/write speed of about 125 MB/s, which is pretty laughable. A good SSD hits 500 MB/s, which is still much slower than the conversion itself. In the end, I decided to use RAM-disk to store files, which achieves speed of 4 GB/s in one thread. Although it is still RAM memory in the physical sense, it works under the same conditions as normal disk drives.</p>
+<p>As it was not enough, I have implemented a faster type of file I/O based on memory-mapped files under Windows, which accelerates large file conversion almost twofold. Setting larger read/write buffer improves speed with traditional fread/fwrite, but is still noticeably slower than memory-mapped I/O, which seems to avoid some copying of the data. It can be done on other OSes of course, just too lazy to mess with it. Brief experiments with write-combined memory and non-temporal loads/stores did not yield significant benefits, so I stopped here.</p>
+<p>Given that buffer size and I/O routines have huge impact on the resulting performance on large files, I did not try to benchmark other libraries. They usually have fread/fwrite I/O with very small buffer size (probably optimized for HDD in ancient times), so the competition is hardly fair. Only comparison between different versions of utf8lut is provided.</p>
+<p>The following data samples were considered:</p>
+<ul>
+<li>
+<p><strong>[rnd1110:500000000]</strong> is about 10^9 bytes both in UTF-8 and in UTF-16, there are about 166 million characters of every byte length: 1, 2, and 3. This is an artificial test which stresses all unpredictable branches in converter.</p>
+</li>
+<li>
+<p><strong>zhwikipedia</strong> is about 710 million bytes in UTF-8 and 928 million bytes in UTF-16, byte length counts are 340692184 / 848881 / 122696553 / 4649. This is some random XML file from Chinese Wikipedia dumps.</p>
+</li>
+</ul>
+<p>The benchmarking routine works as follows. It maps the whole input file into virtual address space, and similarly allocates and maps the output file too (with preliminary size surely enough to hold output). Then it performs memory-to-memory conversion over the mapped regions. Only a bit of additional memory (less than 1MB) may be used for temporary buffers. Two timings are measured the same way as described in the previous section. Conversion is run only once per OS process launched. The process is started twice in a row, and timing of the second run is taken into account.</p>
+<div class="center-content">
+<table class="w500 solid-cells centered-cells nowrap-cells">
+<caption>Large file UTF-8 decoding on <b>Ryzen5</b> (lower is better)</caption>
+<tr>
+  <th></th>
+  <th>trivial</th>
+  <th>utf8lut:1S</th>
+  <th>utf8lut:4S</th>
+</tr>
+<tr>
+  <th>[rnd1110:500000000]</th>
+  <td>16.1 / 17.0</td>
+  <td>4.9 / 6.0</td>
+  <td>2.5 / 4.5</td>
+</tr>
+<tr>
+  <th>zhwikipedia</th>
+  <td>9.0 / 10.1</td>
+  <td>4.1 / 5.2</td>
+  <td>2.2 / 4.7</td>
+</tr>
+</table>
+</div>
+
+<div class="center-content">
+<table class="w500 solid-cells centered-cells nowrap-cells">
+<caption>Large file UTF-8 encoding on <b>Ryzen5</b> (lower is better)</caption>  
+<tr>
+  <th></th>
+  <th>trivial</th>
+  <th>utf8lut:1S</th>
+  <th>utf8lut:4S</th>
+</tr>
+<tr>
+  <th>[rnd1110:500000000]</th>
+  <td>11.6 / 12.6</td>
+  <td>3.3 / 4.3</td>
+  <td>2.8 / 3.8</td>
+</tr>
+<tr>
+  <th>zhwikipedia</th>
+  <td>4.8 / 5.6</td>
+  <td>3.1 / 3.9</td>
+  <td>3.0 / 3.8</td>
+</tr>
+</table>
+</div>
+
+<p>Interesting points:</p>
+<ol>
+<li>
+<p>Everything becomes much slower compared to the repeated benchmark, even by internal timings. It can be seen on [rnd1110:500000000] data sample, which has a direct equivalent in the previous benchmarks. The trivial solution is less affected on relative scale (at least because it was much slower to begin with).</p>
+</li>
+<li>
+<p>zhwikipedia data sample is rather easy for trivial solution. I suppose is has too many mostly-ASCII and mostly-chinese runs, so branch predictor can adapt well to incoming data. Unfortunately, it is quite hard to find a large data sample with challenging byte lengths distribution, since XML and HTML dumps have a lot of ASCII junk. It also poses another question: is it worth trying to vectorize conversion, given that most real-world data is either quite good for trivial solution or too small to even bother?</p>
+</li>
+<li>
+<p>The acceleration from multistreaming is clearly visible by internal timings, but has very low impact on overall timings. This is not only because the overall timings are higher, but also it seems that some of the acceleration is compensated by I/O overhead. Interestingly, UTF-8 encoding exhibits a small but noticeable performance boost from 4x unrolling on random data. This effect was not present in the previous benchmark.</p>
+</li>
+</ol>
+<h2 id="conclusion"><a class="toclink" href="#conclusion">Conclusion</a></h2>
+<p>Some questions still remain. For instance, how would multithreading affect performance, given that RAM is shared between cores? How would LUT-based conversion affect the surrounding code if it is used in the real world? How would hardware hyperthreading compete with multistreaming? If I started looking into all of this, the article would never end =)</p>
+<p>The main drawback of the proposed decoding algorithm is of course its large lookup table. A possible direction for future work would be trying to eliminate or minimize the usage of LUT. The utf8lut code only requires SSSE3 currently, maybe newer instructions sets like BMI2 could substitute LUT usage. They <a href="https://stackoverflow.com/questions/36932240/avx2-what-is-the-most-efficient-way-to-pack-left-based-on-a-mask">already do that</a> for <a href="https://stackoverflow.com/a/41594615/556899">simpler problems</a>.</p>
+<p>The code of whole utf8lut library is <a href="https://bitbucket.org/stgatilov/utf8lut">available on Bitbucket</a> under permissive license. It includes all the algorithms and cases described in the article.</p>
+          <div class="series-neighbors">
+        <p class="series-prev">
+            <span class="arrow-left"></span>
+            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-technical-details.html'>
+                Part 4: Technical details
+            </a>
+        </p>
+    </div>
+
+    </div><!-- /.entry-content -->
+    
+    			<!--<script type="text/javascript" src="http://code.jquery.com/jquery-2.1.4.min.js"></script>-->
+		<script src="https://dirtyhandscoding.github.io/theme/js/jquery.min.js"></script>
+	<script type="text/javascript" src="https://dirtyhandscoding.github.io/theme/pelican_comment_system/comments.js"></script>
+	<script type="text/javascript">
+		$(document).ready(function() {
+			CommentSystem.email_user   = "itiswrongemail";
+			CommentSystem.email_domain = "outlook.com";
+
+			$('#pcs-comment-form').on("submit",
+				function( event )
+				{
+					event.preventDefault();
+					$(location).attr('href', CommentSystem.getMailtoLink("utf8lut-vectorized-utf-8-converter-test-results"));
+				}
+			);
+		});
+	</script>
+
+    	<section>
+	<div id="pcs-comments-header" class="inline-menu">
+	<header>
+		<div>Comments (0)</div>
+		<button type="button" title="Expand or collapse the comments section" class="icon-label" id="pcs-comments-collapse-button" onclick="CommentSystem.collapsible($('#pcs-comments'), $(this));">
+			<span class="nocss">expand</span>
+		</button>
+			<a href="https://dirtyhandscoding.github.io/feeds/comment.utf8lut-vectorized-utf-8-converter-test-results.atom.xml" class="icon-label">atom feed: comments</a>
+	</header>
+	</div>
+	<div id="pcs-comments">
+		<p>There are no comments yet.</p>
+	<section>
+	<div display="none" id="pcs-comment-notreply-helper" />
+	<form id="pcs-comment-form" action="#">
+		<fieldset>
+		<legend>Add a Comment</legend>
+		<div id="pcs-comment-tab-inputs">
+			<input type="hidden" id="pcs-comment-form-input-replyto"/>
+			<label for="pcs-comment-form-input-name">Name</label>
+			<input  id="pcs-comment-form-input-name" type="text" size="40" placeholder="Enter your name or nickname" />
+			<br/>
+			<label for="pcs-comment-form-input-website">Website</label>
+			<input  id="pcs-comment-form-input-website" type="text" size="40" placeholder="Enter your website (optional)" />
+			<br/>
+			<label for="pcs-comment-form-input-empty">Empty</label>
+			<input  id="pcs-comment-form-input-empty" type="text" size="30" placeholder="Do NOT enter anything here!" />
+			<label   for="pcs-comment-form-input-textarea">Your Comment</label>
+			<br/>
+			<textarea id="pcs-comment-form-input-textarea" rows="7" cols="40" placeholder="Enter your comment (markdown is allowed)"></textarea>
+		</div>
+		<div id="pcs-comment-tab-message" style="display:none">
+			<textarea readonly rows="10" cols="40"></textarea>
+		</div>
+
+		<button type="submit"
+				id="pcs-comment-form-button-submit"
+				title="Create mailto link and open it in default email client &#10;Note: you have to send the email to post comment"
+				>Post via email</button>
+		<button type="button"
+				id="pcs-comment-form-button-message"
+				title="See the text of email message to be sent &#10;Note: you can copy it and send manually"
+				onclick="CommentSystem.viewEmail(&quot;utf8lut-vectorized-utf-8-converter-test-results&quot;);"
+				>View email text</button>
+		<a target="_blank"
+				id="pcs-comment-gmail-config-help"
+				title="How to configure Chrome to open mailto links in Gmail..."
+				href="https://productforums.google.com/forum/#!topic/gmail/JtWVPbUfh-o"
+				>?</a>
+		</fieldset>
+
+		<!--			<a href="https://dirtyhandscoding.github.io/feeds/comment.utf8lut-vectorized-utf-8-converter-test-results.atom.xml">
+				Comment Atom Feed
+			</a>
+-->
+	</form>
+	<script>CommentSystem.displayReplyTo();</script>
+</section>
+
+	</div>
+	<script>
+		$('#pcs-comments').css({display: "none"});
+		$('#pcs-comments-collapse-button').addClass('collapsed');
+	</script>
+</section>
+
+  </article>
+</section>
+        <section id="extras" class="body">
+                <div class="social">
+                        <h2>social</h2>
+                        <ul>
+                            <li><a href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate">atom feed</a></li>
+                            <li><a href="/feeds/all.rss.xml" type="application/rss+xml" rel="alternate">rss feed</a></li>
+
+                        </ul>
+                </div><!-- /.social -->
+        </section><!-- /#extras -->
+
+        <footer id="contentinfo" class="body">
+                <p>Powered by <a href="http://getpelican.com/">Pelican</a>. Theme <a href="https://github.com/blueicefield/pelican-blueidea/">blueidea</a>, customized to personal taste.</p>
+        </footer><!-- /#contentinfo -->
+
+</body>
+</html>

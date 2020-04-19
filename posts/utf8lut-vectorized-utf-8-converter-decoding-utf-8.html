@@ -330,9 +330,9 @@ One really effective way of reducing lookup table size is capping the number of 
 <h2 id="utf8lut-code"><a class="toclink" href="#utf8lut-code">utf8lut code</a></h2>
 <p>The algorithm described above is used at the "core" of the utf8lut library. The relevant files are:</p>
 <ul>
-<li><a href="https://bitbucket.org/stgatilov/utf8lut/src/default/src/core/DecoderProcess.h">core/DecoderProcess.h</a>: the algorithm for decoding UTF-8</li>
-<li><a href="https://bitbucket.org/stgatilov/utf8lut/src/default/src/core/DecoderLut.h">core/DecoderLut.h</a>: lookup table data types</li>
-<li><a href="https://bitbucket.org/stgatilov/utf8lut/src/default/src/core/DecoderLut.cpp">core/DecoderLut.cpp</a>: lookup table generation code</li>
+<li><a href="https://github.com/stgatilov/utf8lut/blob/master/src/core/DecoderProcess.h">core/DecoderProcess.h</a>: the algorithm for decoding UTF-8</li>
+<li><a href="https://github.com/stgatilov/utf8lut/blob/master/src/core/DecoderLut.h">core/DecoderLut.h</a>: lookup table data types</li>
+<li><a href="https://github.com/stgatilov/utf8lut/blob/master/src/core/DecoderLut.cpp">core/DecoderLut.cpp</a>: lookup table generation code</li>
 </ul>
 <p>The code samples provided in this article are describing only the most powerful version of the fast path: decoding up to three-byte long characters with full validation. The library code also works for simpler cases: it is possible to disable validation and/or to reduce maximum supported byte-length of characters.</p>
           <div class="series-neighbors">

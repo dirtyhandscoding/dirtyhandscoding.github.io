@@ -492,7 +492,7 @@ The bug which took most fuzzing time (a few seconds) to find was happening at sp
 <h2 id="conclusion"><a class="toclink" href="#conclusion">Conclusion</a></h2>
 <p>Some questions still remain. For instance, how would multithreading affect performance, given that RAM is shared between cores? How would LUT-based conversion affect the surrounding code if it is used in the real world? How would hardware hyperthreading compete with multistreaming? If I started looking into all of this, the article would never end =)</p>
 <p>The main drawback of the proposed decoding algorithm is of course its large lookup table. A possible direction for future work would be trying to eliminate or minimize the usage of LUT. The utf8lut code only requires SSSE3 currently, maybe newer instructions sets like BMI2 could substitute LUT usage. They <a href="https://stackoverflow.com/questions/36932240/avx2-what-is-the-most-efficient-way-to-pack-left-based-on-a-mask">already do that</a> for <a href="https://stackoverflow.com/a/41594615/556899">simpler problems</a>.</p>
-<p>The code of whole utf8lut library is <a href="https://bitbucket.org/stgatilov/utf8lut">available on Bitbucket</a> under permissive license. It includes all the algorithms and cases described in the article.</p>
+<p>The code of whole utf8lut library is <a href="https://github.com/stgatilov/utf8lut">available on Bitbucket</a> under permissive license. It includes all the algorithms and cases described in the article.</p>
           <div class="series-neighbors">
         <p class="series-prev">
             <span class="arrow-left"></span>

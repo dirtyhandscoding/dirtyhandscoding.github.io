@@ -7,7 +7,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/> 
 
         <meta charset="utf-8" />
-        <title>Dirty hands coding - unicode</title>
+        <title>Dirty hands coding</title>
         <link rel="stylesheet" href="https://dirtyhandscoding.github.io/theme/css/main.css" />
         <link href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Dirty hands coding Atom Feed" />
         <link href="/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="Dirty hands coding RSS Feed" />
@@ -44,43 +44,28 @@
                     <ol id="posts-list" class="hfeed" start="2">
             <li><article class="hentry">
                 <header>
-                    <h1><a href="https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-introduction.html" rel="bookmark"
-                           title="Permalink to utf8lut: Vectorized UTF-8 converter. Introduction">utf8lut: Vectorized UTF-8 converter</a></h1>
+                    <h1><a href="https://dirtyhandscoding.github.io/posts/doom-3-c-enhanced-rtti-and-memory-debugging.html" rel="bookmark"
+                           title="Permalink to Doom 3: C++ enhanced RTTI and memory debugging">Doom 3: C++ enhanced RTTI and memory debugging</a></h1>
                 </header>
 
                 <div class="entry-content">
 <footer class="post-info">
-        <span>04 August 2019</span>
-	        <span>| in <a href="https://dirtyhandscoding.github.io/category/high-performance.html">High performance</a></span>
-<span>| tags: <a href="https://dirtyhandscoding.github.io/tag/unicode.html">unicode</a><a href="https://dirtyhandscoding.github.io/tag/simd.html">simd</a><a href="https://dirtyhandscoding.github.io/tag/lut.html">lut</a></span>
-</footer><!-- /.post-info -->                <p>Some time ago I wrote <a href="https://stackoverflow.com/a/31683632/556899">a surprising answer</a> to stackoverflow question "Fastest way to get IPv4 address from string". At that very moment I discovered that <a href="https://msdn.microsoft.com/en-us/library/bb531427(v=vs.120).aspx">_mm_shuffle_epi8</a> instruction combined with sufficiently large lookup-table can do wonders. Actually, this exact methodology was used to implement vectorized merging algorithm in <a href="{filename}1_avx2_merge.md">one of my previous blog posts</a>.</p>
-<p>Inspired by the new discovery, I tried to apply this LUT + shuffle idea to some well-known and moderately generic problem. I tried to apply the idea to accelerate conversion from UTF-8 to UTF-16 and was successful. Initially, I had to postpone all efforts on the problem due to PhD-related activities. After that I thought that I would write a scientific article on the topic. When it became clear that I don't want to lose time on anything like that anymore, I decided to write about it in a blog. As a result, almost three years after the initial work (update: it is four years already), I finally managed to write this report, describing the algorithm and the <strong>utf8lut</strong> library.</p>
-                    <div class="series-summary">
-        <p>This article consists of many parts:</p>
-            <ol class="parts">
-        <li class="active">
-            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-introduction.html'>Introduction</a>
-        </li>
-        <li >
-            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-decoding-utf-8.html'>Decoding UTF-8</a>
-        </li>
-        <li >
-            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-encoding-utf-8.html'>Encoding UTF-8</a>
-        </li>
-        <li >
-            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-technical-details.html'>Technical details</a>
-        </li>
-        <li >
-            <a href='https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-test-results.html'>Test results</a>
-        </li>
-    </ol>
+        <span>19 July 2017</span>
+	        <span>| in <a href="https://dirtyhandscoding.github.io/category/the-dark-mod.html">The Dark Mod</a></span>
+<span>| tags: <a href="https://dirtyhandscoding.github.io/tag/idtech4.html">idtech4</a><a href="https://dirtyhandscoding.github.io/tag/memory-debugging.html">memory debugging</a></span>
+</footer><!-- /.post-info -->                <p>Although Doom 3 was released 13 years ago, there is still of lot of interesting stuff to find in it. The main reason for that is: it was developed in the time of changes. The ID software team had just moved from C to C++ (using Visual C++ 6). Graphic cards were moving from fixed pipeline to programming pipeline, CPUs were getting SIMD extensions. All of this caused a lot of diversity in the code: crazy mix of C++/C/asm code, several renderer backends, code acceleration for MMX/SSE/AltiVec (yeah, Macs used PowerPC at that time). Not to mention tons of scripts and defs, including C++-like scripting language, and in-game GUI system.</p>
+<p>I have to deal with Doom 3 engine in the context of <a href="http://www.thedarkmod.com">The Dark Mod</a> (TDM for short).</p>
+<p>This article is about <strong>memory debugging</strong> configuration in Doom 3 SDK (more precisely, "Debug with inlines and memory log").</p>
 
-    </div>
-
-                <a class="readmore" href="https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-introduction.html">read more</a>
+                
+                <a class="readmore" href="https://dirtyhandscoding.github.io/posts/doom-3-c-enhanced-rtti-and-memory-debugging.html">read more</a>
                 </div><!-- /.entry-content -->
             </article></li>
             </ol><!-- /#posts-list -->
+<p class="paginator">
+        <a href="https://dirtyhandscoding.github.io/index3.html">&laquo;</a>
+    Page 4 / 4
+</p>
             </section><!-- /#content -->
         <section id="extras" class="body">
                 <div class="social">

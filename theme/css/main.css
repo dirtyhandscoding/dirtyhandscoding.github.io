@@ -874,6 +874,10 @@ img.bordered {
     border:1px solid #021a40;
 }
 /* display one image full size */
+.w300 {
+    width:100%;
+    max-width:300px;
+}
 .w400 {
     width:100%;
     max-width:400px;

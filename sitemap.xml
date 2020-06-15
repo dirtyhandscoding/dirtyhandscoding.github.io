@@ -5,28 +5,28 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
 <url>
 <loc>https://dirtyhandscoding.github.io/</loc>
-<lastmod>2020-04-19T23:57:44-00:00</lastmod>
+<lastmod>2020-06-15T10:20:30-00:00</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
 
 <url>
 <loc>https://dirtyhandscoding.github.io/archives.html</loc>
-<lastmod>2020-04-19T23:57:44-00:00</lastmod>
+<lastmod>2020-06-15T10:20:30-00:00</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
 
 <url>
 <loc>https://dirtyhandscoding.github.io/tags.html</loc>
-<lastmod>2020-04-19T23:57:44-00:00</lastmod>
+<lastmod>2020-06-15T10:20:30-00:00</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
 
 <url>
 <loc>https://dirtyhandscoding.github.io/categories.html</loc>
-<lastmod>2020-04-19T23:57:44-00:00</lastmod>
+<lastmod>2020-06-15T10:20:30-00:00</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
@@ -36,6 +36,13 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <lastmod>2018-05-01T00:20:00+07:00</lastmod>
 <changefreq>monthly</changefreq>
 <priority>0.3</priority>
+</url>
+
+<url>
+<loc>https://dirtyhandscoding.github.io/posts/fast-debug-in-visual-c.html</loc>
+<lastmod>2020-06-15T10:25:00+07:00</lastmod>
+<changefreq>monthly</changefreq>
+<priority>0.7</priority>
 </url>
 
 <url>
@@ -102,6 +109,13 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 </url>
 
 <url>
+<loc>https://dirtyhandscoding.github.io/category/cc.html</loc>
+<lastmod>2020-06-15T10:25:00+05:32</lastmod>
+<changefreq>daily</changefreq>
+<priority>0.3</priority>
+</url>
+
+<url>
 <loc>https://dirtyhandscoding.github.io/category/high-performance.html</loc>
 <lastmod>2019-08-04T15:31:00+05:32</lastmod>
 <changefreq>daily</changefreq>
@@ -117,7 +131,35 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
 <url>
 <loc>https://dirtyhandscoding.github.io/category/uncategorized.html</loc>
-<lastmod>2020-03-12T00:22:00+05:32</lastmod>
+<lastmod>2018-05-03T22:25:00+05:32</lastmod>
+<changefreq>daily</changefreq>
+<priority>0.3</priority>
+</url>
+
+<url>
+<loc>https://dirtyhandscoding.github.io/tag/cpp.html</loc>
+<lastmod>2020-06-15T10:25:00+05:32</lastmod>
+<changefreq>daily</changefreq>
+<priority>0.3</priority>
+</url>
+
+<url>
+<loc>https://dirtyhandscoding.github.io/tag/msvc.html</loc>
+<lastmod>2020-06-15T10:25:00+05:32</lastmod>
+<changefreq>daily</changefreq>
+<priority>0.3</priority>
+</url>
+
+<url>
+<loc>https://dirtyhandscoding.github.io/tag/debug.html</loc>
+<lastmod>2020-06-15T10:25:00+05:32</lastmod>
+<changefreq>daily</changefreq>
+<priority>0.3</priority>
+</url>
+
+<url>
+<loc>https://dirtyhandscoding.github.io/tag/release.html</loc>
+<lastmod>2020-06-15T10:25:00+05:32</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
@@ -144,13 +186,6 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 </url>
 
 <url>
-<loc>https://dirtyhandscoding.github.io/tag/cpp.html</loc>
-<lastmod>2020-03-12T00:22:00+05:32</lastmod>
-<changefreq>daily</changefreq>
-<priority>0.3</priority>
-</url>
-
-<url>
 <loc>https://dirtyhandscoding.github.io/tag/bloat.html</loc>
 <lastmod>2020-03-12T00:22:00+05:32</lastmod>
 <changefreq>daily</changefreq>
@@ -159,13 +194,6 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
 <url>
 <loc>https://dirtyhandscoding.github.io/tag/build.html</loc>
-<lastmod>2020-03-12T00:22:00+05:32</lastmod>
-<changefreq>daily</changefreq>
-<priority>0.3</priority>
-</url>
-
-<url>
-<loc>https://dirtyhandscoding.github.io/tag/msvc.html</loc>
 <lastmod>2020-03-12T00:22:00+05:32</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>

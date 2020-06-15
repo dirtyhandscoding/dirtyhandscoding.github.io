@@ -32,6 +32,7 @@
                 </nav>
 <div id="submenu">
                     <ul>
+                            <li><a href="https://dirtyhandscoding.github.io/category/cc.html">C/C++</a></li>
                             <li><a href="https://dirtyhandscoding.github.io/category/high-performance.html">High performance</a></li>
                             <li><a href="https://dirtyhandscoding.github.io/category/the-dark-mod.html">The Dark Mod</a></li>
                             <li><a href="https://dirtyhandscoding.github.io/category/uncategorized.html">Uncategorized</a></li>
@@ -41,6 +42,26 @@
 
                 <section id="content" class="body">
                     <ol id="posts-list" class="hfeed" start="2">
+            <li><article class="hentry">
+                <header>
+                    <h1><a href="https://dirtyhandscoding.github.io/posts/fast-debug-in-visual-c.html" rel="bookmark"
+                           title="Permalink to Fast Debug in Visual C++">Fast Debug in Visual C++</a></h1>
+                </header>
+
+                <div class="entry-content">
+<footer class="post-info">
+        <span>15 June 2020</span>
+	        <span>| in <a href="https://dirtyhandscoding.github.io/category/cc.html">C/C++</a></span>
+<span>| tags: <a href="https://dirtyhandscoding.github.io/tag/cpp.html">cpp</a><a href="https://dirtyhandscoding.github.io/tag/msvc.html">msvc</a><a href="https://dirtyhandscoding.github.io/tag/debug.html">debug</a><a href="https://dirtyhandscoding.github.io/tag/release.html">release</a></span>
+</footer><!-- /.post-info -->                <p>It is <a href="https://stackoverflow.com/questions/12631609/why-is-this-code-100-times-slower-in-debug">well-known</a> that Debug build in Visual C++ is very slow compared to Release build, with the typical ratio about 10-20 times. Various reasons behind it are often stated, and some people even believe that it is inevitable because it is caused by lack of compiler optimizations.</p>
+<p>If some issue happens only on a large dataset or in a real-time application, and it cannot be extracted into a smaller test case, then developer is forced to debug Release build. Which is rather painful experience, because debugger has problems showing control flow, values of local variables, sometimes even currently executed function, since all these concepts are messed up by optimizations. Ironically, the more optimizer-friendly your code is, the worse would be your experience of debugging Release build =)</p>
+<p>Luckily, Visual C++ provides a lot of settings for tuning speed-vs-comfort ratio. It is entirely possible to create a "Fast Debug" configuration which works only a few times slower than Release yet is pretty easy to debug due to lack of optimizations.</p>
+
+                
+                <a class="readmore" href="https://dirtyhandscoding.github.io/posts/fast-debug-in-visual-c.html">read more</a>
+                </div><!-- /.entry-content -->
+            </article></li>
+
             <li><article class="hentry">
                 <header>
                     <h1><a href="https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-introduction.html" rel="bookmark"
@@ -89,7 +110,7 @@
                 <div class="entry-content">
 <footer class="post-info">
         <span>27 May 2018</span>
-	        <span>| in <a href="https://dirtyhandscoding.github.io/category/uncategorized.html">Uncategorized</a></span>
+	        <span>| in <a href="https://dirtyhandscoding.github.io/category/cc.html">C/C++</a></span>
 <span>| tags: <a href="https://dirtyhandscoding.github.io/tag/cpp.html">cpp</a><a href="https://dirtyhandscoding.github.io/tag/bloat.html">bloat</a><a href="https://dirtyhandscoding.github.io/tag/build.html">build</a><a href="https://dirtyhandscoding.github.io/tag/msvc.html">msvc</a></span>
 </footer><!-- /.post-info -->                <p>It is known that code bloat <a href="https://dirtyhandscoding.github.io/posts/on-cpp-code-bloat.html">significantly increases build times in C++</a>. The question is: how can we quantify code bloat? How can we see things which are compiled too many times or the things which generate too much object code? How can we know which places would benefit most from improvement efforts?</p>
 <p>This article is about an excellent tool called <a href="https://github.com/adrianstone55/SymbolSort">SymbolSort</a>, which produces useful code bloat statistics in a project of any size. In particular, the article describes a few improvements which I have implemented recently to provide more useful analysis.</p>
@@ -98,27 +119,9 @@
                 <a class="readmore" href="https://dirtyhandscoding.github.io/posts/improvements-to-symbolsort-tool-for-c-code-bloat-analysis.html">read more</a>
                 </div><!-- /.entry-content -->
             </article></li>
-
-            <li><article class="hentry">
-                <header>
-                    <h1><a href="https://dirtyhandscoding.github.io/posts/on-cpp-code-bloat.html" rel="bookmark"
-                           title="Permalink to On C++ code bloat">On C++ code bloat</a></h1>
-                </header>
-
-                <div class="entry-content">
-<footer class="post-info">
-        <span>13 May 2018</span>
-	        <span>| in <a href="https://dirtyhandscoding.github.io/category/uncategorized.html">Uncategorized</a></span>
-<span>| tags: <a href="https://dirtyhandscoding.github.io/tag/cpp.html">cpp</a><a href="https://dirtyhandscoding.github.io/tag/bloat.html">bloat</a><a href="https://dirtyhandscoding.github.io/tag/build.html">build</a><a href="https://dirtyhandscoding.github.io/tag/msvc.html">msvc</a></span>
-</footer><!-- /.post-info -->                <p>The C++ language is known for its slow build times. This problem is not present in the world of pure C, which might give a hint that the problem is caused by some C++ feature. In fact, it is caused by bad habit or writing code in headers, severely worsened by C++ templates and inspired by STL itself.</p>
-
-                
-                <a class="readmore" href="https://dirtyhandscoding.github.io/posts/on-cpp-code-bloat.html">read more</a>
-                </div><!-- /.entry-content -->
-            </article></li>
             </ol><!-- /#posts-list -->
 <p class="paginator">
-    Page 1 / 3
+    Page 1 / 4
         <a href="https://dirtyhandscoding.github.io/index2.html">&raquo;</a>
 </p>
             </section><!-- /#content -->

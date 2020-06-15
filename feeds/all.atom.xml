@@ -1,5 +1,347 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Dirty hands coding</title><link href="https://dirtyhandscoding.github.io/" rel="alternate"></link><link href="/feeds/all.atom.xml" rel="self"></link><id>https://dirtyhandscoding.github.io/</id><updated>2020-03-12T00:22:00+07:00</updated><entry><title>utf8lut: Vectorized UTF-8 converter. Introduction</title><link href="https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-introduction.html" rel="alternate"></link><published>2019-08-04T15:31:00+07:00</published><updated>2019-08-04T15:31:00+07:00</updated><author><name>dirtyhandscoding</name></author><id>tag:dirtyhandscoding.github.io,2019-08-04:/posts/utf8lut-vectorized-utf-8-converter-introduction.html</id><summary type="html">&lt;p&gt;Some time ago I wrote &lt;a href="https://stackoverflow.com/a/31683632/556899"&gt;a surprising answer&lt;/a&gt; to stackoverflow question "Fastest way to get IPv4 address from string". At that very moment I discovered that &lt;a href="https://msdn.microsoft.com/en-us/library/bb531427(v=vs.120).aspx"&gt;_mm_shuffle_epi8&lt;/a&gt; instruction combined with sufficiently large lookup-table can do wonders. Actually, this exact methodology was used to implement vectorized merging algorithm in &lt;a href="https://dirtyhandscoding.github.io/posts/vectorizing-stdmerge-with-vpermd-from-avx2-and-lookup-table.html"&gt;one of my previous blog posts&lt;/a&gt;.&lt;/p&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Dirty hands coding</title><link href="https://dirtyhandscoding.github.io/" rel="alternate"></link><link href="/feeds/all.atom.xml" rel="self"></link><id>https://dirtyhandscoding.github.io/</id><updated>2020-06-15T10:25:00+07:00</updated><entry><title>Fast Debug in Visual C++</title><link href="https://dirtyhandscoding.github.io/posts/fast-debug-in-visual-c.html" rel="alternate"></link><published>2020-06-15T10:25:00+07:00</published><updated>2020-06-15T10:25:00+07:00</updated><author><name>dirtyhandscoding</name></author><id>tag:dirtyhandscoding.github.io,2020-06-15:/posts/fast-debug-in-visual-c.html</id><summary type="html">&lt;p&gt;It is &lt;a href="https://stackoverflow.com/questions/12631609/why-is-this-code-100-times-slower-in-debug"&gt;well-known&lt;/a&gt; that Debug build in Visual C++ is very slow compared to Release build, with the typical ratio about 10-20 times. Various reasons behind it are often stated, and some people even believe that it is inevitable because it is caused by lack of compiler optimizations.&lt;/p&gt;
+&lt;p&gt;If some issue happens only on a large dataset or in a real-time application, and it cannot be extracted into a smaller test case, then developer is forced to debug Release build. Which is rather painful experience, because debugger has problems showing control flow, values of local variables, sometimes even currently executed function, since all these concepts are messed up by optimizations. Ironically, the more optimizer-friendly your code is, the worse would be your experience of debugging Release build =)&lt;/p&gt;
+&lt;p&gt;Luckily, Visual C++ provides a lot of settings for tuning speed-vs-comfort ratio. It is entirely possible to create a "Fast Debug" configuration which works only a few times slower than Release yet is pretty easy to debug due to lack of optimizations.&lt;/p&gt;
+</summary><content type="html">&lt;p&gt;It is &lt;a href="https://stackoverflow.com/questions/12631609/why-is-this-code-100-times-slower-in-debug"&gt;well-known&lt;/a&gt; that Debug build in Visual C++ is very slow compared to Release build, with the typical ratio about 10-20 times. Various reasons behind it are often stated, and some people even believe that it is inevitable because it is caused by lack of compiler optimizations.&lt;/p&gt;
+&lt;p&gt;If some issue happens only on a large dataset or in a real-time application, and it cannot be extracted into a smaller test case, then developer is forced to debug Release build. Which is rather painful experience, because debugger has problems showing control flow, values of local variables, sometimes even currently executed function, since all these concepts are messed up by optimizations. Ironically, the more optimizer-friendly your code is, the worse would be your experience of debugging Release build =)&lt;/p&gt;
+&lt;p&gt;Luckily, Visual C++ provides a lot of settings for tuning speed-vs-comfort ratio. It is entirely possible to create a "Fast Debug" configuration which works only a few times slower than Release yet is pretty easy to debug due to lack of optimizations.&lt;/p&gt;
+
+
+&lt;h2 id="settings"&gt;&lt;a class="toclink" href="#settings"&gt;Settings&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Below you can see three pieces of advice which can greatly improve performance of Debug build. Of course, none of these improvements are free: with every change you lose some nice debug helper, so don't throw away the full Debug build yet.&lt;/p&gt;
+&lt;h3 id="basic-runtime-checks"&gt;&lt;a class="toclink" href="#basic-runtime-checks"&gt;Basic Runtime Checks&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Disable either &lt;a href="https://docs.microsoft.com/en-us/cpp/build/reference/rtc-run-time-error-checks?view=vs-2019"&gt;Basic Runtime Checks&lt;/a&gt; or &lt;a href="https://docs.microsoft.com/en-us/visualstudio/debugger/edit-and-continue-visual-cpp?view=vs-2019"&gt;Edit And Continue&lt;/a&gt;.
+If you want to know why it becomes slow, I recommend reading the &lt;a href="https://randomascii.wordpress.com/2011/07/22/visual-c-debug-buildsfast-checks-cause-5x-slowdowns/"&gt;full investigation by Bruce Dawson&lt;/a&gt;. But the bottom line is that having both of these settings causes a huge slowdown.&lt;/p&gt;
+&lt;p&gt;Unfortunately, both settings can be useful:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;With Basic Runtime Checks enabled, debugger detects stack corruption. Such a hazard happens e.g. when a local array is modified out of bounds. There are other features included too, but this one seems to be the most useful, and you lose it if you disable the checks. Some stack errors will still be caught by &lt;a href="https://docs.microsoft.com/en-us/cpp/build/reference/gs-buffer-security-check?view=vs-2019"&gt;Buffer Security Check&lt;/a&gt;, which is enabled even in Release, but without certainty.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Edit and Continue allows to pause program execution, edit the source code, update the build, and continue execution without restarting the application. This is especially useful in gamedev, as seen from the &lt;a href="https://liveplusplus.tech/index.html"&gt;list of Live++ clients&lt;/a&gt;. The built-in MSVC implementation is not very reliable, but it nevertheless proved useful in &lt;a href="http://www.thedarkmod.com"&gt;TheDarkMod&lt;/a&gt; development.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="center-content"&gt;
+    &lt;img src="https://dirtyhandscoding.github.io/images/A_fast_debug/stack_corruption.png" class="w400" /&gt;
+    &lt;img src="https://dirtyhandscoding.github.io/images/A_fast_debug/edit_and_continue.gif" class="w400" /&gt;
+&lt;/div&gt;
+
+&lt;p&gt;In VC project, the Runtime Checks setting can be found in: &lt;em&gt;C/C++ -&amp;gt; Code Generation -&amp;gt; Basic Runtime Checks&lt;/em&gt;. By default, the checks are enabled in Debug build, adding &lt;code&gt;/RTC1&lt;/code&gt; command line switch. Choose "Default" in drop-down list to disable it.&lt;/p&gt;
+&lt;p&gt;Speaking of "Edit and Continue", it is also enabled by default in Debug configuration. It can be found in: &lt;em&gt;C/C++ -&amp;gt; General -&amp;gt; Debug Information Format&lt;/em&gt;. It generates &lt;code&gt;/ZI&lt;/code&gt; compiler argument when enabled, and &lt;code&gt;/Zi&lt;/code&gt; argument when disabled. Choose "Program Database" in drop-down list to disable it.&lt;/p&gt;
+&lt;p&gt;In CMake-generated project, the checks are also enabled by default. But as it often happens with CMake, &lt;a href="https://stackoverflow.com/questions/8587764/remove-runtime-checks-compiler-flag-per-project-in-cmake"&gt;the setting is not exposed&lt;/a&gt;. The simplest way to disable it is to remove it from compiler global parameters:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nb"&gt;string&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;REPLACE&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;/RTC1&amp;quot;&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;&amp;quot;&lt;/span&gt; &lt;span class="s"&gt;CMAKE_CXX_FLAGS_DEBUG&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;${CMAKE_CXX_FLAGS_DEBUG}&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The "Edit and Continue" feature is disabled by default in CMake-generated projects. You have to do additional work if you want to enable it, but that's outside the scope of this article.&lt;/p&gt;
+&lt;h3 id="inlining"&gt;&lt;a class="toclink" href="#inlining"&gt;Inlining&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Enable &lt;a href="https://docs.microsoft.com/en-us/cpp/build/reference/ob-inline-function-expansion?view=vs-2019"&gt;inlining level 1&lt;/a&gt; (\Ob1).
+It allows VC compiler to inline calls to functions which are considered 'inline' according to C++ language rules. Function calls are cheap as far as I know, but inlining matters a lot for good performance because it allows to optimize the code much better (since optimizer operates on per-function basis).
+However, limited inlining helps without generic optimizations too. In most cases, only tiny functions and functions marked forceinline are inlined with &lt;code&gt;/Ob1&lt;/code&gt;, so it does not harm debugging. But keep in mind that sometimes it can inline a function you want to debug.&lt;/p&gt;
+&lt;p&gt;The /Ob1 settings was enabled in &lt;a href="https://github.com/id-Software/DOOM-3/blob/master/neo/_WithInlines.props"&gt;"Debug with Inlines" configuration&lt;/a&gt; in Doom 3 source code. We still use it in TheDarkMod. It boosts FPS without noticeable drawbacks.&lt;/p&gt;
+&lt;p&gt;By default, both VC project and CMake completely disable inlining in Debug build (&lt;code&gt;/Od&lt;/code&gt;). In VC project you can find the setting in: &lt;em&gt;C/C++ -&amp;gt; Optimization -&amp;gt; Inline Function Expansion&lt;/em&gt;. Choose "Only __inline" from drop-down list to enable it, resulting in &lt;code&gt;/Ob1&lt;/code&gt; compiler argument. In CMake the easiest way to enable it is to add a global compiler parameter, although it can also be done on per-file basis:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="c"&gt;# globally:&lt;/span&gt;
+&lt;span class="nb"&gt;set&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;CMAKE_CXX_FLAGS_DEBUG&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;${CMAKE_CXX_FLAGS_DEBUG} /Ob1&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="c"&gt;# for specified source files:&lt;/span&gt;
+&lt;span class="nb"&gt;set_source_files_properties&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;sources&lt;/span&gt;&lt;span class="o"&gt;}&lt;/span&gt; &lt;span class="s"&gt;PROPERTIES&lt;/span&gt; &lt;span class="s"&gt;COMPILE_FLAGS&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;/Ob1&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;By the way, CMake uses &lt;code&gt;/Ob1&lt;/code&gt; by default in its RelWithDebInfo configuration. In order to get full Release build with CMake, one has either to enable &lt;code&gt;/Ob2&lt;/code&gt; manually on RelWithDebInfo build or to enable debugging information in Release build.&lt;/p&gt;
+&lt;h3 id="version-of-crt"&gt;&lt;a class="toclink" href="#version-of-crt"&gt;Version of CRT&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Use &lt;a href="https://docs.microsoft.com/en-us/cpp/build/reference/md-mt-ld-use-run-time-library?view=vs-2019"&gt;Release version of C Runtime Library&lt;/a&gt;.
+Doing so in debug build is rather questionable idea. Depending on CRT version, compiler sets &lt;code&gt;_DEBUG&lt;/code&gt; define and enables/disables &lt;a href="https://docs.microsoft.com/en-us/cpp/standard-library/debug-iterator-support?view=vs-2019"&gt;iterator debugging&lt;/a&gt;. Hence, ABI usually depends on CRT version, i.e. you &lt;a href="https://stackoverflow.com/questions/11658915/mixing-debug-and-release-library-binary-bad-practice"&gt;cannot link&lt;/a&gt; together object files compiled against debug and release versions of CRT. Except if you write in pure C or avoid STL completely: in such case you can link debug and release code.&lt;/p&gt;
+&lt;p&gt;The immediate consequence of ABI change is that you are forced to use release builds of prebuilt libraries if you use release CRT. But this is not necessarily a problem, since in most cases you don't have to debug third-party libraries. Quite the opposite, using release libraries allows you to greatly accelerate your debug build if the program spends much time in them. Perhaps "Unoptimized Release" would be better name for such configuration than "Fast Debug" though.&lt;/p&gt;
+&lt;p&gt;Other downsides of using release CRT are:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;No more iterator debugging. Most importantly, using &lt;code&gt;std::vector&amp;lt;T&amp;gt;::operator[]&lt;/code&gt; with index out of range won't trigger any error. You are lucky if you use your own containers instead of STL, because you can still have an assert in your &lt;code&gt;operator[]&lt;/code&gt; for a very low performance cost. You will lose even more debug checks if you love putting STL iterators everywhere (I don't care since I prefer indices to iterators).&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Heap corruption check gone. This check allows to detect writes to heap block outside of its bounds. Without the check, the heap would probably break anyway, but it would happen later and diagnostic message would be less helpful.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;div class="center-content"&gt;
+    &lt;img src="https://dirtyhandscoding.github.io/images/A_fast_debug/iterator_debugging.png" class="w400" /&gt;
+    &lt;img src="https://dirtyhandscoding.github.io/images/A_fast_debug/heap_corruption.png" class="w400" /&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Both in VC project and in CMake-generated project, debug CRT is used for Debug build by default. More precisely &lt;code&gt;/MDd&lt;/code&gt; argument, which means "Multithreaded Debug DLL". In VC project settings, it can be found in &lt;em&gt;C/C++ -&amp;gt; Code Generation -&amp;gt; Runtime Library&lt;/em&gt;. Choose "Multi-threaded DLL" in drop-down list to switch to release CRT (which is &lt;code&gt;/MD&lt;/code&gt;).&lt;/p&gt;
+&lt;p&gt;Changing the setting in CMake is more difficult. One way is to replace global compiler argument:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nb"&gt;string&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;REPLACE&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;/MDd&amp;quot;&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;/MD&amp;quot;&lt;/span&gt; &lt;span class="s"&gt;CMAKE_CXX_FLAGS_DEBUG&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;${CMAKE_CXX_FLAGS_DEBUG}&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;More correct approach is to use the new &lt;a href="https://cmake.org/cmake/help/latest/prop_tgt/MSVC_RUNTIME_LIBRARY.html#prop_tgt:MSVC_RUNTIME_LIBRARY"&gt;MSVC_RUNTIME_LIBRARY&lt;/a&gt; property, but it did not work for me.&lt;/p&gt;
+&lt;h2 id="benchmark"&gt;&lt;a class="toclink" href="#benchmark"&gt;Benchmark&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;A piece of code working with small &lt;code&gt;std::vector&lt;/code&gt; is shown below. Note that you should avoid making small local vectors for good performance. Better use local array, vector-like container which can be linked to local buffer, or custom allocator. This test is ill-written, and stresses low-level performance, heap operations, and methods inlining. All the performance issues are severely magnified, so don't expect the same gains on a real program.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="c1"&gt;//almost all the time is spent in this function (in.size() == 5)&lt;/span&gt;
+&lt;span class="k"&gt;static&lt;/span&gt; &lt;span class="n"&gt;NOINLINE&lt;/span&gt; &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;OrderSum&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;const&lt;/span&gt; &lt;span class="n"&gt;std&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="n"&gt;vector&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;in&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;std&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="n"&gt;vector&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;sorted&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+    &lt;span class="n"&gt;sorted&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;in&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+    &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;n&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;sorted&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;size&lt;/span&gt;&lt;span class="p"&gt;();&lt;/span&gt;
+    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="o"&gt;++&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;j&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="n"&gt;j&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="n"&gt;j&lt;/span&gt;&lt;span class="o"&gt;++&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;sorted&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="n"&gt;sorted&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;j&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+                &lt;span class="n"&gt;std&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="n"&gt;swap&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;sorted&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="n"&gt;sorted&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;j&lt;/span&gt;&lt;span class="p"&gt;]);&lt;/span&gt;
+    &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;res&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="o"&gt;++&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;res&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="n"&gt;sorted&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;res&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+
+&lt;span class="kt"&gt;int64_t&lt;/span&gt; &lt;span class="n"&gt;GlobalSum&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="kt"&gt;void&lt;/span&gt; &lt;span class="nf"&gt;FullTest&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="k"&gt;static&lt;/span&gt; &lt;span class="k"&gt;const&lt;/span&gt; &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;SIZE&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;5&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+    &lt;span class="n"&gt;std&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="n"&gt;vector&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;vec&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="n"&gt;SIZE&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="o"&gt;++&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;vec&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;push_back&lt;/span&gt;&lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="mi"&gt;3&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="mi"&gt;5&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;q&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="n"&gt;q&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="mi"&gt;1000&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="n"&gt;q&lt;/span&gt;&lt;span class="o"&gt;++&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;GlobalSum&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="n"&gt;OrderSum&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;vec&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The call of &lt;code&gt;FullTest&lt;/code&gt; is wrapped into a large loop executed for at least one second. The total time is divided by total number of &lt;code&gt;OrderSum&lt;/code&gt; calls, obtaining the average time spent per one &lt;code&gt;OrderSum&lt;/code&gt; call. Default project was created in VC2017, x64 Debug configuration is used with only the explicitly stated modifications. The program is run 3 times under devenv with debugger attached, median time is recorded. Ryzen 1600 CPU is used.&lt;/p&gt;
+&lt;div class="center-content"&gt;
+&lt;table class="w500 solid-cells centered-cells nowrap-cells"&gt;
+&lt;caption&gt;Time spent per OrderSum call, in nanoseconds&lt;/caption&gt;  
+&lt;tr&gt;
+  &lt;th&gt;E&amp;C disabled&lt;/th&gt;
+  &lt;th&gt;/RTC disabled&lt;/th&gt;
+  &lt;th&gt;/Ob1 enabled&lt;/th&gt;
+  &lt;th&gt;release CRT&lt;/th&gt;
+  &lt;th&gt;result&lt;/th&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+  &lt;td&gt;no&lt;/td&gt;
+  &lt;td&gt;no&lt;/td&gt;
+  &lt;td&gt;no&lt;/td&gt;
+  &lt;td&gt;no&lt;/td&gt;
+  &lt;td&gt;20700&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+  &lt;td&gt;yes&lt;/td&gt;
+  &lt;td&gt;no&lt;/td&gt;
+  &lt;td&gt;no&lt;/td&gt;
+  &lt;td&gt;no&lt;/td&gt;
+  &lt;td&gt;7321&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+  &lt;td&gt;no&lt;/td&gt;
+  &lt;td&gt;yes&lt;/td&gt;
+  &lt;td&gt;no&lt;/td&gt;
+  &lt;td&gt;no&lt;/td&gt;
+  &lt;td&gt;3565&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+  &lt;td&gt;yes&lt;/td&gt;
+  &lt;td&gt;yes&lt;/td&gt;
+  &lt;td&gt;no&lt;/td&gt;
+  &lt;td&gt;no&lt;/td&gt;
+  &lt;td&gt;3491&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+  &lt;td&gt;no&lt;/td&gt;
+  &lt;td&gt;no&lt;/td&gt;
+  &lt;td&gt;yes&lt;/td&gt;
+  &lt;td&gt;no&lt;/td&gt;
+  &lt;td&gt;4278&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+  &lt;td&gt;yes&lt;/td&gt;
+  &lt;td&gt;no&lt;/td&gt;
+  &lt;td&gt;yes&lt;/td&gt;
+  &lt;td&gt;no&lt;/td&gt;
+  &lt;td&gt;2455&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+  &lt;td&gt;no&lt;/td&gt;
+  &lt;td&gt;yes&lt;/td&gt;
+  &lt;td&gt;yes&lt;/td&gt;
+  &lt;td&gt;no&lt;/td&gt;
+  &lt;td&gt;1379&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+  &lt;td&gt;yes&lt;/td&gt;
+  &lt;td&gt;yes&lt;/td&gt;
+  &lt;td&gt;yes&lt;/td&gt;
+  &lt;td&gt;no&lt;/td&gt;
+  &lt;td&gt;1339&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+  &lt;td&gt;no&lt;/td&gt;
+  &lt;td&gt;no&lt;/td&gt;
+  &lt;td&gt;no&lt;/td&gt;
+  &lt;td&gt;yes&lt;/td&gt;
+  &lt;td&gt;10716&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+  &lt;td&gt;yes&lt;/td&gt;
+  &lt;td&gt;no&lt;/td&gt;
+  &lt;td&gt;no&lt;/td&gt;
+  &lt;td&gt;yes&lt;/td&gt;
+  &lt;td&gt;3596&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+  &lt;td&gt;no&lt;/td&gt;
+  &lt;td&gt;yes&lt;/td&gt;
+  &lt;td&gt;no&lt;/td&gt;
+  &lt;td&gt;yes&lt;/td&gt;
+  &lt;td&gt;1617&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+  &lt;td&gt;yes&lt;/td&gt;
+  &lt;td&gt;yes&lt;/td&gt;
+  &lt;td&gt;no&lt;/td&gt;
+  &lt;td&gt;yes&lt;/td&gt;
+  &lt;td&gt;1693&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+  &lt;td&gt;no&lt;/td&gt;
+  &lt;td&gt;no&lt;/td&gt;
+  &lt;td&gt;yes&lt;/td&gt;
+  &lt;td&gt;yes&lt;/td&gt;
+  &lt;td&gt;848&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+  &lt;td&gt;yes&lt;/td&gt;
+  &lt;td&gt;no&lt;/td&gt;
+  &lt;td&gt;yes&lt;/td&gt;
+  &lt;td&gt;yes&lt;/td&gt;
+  &lt;td&gt;506&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+  &lt;td&gt;no&lt;/td&gt;
+  &lt;td&gt;yes&lt;/td&gt;
+  &lt;td&gt;yes&lt;/td&gt;
+  &lt;td&gt;yes&lt;/td&gt;
+  &lt;td&gt;268&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+  &lt;td&gt;yes&lt;/td&gt;
+  &lt;td&gt;yes&lt;/td&gt;
+  &lt;td&gt;yes&lt;/td&gt;
+  &lt;td&gt;yes&lt;/td&gt;
+  &lt;td&gt;268&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+  &lt;td&gt;&lt;/td&gt;
+  &lt;td&gt;&lt;/td&gt;
+  &lt;td&gt;&lt;/td&gt;
+  &lt;td&gt;[release]&lt;/td&gt;
+  &lt;td&gt;86&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/table&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Some conclusions from the raw data:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;If you have already disabled Runtime Checks, then disabling Edit and Continue yields no additional performance improvement.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Disabling Edit and Continue is less helpful than disabling Runtime Checks (about &lt;strong&gt;2x&lt;/strong&gt; difference in time).&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Aside from correlation between Edit and Continue and Runtime Checks, all settings are more or less independent.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Disabling Runtime Checks improves performance in &lt;strong&gt;6x&lt;/strong&gt; times without inlining, and in &lt;strong&gt;3x&lt;/strong&gt; times with inlining.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Inlining accelerates the code in &lt;strong&gt;3x&lt;/strong&gt; times without release CRT but with Runtime Checks disabled.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Release CRT makes the code faster in &lt;strong&gt;2x&lt;/strong&gt; times, given that inlining is disabled.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Release CRT and inlining have major synergy, providing impressive &lt;strong&gt;x14&lt;/strong&gt; boost together when Runtime Checks are disabled.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Default Debug build is &lt;strong&gt;x240&lt;/strong&gt; times slower than default Release build. With all the aforementioned settings enabled, Fast Debug build is only &lt;strong&gt;x3&lt;/strong&gt; times slower than Release build (and that's with optimization still disabled!). The total improvement of Fast Debug over default Debug is &lt;strong&gt;77x&lt;/strong&gt; times.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;I hope this example ruins the myth that Debug build is slow because it lacks optimization, and that two-digit slowdown is inevitable. Indeed, you still need Debug build to simplify debugging all the nasty issues, but I think Fast Debug build should be the default one used for debugging.&lt;/p&gt;
+&lt;h2 id="localized-tuning"&gt;&lt;a class="toclink" href="#localized-tuning"&gt;Localized tuning&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;If debug speed really matters to you, you shouldn't stop at tweaking global settings. In most cases there are few places in the program which waste considerable amount of time. Usually these places are well-written and are almost never touched with debugger. If a bit of code spends time but does not need to be debugged, it's better to enable optimization on it locally.&lt;/p&gt;
+&lt;h5 id="third-party-libraries"&gt;&lt;a class="toclink" href="#third-party-libraries"&gt;Third-party libraries&lt;/a&gt;&lt;/h5&gt;
+&lt;p&gt;A common case is when performance-heavy code is inside a prebuilt library. You don't want to debug that library, so it would be great to use its release version in your debug build. There are several ways to achieve it:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;If it is a pure C library or a C++ library without STL, then its release version can be linked with debug code statically. If it contains any of the STL, then you won't be able to do this due to settings mismatch (iterator debugging and CRT version). Otherwise you can link it even if it was compiled with release CRT and the rest of the code uses debug CRT. A warning about the mismatch can be muted.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;You can build the library as DLL with CRT statically linked in. This DLL can be used in any application, as long as the exported interface contains no STL and does not pass heap allocations across DLL boundary. If any of this happens (it almost certainly happens for a heavy C++ library), then you cannot use this approach. Perhaps there are more restrictions here, e.g. you should not print to console both in the DLL and in your application. That's the typical pain from having several CRTs in a program.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Finally, you can switch your code to release CRT, as suggested &lt;a href="https://dirtyhandscoding.github.io/posts/fast-debug-in-visual-c.html#version-of-crt"&gt;above&lt;/a&gt;. Then you will have to link release versions of all third-party libraries, although this is not a problem in most cases. And you will lose the benefits of debug CRT of course.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h5 id="pragma-optimize"&gt;&lt;a class="toclink" href="#pragma-optimize"&gt;Pragma optimize&lt;/a&gt;&lt;/h5&gt;
+&lt;p&gt;The other case is a performance-heavy piece of your own code. Let's assume it is so heavy and polished, that it can be kept optimized even in debug. There are two ways to do this:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;Enable optimization on a single translation unit, i.e. on cpp file. It can be done both in the VC project file and in CMake. This approach has limited flexibility.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Enable optimization on a few functions. This can be done with &lt;a href="https://docs.microsoft.com/en-us/cpp/preprocessor/optimize?view=vs-2019"&gt;#pragma optimize&lt;/a&gt; directive.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Let's concentrate on the latter. An important thing to know is that &lt;code&gt;#pragma&lt;/code&gt; directive can be used inside macros in its &lt;a href="https://stackoverflow.com/questions/23790112/what-is-pragma-and-what-are-the-differences-between-pragma-and-pragma"&gt;__pragma&lt;/a&gt; form, so it is possible to wrap optimization pragmas into macros which are enabled depending on compiler and configuration:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;#if defined(_MSC_VER) &amp;amp;&amp;amp; defined(OPTIMIZE_DEBUG)
+  //force optimization of this code section in special debug configuration
+  #define DEBUG_OPTIMIZE_ON __pragma(optimize(&amp;quot;gt&amp;quot;, on))    //enable optimizations
+  #define DEBUG_OPTIMIZE_OFF __pragma(optimize(&amp;quot;&amp;quot;, on))     //reset optimization settings
+#else
+  #define DEBUG_OPTIMIZE_ON
+  #define DEBUG_OPTIMIZE_OFF
+#endif
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Optimization can be force-enabled for a bunch of functions like this (excerpt from TheDarkMod):&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;DEBUG_OPTIMIZE_ON&lt;/span&gt;
+&lt;span class="kt"&gt;void&lt;/span&gt; &lt;span class="nf"&gt;R_GlobalPlaneToLocal&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt; &lt;span class="k"&gt;const&lt;/span&gt; &lt;span class="kt"&gt;float&lt;/span&gt; &lt;span class="n"&gt;modelMatrix&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;16&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="k"&gt;const&lt;/span&gt; &lt;span class="n"&gt;idPlane&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;in&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;idPlane&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;out&lt;/span&gt; &lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;out&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;DotProduct&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt; &lt;span class="n"&gt;in&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;modelMatrix&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="n"&gt;out&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;DotProduct&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt; &lt;span class="n"&gt;in&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;modelMatrix&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;4&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="n"&gt;out&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;DotProduct&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt; &lt;span class="n"&gt;in&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;modelMatrix&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;8&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="n"&gt;out&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;3&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;in&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;3&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;modelMatrix&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;12&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;in&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;modelMatrix&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;13&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;in&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;modelMatrix&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;14&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;in&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;];&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;span class="n"&gt;DEBUG_OPTIMIZE_OFF&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;There are several details to keep in mind:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;I suggest creating a special macro flag &lt;code&gt;OPTIMIZE_DEBUG&lt;/code&gt; for this tweak, since there is no predefined macro showing optimization level or build configuration. The macro &lt;code&gt;_DEBUG&lt;/code&gt; is usually defined when debug CRT is used, so it will be missing if you switch your Debug build to release CRT. The macro &lt;code&gt;NDEBUG&lt;/code&gt; only affects removal of asserts.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Be sure to close the section of force-optimized code with &lt;code&gt;DEBUG_OPTIMIZE_OFF&lt;/code&gt;, otherwise the rest of cpp file will become surprisingly hard to debug.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;The tweak has no effect on template and/or inline functions. One cannot just surround the body of such function and think it will be optimized. Because template functions are compiled when they are instantiated (this usually happens implicitly), and inline functions are compiled as the part of the function they are inlined into (at least optimization matters at this moment). It shouldn't confuse people who know how machine code is generated.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Function calls are rarely inlined in debug builds, even if &lt;code&gt;/Ob1&lt;/code&gt; is enabled (and absolutely never if it's disabled). One way to workaround the issue is to use macros instead of inline functions. The other way is to mark small accessors with &lt;a href="https://docs.microsoft.com/en-us/cpp/cpp/inline-functions-cpp?redirectedfrom=MSDN&amp;amp;view=vs-2019#inline-__inline-and-__forceinline"&gt;__forceinline&lt;/a&gt; keyword (wrapped in a cross-platform macro of course).&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Given that it is easy to make a mistake with this approach, I recommend generating assembly output with &lt;a href="https://docs.microsoft.com/en-us/cpp/build/reference/fa-fa-listing-file?view=vs-2019"&gt;/FAs&lt;/a&gt; and checking it. Verify that optimization is applied as expected to functions, and that there are no non-inlined function calls in optimized sections. Optimized functions are preceded with the following line in VC assembly listing:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;; Function compile flags: /Ogtp
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Non-optimized functions have:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;; Function compile flags: /Odtp /ZI
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The key difference here is &lt;code&gt;/Og&lt;/code&gt; against &lt;code&gt;/Od&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;This is not the most clean and easy-to-use technique, but it can be helpful sometimes. For instance, the original Doom 3 engine contains a set of SIMD routines written in assembly. The most performance-critical of these routines are used every frame to compute animations and stencil shadows of dynamic meshes. Yeah, that's CPU-side shadows and animation, greetings from year 2004 =) We had to rewrite these routines with intrinsics in order to accelerate 64-bit build of TheDarkMod, since assembly is locked in 32-bit. One weak point of intrinsics is that they are quite slow in Debug. So we had to force-enable optimization on all the SIMD routines in the "Debug with Inlines" configuration.&lt;/p&gt;
+&lt;h3 id="conclusion"&gt;&lt;a class="toclink" href="#conclusion"&gt;Conclusion&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;All the materials used for benchmark are available in &lt;a href="https://github.com/stgatilov/FastDebugInVC_materials"&gt;this repo&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;I'd like to mention the article &lt;a href="https://mropert.github.io/2019/08/03/fifty_shades_of_debug/"&gt;Fifty shades of debug&lt;/a&gt; by Mathieu Ropert here. It contains many ideas similar to the ones presented in this article.&lt;/p&gt;</content><category term="cpp"></category><category term="msvc"></category><category term="debug"></category><category term="release"></category></entry><entry><title>utf8lut: Vectorized UTF-8 converter. Introduction</title><link href="https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-introduction.html" rel="alternate"></link><published>2019-08-04T15:31:00+07:00</published><updated>2019-08-04T15:31:00+07:00</updated><author><name>dirtyhandscoding</name></author><id>tag:dirtyhandscoding.github.io,2019-08-04:/posts/utf8lut-vectorized-utf-8-converter-introduction.html</id><summary type="html">&lt;p&gt;Some time ago I wrote &lt;a href="https://stackoverflow.com/a/31683632/556899"&gt;a surprising answer&lt;/a&gt; to stackoverflow question "Fastest way to get IPv4 address from string". At that very moment I discovered that &lt;a href="https://msdn.microsoft.com/en-us/library/bb531427(v=vs.120).aspx"&gt;_mm_shuffle_epi8&lt;/a&gt; instruction combined with sufficiently large lookup-table can do wonders. Actually, this exact methodology was used to implement vectorized merging algorithm in &lt;a href="https://dirtyhandscoding.github.io/posts/vectorizing-stdmerge-with-vpermd-from-avx2-and-lookup-table.html"&gt;one of my previous blog posts&lt;/a&gt;.&lt;/p&gt;
 &lt;p&gt;Inspired by the new discovery, I tried to apply this LUT + shuffle idea to some well-known and moderately generic problem. I tried to apply the idea to accelerate conversion from UTF-8 to UTF-16 and was successful. Initially, I had to postpone all efforts on the problem due to PhD-related activities. After that I thought that I would write a scientific article on the topic. When it became clear that I don't want to lose time on anything like that anymore, I decided to write about it in a blog. As a result, almost three years after the initial work (update: it is four years already), I finally managed to write this report, describing the algorithm and the &lt;strong&gt;utf8lut&lt;/strong&gt; library.&lt;/p&gt;
 </summary><content type="html">&lt;p&gt;Some time ago I wrote &lt;a href="https://stackoverflow.com/a/31683632/556899"&gt;a surprising answer&lt;/a&gt; to stackoverflow question "Fastest way to get IPv4 address from string". At that very moment I discovered that &lt;a href="https://msdn.microsoft.com/en-us/library/bb531427(v=vs.120).aspx"&gt;_mm_shuffle_epi8&lt;/a&gt; instruction combined with sufficiently large lookup-table can do wonders. Actually, this exact methodology was used to implement vectorized merging algorithm in &lt;a href="https://dirtyhandscoding.github.io/posts/vectorizing-stdmerge-with-vpermd-from-avx2-and-lookup-table.html"&gt;one of my previous blog posts&lt;/a&gt;.&lt;/p&gt;
 &lt;p&gt;Inspired by the new discovery, I tried to apply this LUT + shuffle idea to some well-known and moderately generic problem. I tried to apply the idea to accelerate conversion from UTF-8 to UTF-16 and was successful. Initially, I had to postpone all efforts on the problem due to PhD-related activities. After that I thought that I would write a scientific article on the topic. When it became clear that I don't want to lose time on anything like that anymore, I decided to write about it in a blog. As a result, almost three years after the initial work (update: it is four years already), I finally managed to write this report, describing the algorithm and the &lt;strong&gt;utf8lut&lt;/strong&gt; library.&lt;/p&gt;

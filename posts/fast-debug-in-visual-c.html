@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <!-- load favicon from /images -->
+        <link rel="icon" type="image/png" href="/images/favicon.png" />
+        <!-- stgatilov: properly detect device width on a mobile -->
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/> 
+
+        <meta charset="utf-8" />
+        <title>Fast Debug in Visual C++</title>
+        <link rel="stylesheet" href="https://dirtyhandscoding.github.io/theme/css/main.css" />
+        <link href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Dirty hands coding Atom Feed" />
+        <link href="/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="Dirty hands coding RSS Feed" />
+
+        <!--[if IE]>
+            <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+        <![endif]-->
+</head>
+
+<body id="index" class="home">
+        <header id="banner" class="body">
+                <h1><a href="https://dirtyhandscoding.github.io/">Dirty hands coding </a></h1>
+                <nav><ul>
+                    <li><a href="/archives.html">ARCHIVES</a></li>
+                    <li><a href="/categories.html">CATEGORIES</a></li>
+                    <li><a href="/tags.html">TAGS</a></li>
+                    <li><a href="/pages/contact.html">CONTACT</a></li>
+                </ul>
+<form class="navbar-search" action="https://dirtyhandscoding.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);">
+                        <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input">
+                    </form>
+                </nav>
+<div id="submenu">
+                    <ul>
+                            <li class="active"><a href="https://dirtyhandscoding.github.io/category/cc.html">C/C++</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/high-performance.html">High performance</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/the-dark-mod.html">The Dark Mod</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/uncategorized.html">Uncategorized</a></li>
+                    </ul>
+                <div>
+        </header><!-- /#banner -->
+<section id="content" class="body">
+  <article>
+    <header>
+      <h1 class="entry-title">
+        <a href="https://dirtyhandscoding.github.io/posts/fast-debug-in-visual-c.html" rel="bookmark"
+           title="Permalink to Fast Debug in Visual C++">Fast Debug in Visual C++</a></h1>
+    </header>
+
+    <div class="entry-content">
+<footer class="post-info">
+        <span>15 June 2020</span>
+	        <span>| in <a href="https://dirtyhandscoding.github.io/category/cc.html">C/C++</a></span>
+<span>| tags: <a href="https://dirtyhandscoding.github.io/tag/cpp.html">cpp</a><a href="https://dirtyhandscoding.github.io/tag/msvc.html">msvc</a><a href="https://dirtyhandscoding.github.io/tag/debug.html">debug</a><a href="https://dirtyhandscoding.github.io/tag/release.html">release</a></span>
+</footer><!-- /.post-info -->      
+      <p>It is <a href="https://stackoverflow.com/questions/12631609/why-is-this-code-100-times-slower-in-debug">well-known</a> that Debug build in Visual C++ is very slow compared to Release build, with the typical ratio about 10-20 times. Various reasons behind it are often stated, and some people even believe that it is inevitable because it is caused by lack of compiler optimizations.</p>
+<p>If some issue happens only on a large dataset or in a real-time application, and it cannot be extracted into a smaller test case, then developer is forced to debug Release build. Which is rather painful experience, because debugger has problems showing control flow, values of local variables, sometimes even currently executed function, since all these concepts are messed up by optimizations. Ironically, the more optimizer-friendly your code is, the worse would be your experience of debugging Release build =)</p>
+<p>Luckily, Visual C++ provides a lot of settings for tuning speed-vs-comfort ratio. It is entirely possible to create a "Fast Debug" configuration which works only a few times slower than Release yet is pretty easy to debug due to lack of optimizations.</p>
+
+
+<h2 id="settings"><a class="toclink" href="#settings">Settings</a></h2>
+<p>Below you can see three pieces of advice which can greatly improve performance of Debug build. Of course, none of these improvements are free: with every change you lose some nice debug helper, so don't throw away the full Debug build yet.</p>
+<h3 id="basic-runtime-checks"><a class="toclink" href="#basic-runtime-checks">Basic Runtime Checks</a></h3>
+<p>Disable either <a href="https://docs.microsoft.com/en-us/cpp/build/reference/rtc-run-time-error-checks?view=vs-2019">Basic Runtime Checks</a> or <a href="https://docs.microsoft.com/en-us/visualstudio/debugger/edit-and-continue-visual-cpp?view=vs-2019">Edit And Continue</a>.
+If you want to know why it becomes slow, I recommend reading the <a href="https://randomascii.wordpress.com/2011/07/22/visual-c-debug-buildsfast-checks-cause-5x-slowdowns/">full investigation by Bruce Dawson</a>. But the bottom line is that having both of these settings causes a huge slowdown.</p>
+<p>Unfortunately, both settings can be useful:</p>
+<ul>
+<li>
+<p>With Basic Runtime Checks enabled, debugger detects stack corruption. Such a hazard happens e.g. when a local array is modified out of bounds. There are other features included too, but this one seems to be the most useful, and you lose it if you disable the checks. Some stack errors will still be caught by <a href="https://docs.microsoft.com/en-us/cpp/build/reference/gs-buffer-security-check?view=vs-2019">Buffer Security Check</a>, which is enabled even in Release, but without certainty.</p>
+</li>
+<li>
+<p>Edit and Continue allows to pause program execution, edit the source code, update the build, and continue execution without restarting the application. This is especially useful in gamedev, as seen from the <a href="https://liveplusplus.tech/index.html">list of Live++ clients</a>. The built-in MSVC implementation is not very reliable, but it nevertheless proved useful in <a href="http://www.thedarkmod.com">TheDarkMod</a> development.</p>
+</li>
+</ul>
+<div class="center-content">
+    <img src="https://dirtyhandscoding.github.io/images/A_fast_debug/stack_corruption.png" class="w400" />
+    <img src="https://dirtyhandscoding.github.io/images/A_fast_debug/edit_and_continue.gif" class="w400" />
+</div>
+
+<p>In VC project, the Runtime Checks setting can be found in: <em>C/C++ -&gt; Code Generation -&gt; Basic Runtime Checks</em>. By default, the checks are enabled in Debug build, adding <code>/RTC1</code> command line switch. Choose "Default" in drop-down list to disable it.</p>
+<p>Speaking of "Edit and Continue", it is also enabled by default in Debug configuration. It can be found in: <em>C/C++ -&gt; General -&gt; Debug Information Format</em>. It generates <code>/ZI</code> compiler argument when enabled, and <code>/Zi</code> argument when disabled. Choose "Program Database" in drop-down list to disable it.</p>
+<p>In CMake-generated project, the checks are also enabled by default. But as it often happens with CMake, <a href="https://stackoverflow.com/questions/8587764/remove-runtime-checks-compiler-flag-per-project-in-cmake">the setting is not exposed</a>. The simplest way to disable it is to remove it from compiler global parameters:</p>
+<div class="highlight"><pre><span></span><span class="nb">string</span><span class="p">(</span><span class="s">REPLACE</span> <span class="s2">&quot;/RTC1&quot;</span> <span class="s2">&quot;&quot;</span> <span class="s">CMAKE_CXX_FLAGS_DEBUG</span> <span class="s2">&quot;${CMAKE_CXX_FLAGS_DEBUG}&quot;</span><span class="p">)</span>
+</pre></div>
+
+
+<p>The "Edit and Continue" feature is disabled by default in CMake-generated projects. You have to do additional work if you want to enable it, but that's outside the scope of this article.</p>
+<h3 id="inlining"><a class="toclink" href="#inlining">Inlining</a></h3>
+<p>Enable <a href="https://docs.microsoft.com/en-us/cpp/build/reference/ob-inline-function-expansion?view=vs-2019">inlining level 1</a> (\Ob1).
+It allows VC compiler to inline calls to functions which are considered 'inline' according to C++ language rules. Function calls are cheap as far as I know, but inlining matters a lot for good performance because it allows to optimize the code much better (since optimizer operates on per-function basis).
+However, limited inlining helps without generic optimizations too. In most cases, only tiny functions and functions marked forceinline are inlined with <code>/Ob1</code>, so it does not harm debugging. But keep in mind that sometimes it can inline a function you want to debug.</p>
+<p>The /Ob1 settings was enabled in <a href="https://github.com/id-Software/DOOM-3/blob/master/neo/_WithInlines.props">"Debug with Inlines" configuration</a> in Doom 3 source code. We still use it in TheDarkMod. It boosts FPS without noticeable drawbacks.</p>
+<p>By default, both VC project and CMake completely disable inlining in Debug build (<code>/Od</code>). In VC project you can find the setting in: <em>C/C++ -&gt; Optimization -&gt; Inline Function Expansion</em>. Choose "Only __inline" from drop-down list to enable it, resulting in <code>/Ob1</code> compiler argument. In CMake the easiest way to enable it is to add a global compiler parameter, although it can also be done on per-file basis:</p>
+<div class="highlight"><pre><span></span><span class="c"># globally:</span>
+<span class="nb">set</span><span class="p">(</span><span class="s">CMAKE_CXX_FLAGS_DEBUG</span> <span class="s2">&quot;${CMAKE_CXX_FLAGS_DEBUG} /Ob1&quot;</span><span class="p">)</span>
+<span class="c"># for specified source files:</span>
+<span class="nb">set_source_files_properties</span><span class="p">(</span><span class="o">${</span><span class="nv">sources</span><span class="o">}</span> <span class="s">PROPERTIES</span> <span class="s">COMPILE_FLAGS</span> <span class="s2">&quot;/Ob1&quot;</span><span class="p">)</span>
+</pre></div>
+
+
+<p>By the way, CMake uses <code>/Ob1</code> by default in its RelWithDebInfo configuration. In order to get full Release build with CMake, one has either to enable <code>/Ob2</code> manually on RelWithDebInfo build or to enable debugging information in Release build.</p>
+<h3 id="version-of-crt"><a class="toclink" href="#version-of-crt">Version of CRT</a></h3>
+<p>Use <a href="https://docs.microsoft.com/en-us/cpp/build/reference/md-mt-ld-use-run-time-library?view=vs-2019">Release version of C Runtime Library</a>.
+Doing so in debug build is rather questionable idea. Depending on CRT version, compiler sets <code>_DEBUG</code> define and enables/disables <a href="https://docs.microsoft.com/en-us/cpp/standard-library/debug-iterator-support?view=vs-2019">iterator debugging</a>. Hence, ABI usually depends on CRT version, i.e. you <a href="https://stackoverflow.com/questions/11658915/mixing-debug-and-release-library-binary-bad-practice">cannot link</a> together object files compiled against debug and release versions of CRT. Except if you write in pure C or avoid STL completely: in such case you can link debug and release code.</p>
+<p>The immediate consequence of ABI change is that you are forced to use release builds of prebuilt libraries if you use release CRT. But this is not necessarily a problem, since in most cases you don't have to debug third-party libraries. Quite the opposite, using release libraries allows you to greatly accelerate your debug build if the program spends much time in them. Perhaps "Unoptimized Release" would be better name for such configuration than "Fast Debug" though.</p>
+<p>Other downsides of using release CRT are:</p>
+<ol>
+<li>
+<p>No more iterator debugging. Most importantly, using <code>std::vector&lt;T&gt;::operator[]</code> with index out of range won't trigger any error. You are lucky if you use your own containers instead of STL, because you can still have an assert in your <code>operator[]</code> for a very low performance cost. You will lose even more debug checks if you love putting STL iterators everywhere (I don't care since I prefer indices to iterators).</p>
+</li>
+<li>
+<p>Heap corruption check gone. This check allows to detect writes to heap block outside of its bounds. Without the check, the heap would probably break anyway, but it would happen later and diagnostic message would be less helpful.</p>
+</li>
+</ol>
+<div class="center-content">
+    <img src="https://dirtyhandscoding.github.io/images/A_fast_debug/iterator_debugging.png" class="w400" />
+    <img src="https://dirtyhandscoding.github.io/images/A_fast_debug/heap_corruption.png" class="w400" />
+</div>
+
+<p>Both in VC project and in CMake-generated project, debug CRT is used for Debug build by default. More precisely <code>/MDd</code> argument, which means "Multithreaded Debug DLL". In VC project settings, it can be found in <em>C/C++ -&gt; Code Generation -&gt; Runtime Library</em>. Choose "Multi-threaded DLL" in drop-down list to switch to release CRT (which is <code>/MD</code>).</p>
+<p>Changing the setting in CMake is more difficult. One way is to replace global compiler argument:</p>
+<div class="highlight"><pre><span></span><span class="nb">string</span><span class="p">(</span><span class="s">REPLACE</span> <span class="s2">&quot;/MDd&quot;</span> <span class="s2">&quot;/MD&quot;</span> <span class="s">CMAKE_CXX_FLAGS_DEBUG</span> <span class="s2">&quot;${CMAKE_CXX_FLAGS_DEBUG}&quot;</span><span class="p">)</span>
+</pre></div>
+
+
+<p>More correct approach is to use the new <a href="https://cmake.org/cmake/help/latest/prop_tgt/MSVC_RUNTIME_LIBRARY.html#prop_tgt:MSVC_RUNTIME_LIBRARY">MSVC_RUNTIME_LIBRARY</a> property, but it did not work for me.</p>
+<h2 id="benchmark"><a class="toclink" href="#benchmark">Benchmark</a></h2>
+<p>A piece of code working with small <code>std::vector</code> is shown below. Note that you should avoid making small local vectors for good performance. Better use local array, vector-like container which can be linked to local buffer, or custom allocator. This test is ill-written, and stresses low-level performance, heap operations, and methods inlining. All the performance issues are severely magnified, so don't expect the same gains on a real program.</p>
+<div class="highlight"><pre><span></span><span class="c1">//almost all the time is spent in this function (in.size() == 5)</span>
+<span class="k">static</span> <span class="n">NOINLINE</span> <span class="kt">int</span> <span class="nf">OrderSum</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="o">&amp;</span><span class="n">in</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">sorted</span><span class="p">;</span>
+    <span class="n">sorted</span> <span class="o">=</span> <span class="n">in</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="n">n</span> <span class="o">=</span> <span class="n">sorted</span><span class="p">.</span><span class="n">size</span><span class="p">();</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
+        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">i</span><span class="p">;</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">sorted</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">sorted</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+                <span class="n">std</span><span class="o">::</span><span class="n">swap</span><span class="p">(</span><span class="n">sorted</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">sorted</span><span class="p">[</span><span class="n">j</span><span class="p">]);</span>
+    <span class="kt">int</span> <span class="n">res</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
+        <span class="n">res</span> <span class="o">+=</span> <span class="n">sorted</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">res</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">int64_t</span> <span class="n">GlobalSum</span><span class="p">;</span>
+<span class="kt">void</span> <span class="nf">FullTest</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">static</span> <span class="k">const</span> <span class="kt">int</span> <span class="n">SIZE</span> <span class="o">=</span> <span class="mi">5</span><span class="p">;</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">vec</span><span class="p">;</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">SIZE</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
+        <span class="n">vec</span><span class="p">.</span><span class="n">push_back</span><span class="p">((</span><span class="n">i</span><span class="o">*</span><span class="mi">3</span><span class="p">)</span><span class="o">%</span><span class="mi">5</span> <span class="o">+</span> <span class="n">i</span><span class="p">);</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">q</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">q</span> <span class="o">&lt;</span> <span class="mi">1000</span><span class="p">;</span> <span class="n">q</span><span class="o">++</span><span class="p">)</span>
+        <span class="n">GlobalSum</span> <span class="o">+=</span> <span class="n">OrderSum</span><span class="p">(</span><span class="n">vec</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>The call of <code>FullTest</code> is wrapped into a large loop executed for at least one second. The total time is divided by total number of <code>OrderSum</code> calls, obtaining the average time spent per one <code>OrderSum</code> call. Default project was created in VC2017, x64 Debug configuration is used with only the explicitly stated modifications. The program is run 3 times under devenv with debugger attached, median time is recorded. Ryzen 1600 CPU is used.</p>
+<div class="center-content">
+<table class="w500 solid-cells centered-cells nowrap-cells">
+<caption>Time spent per OrderSum call, in nanoseconds</caption>  
+<tr>
+  <th>E&C disabled</th>
+  <th>/RTC disabled</th>
+  <th>/Ob1 enabled</th>
+  <th>release CRT</th>
+  <th>result</th>
+</tr>
+<tr>
+  <td>no</td>
+  <td>no</td>
+  <td>no</td>
+  <td>no</td>
+  <td>20700</td>
+</tr>
+<tr>
+  <td>yes</td>
+  <td>no</td>
+  <td>no</td>
+  <td>no</td>
+  <td>7321</td>
+</tr>
+<tr>
+  <td>no</td>
+  <td>yes</td>
+  <td>no</td>
+  <td>no</td>
+  <td>3565</td>
+</tr>
+<tr>
+  <td>yes</td>
+  <td>yes</td>
+  <td>no</td>
+  <td>no</td>
+  <td>3491</td>
+</tr>
+<tr>
+  <td>no</td>
+  <td>no</td>
+  <td>yes</td>
+  <td>no</td>
+  <td>4278</td>
+</tr>
+<tr>
+  <td>yes</td>
+  <td>no</td>
+  <td>yes</td>
+  <td>no</td>
+  <td>2455</td>
+</tr>
+<tr>
+  <td>no</td>
+  <td>yes</td>
+  <td>yes</td>
+  <td>no</td>
+  <td>1379</td>
+</tr>
+<tr>
+  <td>yes</td>
+  <td>yes</td>
+  <td>yes</td>
+  <td>no</td>
+  <td>1339</td>
+</tr>
+<tr>
+  <td>no</td>
+  <td>no</td>
+  <td>no</td>
+  <td>yes</td>
+  <td>10716</td>
+</tr>
+<tr>
+  <td>yes</td>
+  <td>no</td>
+  <td>no</td>
+  <td>yes</td>
+  <td>3596</td>
+</tr>
+<tr>
+  <td>no</td>
+  <td>yes</td>
+  <td>no</td>
+  <td>yes</td>
+  <td>1617</td>
+</tr>
+<tr>
+  <td>yes</td>
+  <td>yes</td>
+  <td>no</td>
+  <td>yes</td>
+  <td>1693</td>
+</tr>
+<tr>
+  <td>no</td>
+  <td>no</td>
+  <td>yes</td>
+  <td>yes</td>
+  <td>848</td>
+</tr>
+<tr>
+  <td>yes</td>
+  <td>no</td>
+  <td>yes</td>
+  <td>yes</td>
+  <td>506</td>
+</tr>
+<tr>
+  <td>no</td>
+  <td>yes</td>
+  <td>yes</td>
+  <td>yes</td>
+  <td>268</td>
+</tr>
+<tr>
+  <td>yes</td>
+  <td>yes</td>
+  <td>yes</td>
+  <td>yes</td>
+  <td>268</td>
+</tr>
+<tr>
+  <td></td>
+  <td></td>
+  <td></td>
+  <td>[release]</td>
+  <td>86</td>
+</tr>
+</table>
+</div>
+
+<p>Some conclusions from the raw data:</p>
+<ul>
+<li>
+<p>If you have already disabled Runtime Checks, then disabling Edit and Continue yields no additional performance improvement.</p>
+</li>
+<li>
+<p>Disabling Edit and Continue is less helpful than disabling Runtime Checks (about <strong>2x</strong> difference in time).</p>
+</li>
+<li>
+<p>Aside from correlation between Edit and Continue and Runtime Checks, all settings are more or less independent.</p>
+</li>
+<li>
+<p>Disabling Runtime Checks improves performance in <strong>6x</strong> times without inlining, and in <strong>3x</strong> times with inlining.</p>
+</li>
+<li>
+<p>Inlining accelerates the code in <strong>3x</strong> times without release CRT but with Runtime Checks disabled.</p>
+</li>
+<li>
+<p>Release CRT makes the code faster in <strong>2x</strong> times, given that inlining is disabled.</p>
+</li>
+<li>
+<p>Release CRT and inlining have major synergy, providing impressive <strong>x14</strong> boost together when Runtime Checks are disabled.</p>
+</li>
+<li>
+<p>Default Debug build is <strong>x240</strong> times slower than default Release build. With all the aforementioned settings enabled, Fast Debug build is only <strong>x3</strong> times slower than Release build (and that's with optimization still disabled!). The total improvement of Fast Debug over default Debug is <strong>77x</strong> times.</p>
+</li>
+</ul>
+<p>I hope this example ruins the myth that Debug build is slow because it lacks optimization, and that two-digit slowdown is inevitable. Indeed, you still need Debug build to simplify debugging all the nasty issues, but I think Fast Debug build should be the default one used for debugging.</p>
+<h2 id="localized-tuning"><a class="toclink" href="#localized-tuning">Localized tuning</a></h2>
+<p>If debug speed really matters to you, you shouldn't stop at tweaking global settings. In most cases there are few places in the program which waste considerable amount of time. Usually these places are well-written and are almost never touched with debugger. If a bit of code spends time but does not need to be debugged, it's better to enable optimization on it locally.</p>
+<h5 id="third-party-libraries"><a class="toclink" href="#third-party-libraries">Third-party libraries</a></h5>
+<p>A common case is when performance-heavy code is inside a prebuilt library. You don't want to debug that library, so it would be great to use its release version in your debug build. There are several ways to achieve it:</p>
+<ol>
+<li>
+<p>If it is a pure C library or a C++ library without STL, then its release version can be linked with debug code statically. If it contains any of the STL, then you won't be able to do this due to settings mismatch (iterator debugging and CRT version). Otherwise you can link it even if it was compiled with release CRT and the rest of the code uses debug CRT. A warning about the mismatch can be muted.</p>
+</li>
+<li>
+<p>You can build the library as DLL with CRT statically linked in. This DLL can be used in any application, as long as the exported interface contains no STL and does not pass heap allocations across DLL boundary. If any of this happens (it almost certainly happens for a heavy C++ library), then you cannot use this approach. Perhaps there are more restrictions here, e.g. you should not print to console both in the DLL and in your application. That's the typical pain from having several CRTs in a program.</p>
+</li>
+<li>
+<p>Finally, you can switch your code to release CRT, as suggested <a href="https://dirtyhandscoding.github.io/posts/fast-debug-in-visual-c.html#version-of-crt">above</a>. Then you will have to link release versions of all third-party libraries, although this is not a problem in most cases. And you will lose the benefits of debug CRT of course.</p>
+</li>
+</ol>
+<h5 id="pragma-optimize"><a class="toclink" href="#pragma-optimize">Pragma optimize</a></h5>
+<p>The other case is a performance-heavy piece of your own code. Let's assume it is so heavy and polished, that it can be kept optimized even in debug. There are two ways to do this:</p>
+<ol>
+<li>
+<p>Enable optimization on a single translation unit, i.e. on cpp file. It can be done both in the VC project file and in CMake. This approach has limited flexibility.</p>
+</li>
+<li>
+<p>Enable optimization on a few functions. This can be done with <a href="https://docs.microsoft.com/en-us/cpp/preprocessor/optimize?view=vs-2019">#pragma optimize</a> directive.</p>
+</li>
+</ol>
+<p>Let's concentrate on the latter. An important thing to know is that <code>#pragma</code> directive can be used inside macros in its <a href="https://stackoverflow.com/questions/23790112/what-is-pragma-and-what-are-the-differences-between-pragma-and-pragma">__pragma</a> form, so it is possible to wrap optimization pragmas into macros which are enabled depending on compiler and configuration:</p>
+<div class="highlight"><pre><span></span>#if defined(_MSC_VER) &amp;&amp; defined(OPTIMIZE_DEBUG)
+  //force optimization of this code section in special debug configuration
+  #define DEBUG_OPTIMIZE_ON __pragma(optimize(&quot;gt&quot;, on))    //enable optimizations
+  #define DEBUG_OPTIMIZE_OFF __pragma(optimize(&quot;&quot;, on))     //reset optimization settings
+#else
+  #define DEBUG_OPTIMIZE_ON
+  #define DEBUG_OPTIMIZE_OFF
+#endif
+</pre></div>
+
+
+<p>Optimization can be force-enabled for a bunch of functions like this (excerpt from TheDarkMod):</p>
+<div class="highlight"><pre><span></span><span class="n">DEBUG_OPTIMIZE_ON</span>
+<span class="kt">void</span> <span class="nf">R_GlobalPlaneToLocal</span><span class="p">(</span> <span class="k">const</span> <span class="kt">float</span> <span class="n">modelMatrix</span><span class="p">[</span><span class="mi">16</span><span class="p">],</span> <span class="k">const</span> <span class="n">idPlane</span> <span class="o">&amp;</span><span class="n">in</span><span class="p">,</span> <span class="n">idPlane</span> <span class="o">&amp;</span><span class="n">out</span> <span class="p">)</span> <span class="p">{</span>
+    <span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">DotProduct</span><span class="p">(</span> <span class="n">in</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">modelMatrix</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="p">);</span>
+    <span class="n">out</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">DotProduct</span><span class="p">(</span> <span class="n">in</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">modelMatrix</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="p">);</span>
+    <span class="n">out</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">DotProduct</span><span class="p">(</span> <span class="n">in</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">modelMatrix</span><span class="p">[</span><span class="mi">8</span><span class="p">]</span> <span class="p">);</span>
+    <span class="n">out</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">in</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">+</span> <span class="n">modelMatrix</span><span class="p">[</span><span class="mi">12</span><span class="p">]</span> <span class="o">*</span> <span class="n">in</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">modelMatrix</span><span class="p">[</span><span class="mi">13</span><span class="p">]</span> <span class="o">*</span> <span class="n">in</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">modelMatrix</span><span class="p">[</span><span class="mi">14</span><span class="p">]</span> <span class="o">*</span> <span class="n">in</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+<span class="p">}</span>
+<span class="n">DEBUG_OPTIMIZE_OFF</span>
+</pre></div>
+
+
+<p>There are several details to keep in mind:</p>
+<ul>
+<li>
+<p>I suggest creating a special macro flag <code>OPTIMIZE_DEBUG</code> for this tweak, since there is no predefined macro showing optimization level or build configuration. The macro <code>_DEBUG</code> is usually defined when debug CRT is used, so it will be missing if you switch your Debug build to release CRT. The macro <code>NDEBUG</code> only affects removal of asserts.</p>
+</li>
+<li>
+<p>Be sure to close the section of force-optimized code with <code>DEBUG_OPTIMIZE_OFF</code>, otherwise the rest of cpp file will become surprisingly hard to debug.</p>
+</li>
+<li>
+<p>The tweak has no effect on template and/or inline functions. One cannot just surround the body of such function and think it will be optimized. Because template functions are compiled when they are instantiated (this usually happens implicitly), and inline functions are compiled as the part of the function they are inlined into (at least optimization matters at this moment). It shouldn't confuse people who know how machine code is generated.</p>
+</li>
+<li>
+<p>Function calls are rarely inlined in debug builds, even if <code>/Ob1</code> is enabled (and absolutely never if it's disabled). One way to workaround the issue is to use macros instead of inline functions. The other way is to mark small accessors with <a href="https://docs.microsoft.com/en-us/cpp/cpp/inline-functions-cpp?redirectedfrom=MSDN&amp;view=vs-2019#inline-__inline-and-__forceinline">__forceinline</a> keyword (wrapped in a cross-platform macro of course).</p>
+</li>
+</ul>
+<p>Given that it is easy to make a mistake with this approach, I recommend generating assembly output with <a href="https://docs.microsoft.com/en-us/cpp/build/reference/fa-fa-listing-file?view=vs-2019">/FAs</a> and checking it. Verify that optimization is applied as expected to functions, and that there are no non-inlined function calls in optimized sections. Optimized functions are preceded with the following line in VC assembly listing:</p>
+<div class="highlight"><pre><span></span>; Function compile flags: /Ogtp
+</pre></div>
+
+
+<p>Non-optimized functions have:</p>
+<div class="highlight"><pre><span></span>; Function compile flags: /Odtp /ZI
+</pre></div>
+
+
+<p>The key difference here is <code>/Og</code> against <code>/Od</code>.</p>
+<p>This is not the most clean and easy-to-use technique, but it can be helpful sometimes. For instance, the original Doom 3 engine contains a set of SIMD routines written in assembly. The most performance-critical of these routines are used every frame to compute animations and stencil shadows of dynamic meshes. Yeah, that's CPU-side shadows and animation, greetings from year 2004 =) We had to rewrite these routines with intrinsics in order to accelerate 64-bit build of TheDarkMod, since assembly is locked in 32-bit. One weak point of intrinsics is that they are quite slow in Debug. So we had to force-enable optimization on all the SIMD routines in the "Debug with Inlines" configuration.</p>
+<h3 id="conclusion"><a class="toclink" href="#conclusion">Conclusion</a></h3>
+<p>All the materials used for benchmark are available in <a href="https://github.com/stgatilov/FastDebugInVC_materials">this repo</a>.</p>
+<p>I'd like to mention the article <a href="https://mropert.github.io/2019/08/03/fifty_shades_of_debug/">Fifty shades of debug</a> by Mathieu Ropert here. It contains many ideas similar to the ones presented in this article.</p>
+      
+    </div><!-- /.entry-content -->
+    <section>
+        <div id="post-share-links" class="inline-menu">
+            <div>Share on:</div>
+            <a href="https://twitter.com/intent/tweet?text=Fast%20Debug%20in%20Visual%20C%2B%2B&url=https%3A//dirtyhandscoding.github.io/posts/fast-debug-in-visual-c.html" target="_blank" class="icon-label" title="Share on Twitter">Twitter</a><!--
+            --><a href="http://www.facebook.com/sharer/sharer.php?u=https%3A//dirtyhandscoding.github.io/posts/fast-debug-in-visual-c.html" target="_blank" class="icon-label" title="Share on Facebook">Facebook</a><!--
+            --><a href="https://plus.google.com/share?url=https%3A//dirtyhandscoding.github.io/posts/fast-debug-in-visual-c.html" target="_blank" class="icon-label" title="Share on Google Plus">Google+</a><!--
+            --><a href="https://sharetodiaspora.github.io/?title=Fast%20Debug%20in%20Visual%20C%2B%2B&url=https%3A//dirtyhandscoding.github.io/posts/fast-debug-in-visual-c.html" target="_blank" class="icon-label" title="Share on Diaspora">Diaspora*</a><!--
+            --><a href="https://news.ycombinator.com/submitlink?t=Fast%20Debug%20in%20Visual%20C%2B%2B&u=https%3A//dirtyhandscoding.github.io/posts/fast-debug-in-visual-c.html" target="_blank" class="icon-label" title="Share on HackerNews">HackerNews</a><!--
+            --><a href="mailto:?subject=Fast%20Debug%20in%20Visual%20C%2B%2B&amp;body=https%3A//dirtyhandscoding.github.io/posts/fast-debug-in-visual-c.html" target="_blank" class="icon-label" title="Share via Email">Email</a>
+        </div>
+    </section>
+    
+    			<!--<script type="text/javascript" src="http://code.jquery.com/jquery-2.1.4.min.js"></script>-->
+		<script src="https://dirtyhandscoding.github.io/theme/js/jquery.min.js"></script>
+	<script type="text/javascript" src="https://dirtyhandscoding.github.io/theme/pelican_comment_system/comments.js"></script>
+	<script type="text/javascript">
+		$(document).ready(function() {
+			CommentSystem.email_user   = "itiswrongemail";
+			CommentSystem.email_domain = "outlook.com";
+
+			$('#pcs-comment-form').on("submit",
+				function( event )
+				{
+					event.preventDefault();
+					$(location).attr('href', CommentSystem.getMailtoLink("fast-debug-in-visual-c"));
+				}
+			);
+		});
+	</script>
+
+    	<section>
+	<div id="pcs-comments-header" class="inline-menu">
+	<header>
+		<div>Comments (0)</div>
+		<button type="button" title="Expand or collapse the comments section" class="icon-label" id="pcs-comments-collapse-button" onclick="CommentSystem.collapsible($('#pcs-comments'), $(this));">
+			<span class="nocss">expand</span>
+		</button>
+			<a href="https://dirtyhandscoding.github.io/feeds/comment.fast-debug-in-visual-c.atom.xml" class="icon-label">atom feed: comments</a>
+	</header>
+	</div>
+	<div id="pcs-comments">
+		<p>There are no comments yet.</p>
+	<section>
+	<div display="none" id="pcs-comment-notreply-helper" />
+	<form id="pcs-comment-form" action="#">
+		<fieldset>
+		<legend>Add a Comment</legend>
+		<div id="pcs-comment-tab-inputs">
+			<input type="hidden" id="pcs-comment-form-input-replyto"/>
+			<label for="pcs-comment-form-input-name">Name</label>
+			<input  id="pcs-comment-form-input-name" type="text" size="40" placeholder="Enter your name or nickname" />
+			<br/>
+			<label for="pcs-comment-form-input-website">Website</label>
+			<input  id="pcs-comment-form-input-website" type="text" size="40" placeholder="Enter your website (optional)" />
+			<br/>
+			<label for="pcs-comment-form-input-empty">Empty</label>
+			<input  id="pcs-comment-form-input-empty" type="text" size="30" placeholder="Do NOT enter anything here!" />
+			<label   for="pcs-comment-form-input-textarea">Your Comment</label>
+			<br/>
+			<textarea id="pcs-comment-form-input-textarea" rows="7" cols="40" placeholder="Enter your comment (markdown is allowed)"></textarea>
+		</div>
+		<div id="pcs-comment-tab-message" style="display:none">
+			<textarea readonly rows="10" cols="40"></textarea>
+		</div>
+
+		<button type="submit"
+				id="pcs-comment-form-button-submit"
+				title="Create mailto link and open it in default email client &#10;Note: you have to send the email to post comment"
+				>Post via email</button>
+		<button type="button"
+				id="pcs-comment-form-button-message"
+				title="See the text of email message to be sent &#10;Note: you can copy it and send manually"
+				onclick="CommentSystem.viewEmail(&quot;fast-debug-in-visual-c&quot;);"
+				>View email text</button>
+		<a target="_blank"
+				id="pcs-comment-gmail-config-help"
+				title="How to configure Chrome to open mailto links in Gmail..."
+				href="https://productforums.google.com/forum/#!topic/gmail/JtWVPbUfh-o"
+				>?</a>
+		</fieldset>
+
+		<!--			<a href="https://dirtyhandscoding.github.io/feeds/comment.fast-debug-in-visual-c.atom.xml">
+				Comment Atom Feed
+			</a>
+-->
+	</form>
+	<script>CommentSystem.displayReplyTo();</script>
+</section>
+
+	</div>
+	<script>
+		$('#pcs-comments').css({display: "none"});
+		$('#pcs-comments-collapse-button').addClass('collapsed');
+	</script>
+</section>
+
+  </article>
+</section>
+        <section id="extras" class="body">
+                <div class="social">
+                        <h2>social</h2>
+                        <ul>
+                            <li><a href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate">atom feed</a></li>
+                            <li><a href="/feeds/all.rss.xml" type="application/rss+xml" rel="alternate">rss feed</a></li>
+
+                        </ul>
+                </div><!-- /.social -->
+        </section><!-- /#extras -->
+
+        <footer id="contentinfo" class="body">
+                <p>Powered by <a href="http://getpelican.com/">Pelican</a>. Theme <a href="https://github.com/blueicefield/pelican-blueidea/">blueidea</a>, customized to personal taste.</p>
+        </footer><!-- /#contentinfo -->
+
+</body>
+</html>

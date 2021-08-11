@@ -68,7 +68,7 @@
 
 <h2 id="comparison-network"><a class="toclink" href="#comparison-network">Comparison network</a></h2>
 <p>Consider the sample implementation. The best known sorting network for N = 16 was <a href="http://www.hanshq.net/knuth-cheque.html">invented by Green in 1969</a>, it contains 60 comparators which can be processed in 10 batches.</p>
-<div class="highlight"><pre><span></span><span class="cp">#ifdef _MSC_VER</span>
+<div class="highlight"><pre><span></span><code><span class="cp">#ifdef _MSC_VER</span>
     <span class="cp">#define MIN(x, y) (x &lt; y ? x : y)</span>
     <span class="cp">#define MAX(x, y) (x &lt; y ? y : x) </span>
     <span class="cp">#define COMPARATOR(i, j) {  \</span>
@@ -100,8 +100,7 @@
 <span class="n">COMPARATOR</span><span class="p">(</span><span class="mi">11</span><span class="p">,</span> <span class="mi">12</span><span class="p">);</span>
 <span class="n">COMPARATOR</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">);</span>
 <span class="n">COMPARATOR</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">);</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>Notice all the hard work to implement comparators in efficient way. For MSVC, ordinary min/max implementation via ternary operator is OK (note: do not try to use <code>std::min</code> and <code>std::max</code>, they are <a href="https://randomascii.wordpress.com/2013/11/24/stdmin-causing-three-times-slowdown-on-vc/">not optimizer-friendly</a>). The same works well on ICC and Clang, according to <a href="https://godbolt.org/">gcc.godbolt</a>. But on GCC it does not generate <code>cmov</code>, so I had to copy/paste some piece of inline assembly from somewhere. Note that the version with branches is <strong>2.7</strong> times slower than branchess version with cmovs on my machine.</p>
 <p>A sorting algorithm based on comparison network satisfies points 1, 2, and 4 of the list above. It can be implemented in branchless way, although you have be extremely careful and check assembly output to make sure that cmov instructions are actually generated. Comparison network was initially designed as a parallel algorithm, so a lot of comparisons can be done in parallel. Given that for a fixed and small size the whole network is usually fully unrolled, the CPU is free to schedule as many instructions as it can at every moment. Finally, the algorithm is as simple as "do the given list of compare-and-swap operations", so there is no overhead which could waste performance.</p>
@@ -113,7 +112,7 @@
 <p><img src="https://dirtyhandscoding.github.io/images/4_simd_small_sort/count_position1.png" class="centered w700" /></p>
 <p>If equal elements are possible in the input array, then counting algorithm becomes more complicated. Let's try to make our sorting algorithm stable. Then the final position of element <em>A[i] = X</em> is equal to the number of elements less than <em>X</em> plus the number of elements equal to <em>X</em> located to the left of position <em>i</em>. It means that in addition to less elements, we also have to count number of equal elements, although only in about half of the array. This additional computation is inevitable, unless you are absolutely sure the input array has no duplicates.</p>
 <p>The simple implementation of the suggested algorithm looks like this:</p>
-<div class="highlight"><pre><span></span><span class="k">for</span> <span class="p">(</span><span class="kt">size_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">Count</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="k">for</span> <span class="p">(</span><span class="kt">size_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">Count</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
     <span class="kt">int</span> <span class="n">elem</span> <span class="o">=</span> <span class="n">inKeys</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
     <span class="kt">size_t</span> <span class="n">cnt</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
     <span class="k">for</span> <span class="p">(</span><span class="kt">size_t</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">Count</span><span class="p">;</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span>
@@ -122,31 +121,28 @@
         <span class="n">cnt</span> <span class="o">+=</span> <span class="p">(</span><span class="n">inKeys</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="n">elem</span><span class="p">);</span>
     <span class="n">dstKeys</span><span class="p">[</span><span class="n">cnt</span><span class="p">]</span> <span class="o">=</span> <span class="n">elem</span><span class="p">;</span>
 <span class="p">}</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>How should this sorting algorithm be called? I have never seen anything like this before. However, while looking for Green's sorting network at <a href="https://github.com/Morwenn/cpp-sort">Morwenn's repository</a>, I stumbled upon <a href="https://github.com/Morwenn/cpp-sort/wiki/Original-research">a page</a> which contains an interesting link at the very end. It points to the so-called <a href="http://www.geocities.ws/p356spt/">"Exact sort"</a>, which is exactly what I described just above. I don't like this name, because it gives too much attention to the very last step of the algorithm (i.e. moving elements to their places). In my opinion, the element-counting mechanic is the much more important part of the algorithm, which will be evident in the next section. That's why I prefer to call it "position-counting sort" (<a href="https://en.wikipedia.org/wiki/Counting_sort">"counting sort"</a> is already taken).</p>
 <p>Let's recall the sacred four points. The algorithm is very simple in its core. It has no branches if fully unrolled (recall: array size is small and compile-time constaint). Note that the comparison does not generate a branch in x86. Unrolling this code is not recommended, even without unrolling branches should be well-predicted. As for data dependencies: outer iterations are completely independent, the inner loops behave like the <a href="http://www.drdobbs.com/architecture-and-design/parallel-pattern-7-reduce/222000718">reduce</a> algorithm, so their iterations can be made quite independent from each other too. Finally, the data access patterns are very simple: inner loops access all elements sequentally (order does not even matter). This means that we can attempt to vectorize this algorithm.</p>
 <h2 id="vectorization"><a class="toclink" href="#vectorization">Vectorization</a></h2>
 <p>As just noted, data dependencies are rather weak across iterations of both loops. So it makes sense to vectorize both by iterations of inner and outer loops. Vectorization of inner iterations should produce something like:</p>
-<div class="highlight"><pre><span></span><span class="kr">__m128i</span> <span class="n">cnt</span> <span class="o">=</span> <span class="n">_mm_setzero_si128</span><span class="p">();</span>
+<div class="highlight"><pre><span></span><code><span class="kr">__m128i</span> <span class="n">cnt</span> <span class="o">=</span> <span class="n">_mm_setzero_si128</span><span class="p">();</span>
 <span class="k">for</span> <span class="p">(</span><span class="kt">size_t</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">Count</span><span class="p">;</span> <span class="n">j</span> <span class="o">+=</span> <span class="mi">4</span><span class="p">)</span> <span class="p">{</span>
     <span class="kr">__m128i</span> <span class="n">data</span> <span class="o">=</span> <span class="n">_mm_load_si128</span><span class="p">((</span><span class="kr">__m128i</span><span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">inKeys</span><span class="p">[</span><span class="n">j</span><span class="p">]);</span>
     <span class="n">cnt</span> <span class="o">=</span> <span class="n">_mm_sub_epi32</span><span class="p">(</span><span class="n">cnt</span><span class="p">,</span> <span class="n">_mm_cmplt_epi32</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">elem_x4</span><span class="p">));</span>
 <span class="p">}</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>At the end, horizontal sum of <code>cnt</code> register has to be computed to obtain the sought-for final position of the considered element. In order to reduce number of loads, make horizontal sum faster, and in general reduce the overhead of loops, we can also process the elements to be moved in packs of four. So in the outer loop we load four elements at once too.</p>
 <p>Here is the plan (bottom half shows horizontal sum at the end):
 <img src="https://dirtyhandscoding.github.io/images/4_simd_small_sort/vectorized_count2.png" class="centered w600" /></p>
 <p>The code starts by iterating over the elements to be moved:</p>
-<div class="highlight"><pre><span></span><span class="k">for</span> <span class="p">(</span><span class="kt">size_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">Count</span><span class="p">;</span> <span class="n">i</span> <span class="o">+=</span> <span class="mi">4</span><span class="p">)</span> <span class="p">{</span>
-</pre></div>
-
+<div class="highlight"><pre><span></span><code><span class="k">for</span> <span class="p">(</span><span class="kt">size_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">Count</span><span class="p">;</span> <span class="n">i</span> <span class="o">+=</span> <span class="mi">4</span><span class="p">)</span> <span class="p">{</span>
+</code></pre></div>
 
 <p>Here is the body of the outer loop:</p>
-<div class="highlight"><pre><span></span><span class="c1">//load four elements (to be moved into their locations)</span>
+<div class="highlight"><pre><span></span><code><span class="c1">//load four elements (to be moved into their locations)</span>
 <span class="kr">__m128i</span> <span class="n">reg</span> <span class="o">=</span> <span class="n">_mm_load_si128</span><span class="p">((</span><span class="kr">__m128i</span><span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">inKeys</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
 <span class="c1">//prepare a register with each value broadcasted</span>
 <span class="kr">__m128i</span> <span class="n">reg0</span> <span class="o">=</span> <span class="n">_mm_shuffle_epi32</span><span class="p">(</span><span class="n">reg</span><span class="p">,</span> <span class="n">SHUF</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">));</span>
@@ -167,30 +163,27 @@
     <span class="n">cnt2</span> <span class="o">=</span> <span class="n">_mm_sub_epi32</span><span class="p">(</span><span class="n">cnt2</span><span class="p">,</span> <span class="n">_mm_cmplt_epi32</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">reg2</span><span class="p">));</span>
     <span class="n">cnt3</span> <span class="o">=</span> <span class="n">_mm_sub_epi32</span><span class="p">(</span><span class="n">cnt3</span><span class="p">,</span> <span class="n">_mm_cmplt_epi32</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">reg3</span><span class="p">));</span>
 <span class="p">}</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>Now we need to take equal elements into account. They are processed in very similar way, but only elements to the left of <code>i</code> are compared:</p>
-<div class="highlight"><pre><span></span><span class="k">for</span> <span class="p">(</span><span class="kt">size_t</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">i</span><span class="p">;</span> <span class="n">j</span> <span class="o">+=</span> <span class="mi">4</span><span class="p">)</span> <span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="k">for</span> <span class="p">(</span><span class="kt">size_t</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">i</span><span class="p">;</span> <span class="n">j</span> <span class="o">+=</span> <span class="mi">4</span><span class="p">)</span> <span class="p">{</span>
     <span class="kr">__m128i</span> <span class="n">data</span> <span class="o">=</span> <span class="n">_mm_load_si128</span><span class="p">((</span><span class="kr">__m128i</span><span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">inKeys</span><span class="p">[</span><span class="n">j</span><span class="p">]);</span>
     <span class="n">cnt0</span> <span class="o">=</span> <span class="n">_mm_sub_epi32</span><span class="p">(</span><span class="n">cnt0</span><span class="p">,</span> <span class="n">_mm_cmpeq_epi32</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">reg0</span><span class="p">));</span>
     <span class="n">cnt1</span> <span class="o">=</span> <span class="n">_mm_sub_epi32</span><span class="p">(</span><span class="n">cnt1</span><span class="p">,</span> <span class="n">_mm_cmpeq_epi32</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">reg1</span><span class="p">));</span>
     <span class="n">cnt2</span> <span class="o">=</span> <span class="n">_mm_sub_epi32</span><span class="p">(</span><span class="n">cnt2</span><span class="p">,</span> <span class="n">_mm_cmpeq_epi32</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">reg2</span><span class="p">));</span>
     <span class="n">cnt3</span> <span class="o">=</span> <span class="n">_mm_sub_epi32</span><span class="p">(</span><span class="n">cnt3</span><span class="p">,</span> <span class="n">_mm_cmpeq_epi32</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">reg3</span><span class="p">));</span>
 <span class="p">}</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>Finally, there may be equal elements across elements <em>i, i+1, i+2, i+3</em>. We need to compare all elements in <code>reg</code> with each other, while carefully masking out the comparisons where operands go in wrong order:</p>
-<div class="highlight"><pre><span></span><span class="c1">//cnt0 = _mm_sub_epi32(cnt0, _mm_and_si128(_mm_cmplt_epi32(reg, reg0), _mm_setr_epi32( 0,  0,  0,  0)));</span>
-<span class="n">cnt1</span> <span class="o">=</span> <span class="n">_mm_sub_epi32</span><span class="p">(</span><span class="n">cnt1</span><span class="p">,</span> <span class="n">_mm_and_si128</span><span class="p">(</span><span class="n">_mm_cmpeq_epi32</span><span class="p">(</span><span class="n">reg</span><span class="p">,</span> <span class="n">reg1</span><span class="p">),</span> <span class="n">_mm_setr_epi32</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span>  <span class="mi">0</span><span class="p">,</span>  <span class="mi">0</span><span class="p">,</span>  <span class="mi">0</span><span class="p">)));</span>
-<span class="n">cnt2</span> <span class="o">=</span> <span class="n">_mm_sub_epi32</span><span class="p">(</span><span class="n">cnt2</span><span class="p">,</span> <span class="n">_mm_and_si128</span><span class="p">(</span><span class="n">_mm_cmpeq_epi32</span><span class="p">(</span><span class="n">reg</span><span class="p">,</span> <span class="n">reg2</span><span class="p">),</span> <span class="n">_mm_setr_epi32</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>  <span class="mi">0</span><span class="p">,</span>  <span class="mi">0</span><span class="p">)));</span>
-<span class="n">cnt3</span> <span class="o">=</span> <span class="n">_mm_sub_epi32</span><span class="p">(</span><span class="n">cnt3</span><span class="p">,</span> <span class="n">_mm_and_si128</span><span class="p">(</span><span class="n">_mm_cmpeq_epi32</span><span class="p">(</span><span class="n">reg</span><span class="p">,</span> <span class="n">reg3</span><span class="p">),</span> <span class="n">_mm_setr_epi32</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>  <span class="mi">0</span><span class="p">)));</span>
-</pre></div>
-
+<div class="highlight"><pre><span></span><code><span class="c1">//cnt0 = _mm_sub_epi32(cnt0, _mm_and_si128(_mm_cmplt_epi32(reg, reg0), _mm_setr_epi32( 0,  0,  0,  0)));</span>
+<span class="n">cnt1</span> <span class="o">=</span> <span class="n">_mm_sub_epi32</span><span class="p">(</span><span class="n">cnt1</span><span class="p">,</span> <span class="n">_mm_and_si128</span><span class="p">(</span><span class="n">_mm_cmpeq_epi32</span><span class="p">(</span><span class="n">reg</span><span class="p">,</span> <span class="n">reg1</span><span class="p">),</span> <span class="n">_mm_setr_epi32</span><span class="p">(</span><span class="mi">-1</span><span class="p">,</span>  <span class="mi">0</span><span class="p">,</span>  <span class="mi">0</span><span class="p">,</span>  <span class="mi">0</span><span class="p">)));</span>
+<span class="n">cnt2</span> <span class="o">=</span> <span class="n">_mm_sub_epi32</span><span class="p">(</span><span class="n">cnt2</span><span class="p">,</span> <span class="n">_mm_and_si128</span><span class="p">(</span><span class="n">_mm_cmpeq_epi32</span><span class="p">(</span><span class="n">reg</span><span class="p">,</span> <span class="n">reg2</span><span class="p">),</span> <span class="n">_mm_setr_epi32</span><span class="p">(</span><span class="mi">-1</span><span class="p">,</span> <span class="mi">-1</span><span class="p">,</span>  <span class="mi">0</span><span class="p">,</span>  <span class="mi">0</span><span class="p">)));</span>
+<span class="n">cnt3</span> <span class="o">=</span> <span class="n">_mm_sub_epi32</span><span class="p">(</span><span class="n">cnt3</span><span class="p">,</span> <span class="n">_mm_and_si128</span><span class="p">(</span><span class="n">_mm_cmpeq_epi32</span><span class="p">(</span><span class="n">reg</span><span class="p">,</span> <span class="n">reg3</span><span class="p">),</span> <span class="n">_mm_setr_epi32</span><span class="p">(</span><span class="mi">-1</span><span class="p">,</span> <span class="mi">-1</span><span class="p">,</span> <span class="mi">-1</span><span class="p">,</span>  <span class="mi">0</span><span class="p">)));</span>
+</code></pre></div>
 
 <p>Now all counts are gathered in XMM registers, and we have to calculate horizontal sum of each register. Since there are four of them, it makes sense to fully transpose them and then do a simple vertical sum:</p>
-<div class="highlight"><pre><span></span><span class="c1">//4x4 matrix transpose in SSE</span>
+<div class="highlight"><pre><span></span><code><span class="c1">//4x4 matrix transpose in SSE</span>
 <span class="kr">__m128i</span> <span class="n">c01L</span> <span class="o">=</span> <span class="n">_mm_unpacklo_epi32</span><span class="p">(</span><span class="n">cnt0</span><span class="p">,</span> <span class="n">cnt1</span><span class="p">);</span>
 <span class="kr">__m128i</span> <span class="n">c01H</span> <span class="o">=</span> <span class="n">_mm_unpackhi_epi32</span><span class="p">(</span><span class="n">cnt0</span><span class="p">,</span> <span class="n">cnt1</span><span class="p">);</span>
 <span class="kr">__m128i</span> <span class="n">c23L</span> <span class="o">=</span> <span class="n">_mm_unpacklo_epi32</span><span class="p">(</span><span class="n">cnt2</span><span class="p">,</span> <span class="n">cnt3</span><span class="p">);</span>
@@ -201,11 +194,10 @@
 <span class="kr">__m128i</span> <span class="n">cntW</span> <span class="o">=</span> <span class="n">_mm_unpackhi_epi64</span><span class="p">(</span><span class="n">c01H</span><span class="p">,</span> <span class="n">c23H</span><span class="p">);</span>
 <span class="c1">//obtain four resulting counts</span>
 <span class="kr">__m128i</span> <span class="n">cnt</span> <span class="o">=</span> <span class="n">_mm_add_epi32</span><span class="p">(</span><span class="n">_mm_add_epi32</span><span class="p">(</span><span class="n">cntX</span><span class="p">,</span> <span class="n">cntY</span><span class="p">),</span> <span class="n">_mm_add_epi32</span><span class="p">(</span><span class="n">cntZ</span><span class="p">,</span> <span class="n">cntW</span><span class="p">));</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>Now we have final locations of all the four considered elements. We need only to extract them and move the elements to their places:</p>
-<div class="highlight"><pre><span></span><span class="kt">unsigned</span> <span class="n">k0</span> <span class="o">=</span> <span class="n">_mm_cvtsi128_si32</span><span class="p">(</span><span class="n">cnt</span>   <span class="p">);</span>
+<div class="highlight"><pre><span></span><code><span class="kt">unsigned</span> <span class="n">k0</span> <span class="o">=</span> <span class="n">_mm_cvtsi128_si32</span><span class="p">(</span><span class="n">cnt</span>   <span class="p">);</span>
 <span class="kt">unsigned</span> <span class="n">k1</span> <span class="o">=</span> <span class="n">_mm_extract_epi32</span><span class="p">(</span><span class="n">cnt</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
 <span class="kt">unsigned</span> <span class="n">k2</span> <span class="o">=</span> <span class="n">_mm_extract_epi32</span><span class="p">(</span><span class="n">cnt</span><span class="p">,</span> <span class="mi">2</span><span class="p">);</span>
 <span class="kt">unsigned</span> <span class="n">k3</span> <span class="o">=</span> <span class="n">_mm_extract_epi32</span><span class="p">(</span><span class="n">cnt</span><span class="p">,</span> <span class="mi">3</span><span class="p">);</span>
@@ -213,8 +205,7 @@
 <span class="n">dstKeys</span><span class="p">[</span><span class="n">k1</span><span class="p">]</span> <span class="o">=</span> <span class="n">inKeys</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">];</span>
 <span class="n">dstKeys</span><span class="p">[</span><span class="n">k2</span><span class="p">]</span> <span class="o">=</span> <span class="n">inKeys</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">2</span><span class="p">];</span>
 <span class="n">dstKeys</span><span class="p">[</span><span class="n">k3</span><span class="p">]</span> <span class="o">=</span> <span class="n">inKeys</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">3</span><span class="p">];</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>That's all!</p>
 <h2 id="comparison"><a class="toclink" href="#comparison">Comparison</a></h2>
@@ -222,7 +213,7 @@
 <img src="https://dirtyhandscoding.github.io/images/4_simd_small_sort/res_general.png" class="centered w800" /></p>
 <p>For instance, implementation <strong>PCSort_Main</strong> for N = 16 (dark green bar on the left) takes 41 nanoseconds per call, i.e. processes (1/41) calls per nanosecond. It is about 3.5 times faster than std::sort implementation.</p>
 <p>The dashed bars correspond to implementations which work properly only on input arrays with all elements distinct.</p>
-<p>Here is the explanation of different implementations:
+<p>Here is the explanation of different implementations:</p>
 <ol>
   <li><strong>SortingNetwork</strong>: branchless sorting networks. For N = 16 it is Green's network of size 6 (as described above), for N = 32 it is something built on top of it (taken from <a href="https://github.com/Morwenn/cpp-sort/blob/master/include/cpp-sort/detail/sorting_network/sort32.h">here</a>).</li>
   <li><strong>PCSort_Main</strong>: the standard vectorized implementation of position-counting sort, exactly as described above.</li>
@@ -230,13 +221,14 @@
   <li><strong>PCSort_Trans</strong>: somewhat transposed implementation. A local array of N counters is created. The outer loop goes through the elements to compare with. The inner loop goes through the elements for which the final location is to be computed. During each outer loop, we have to pass through the array of counters and increase some of them. Note that optimization from <strong>PCSort_Optimized</strong> is already applied: each element is processed once per outer iteration.</li>
   <li><strong>PCSort_WideOuter</strong>: this implementation uses wider vectorization in the outer loop compared to <strong>PCSort_Main</strong>, it computes final location for 16 elements during one outer iteration. In the inner loop elements are loaded in packs of four, and each element is broadcasted to the whole register to make comparison. This implementation works only for distinct elements: supporting equal elements in it is a major pain.</li>
   <li><strong>PCSort_WideOuter</strong>: same as <strong>PCSort_WideOuter</strong>, but all loops are fully unrolled (works only for N = 16). To my surprise, it works slower than the version with loops.</li>
-</ol></p>
+</ol>
+
 <p>According to the data, the standard position-counting sort (<strong>PCSort_Main</strong>) is 20-25% faster than sorting network for N = 16 and N = 32. The optimized implementations are even better for larger N (+17% for N = 32, and +30% for N = 64). If you are sure that all elements are surely distinct, you can get additional +30% performance boost.
 It is very important to note that the results differ a lot depending on compiler. 64-bit MSVC turned out to be the best compiler for position-counting sort, while network sort is much faster on 64-bit GCC (details in table below).</p>
 <p>Below you can see performance plotted by N increasing. For each N and each method, the ratio of its speed to speed of std::sort is shown. For example, <strong>PCSort_Main</strong> is 3.5 times faster than std::sort for N = 16.</p>
 <p><img src="https://dirtyhandscoding.github.io/images/4_simd_small_sort/res_byn.png" class="centered w600" /></p>
 <p>As you see, the proposed sorting method is always faster than insertion sort, and the std::sort implementation catches up with proposed method only for N = 256 (or a bit later for optimized/distinct-only versions).</p>
-<p>I also mesured performance across several compilers and CPUs. The difference between compilers is surprisingly noticeable! Here is the full table:
+<p>I also mesured performance across several compilers and CPUs. The difference between compilers is surprisingly noticeable! Here is the full table:</p>
 <div class="centered w500 center-content">
 <table class="solid-cells">
    <caption>Time of one N=32 sort, in ns</caption>
@@ -259,25 +251,28 @@ It is very important to note that the results differ a lot depending on compiler
    <tr><td>i3-5005U + VC2013 x32</td><td>282.3</td><td>224.1</td><td>387.2</td><td>670.4</td></tr>
    <tr><td>i3-5005U + VC2015 x32</td><td>276.6</td><td>213.6</td><td>392.0</td><td>649.5</td></tr>
 </table>
-</div></p>
-<p>The list of CPUs used:
+</div>
+
+<p>The list of CPUs used:</p>
 <ol>
   <li><strong>Ryzen5</strong>: Ryzen 5 1600, 3.2 GHz</li>
   <li><strong>i3-5005U</strong>: Intel i3-5005U, 2.0 GHz (Broadwell)</li>
-</ol></p>
-<p>The list of compilers used:
+</ol>
+
+<p>The list of compilers used:</p>
 <ol>
   <li><strong>VC20xx</strong>: Microsoft Visual C++ of year 20xx (compiled with <code>cl.exe</code> with <code>/O2</code> parameter).</li>
   <li><strong>GCC7</strong>: GCC 7.1.0 inside VirtualBox VM with Ubuntu (with <code>-O3 -msse4</code>).</li>
   <li><strong>GCC5</strong>: GCC 5.4.0 inside VirtualBox VM with Ubuntu (with <code>-O3 -msse4</code>).</li>
   <li><strong>TDM GCC5</strong>: TDM GCC 5.1.0 on Windows (with <code>-O3 -msse4</code>).</li>
-</ol></p>
+</ol>
+
 <p>As you see, 64-bit GCC manages to get 1.5 times faster performance from the sorting network. I suppose it succeeds in fitting everything into registers, while 32-bit GCC and MSVC cannot avoid register stalls. 
 The position-counting sort also benefits from 64-bit case, most likely also due to having more XMM registers available.</p>
 <h2 id="discussion"><a class="toclink" href="#discussion">Discussion</a></h2>
 <p>In practice, sorting only keys is rarely enough. In most cases each element consists of a key and an attached value, and an element must be moved as a whole during sort. There are <a href="https://en.wikipedia.org/wiki/AOS_and_SOA">two ways to store array of elements</a>: having single array of key-value pairs (array-of-structures, AoS) and having two separate arrays, one with keys and the other one with values (structure-of-arrays, SoA).</p>
 <p>It is very easy to extend the proposed algorithm to process keys with attached values, given that elements are stored in SoA layout, i.e. values are stored in a separate array. Since the vectorized part determines the final position (index) of every element, it is enough to send the values to same positions as their keys:</p>
-<div class="highlight"><pre><span></span><span class="kt">unsigned</span> <span class="n">k0</span> <span class="o">=</span> <span class="n">_mm_cvtsi128_si32</span><span class="p">(</span><span class="n">cnt</span>   <span class="p">);</span>
+<div class="highlight"><pre><span></span><code><span class="kt">unsigned</span> <span class="n">k0</span> <span class="o">=</span> <span class="n">_mm_cvtsi128_si32</span><span class="p">(</span><span class="n">cnt</span>   <span class="p">);</span>
 <span class="kt">unsigned</span> <span class="n">k1</span> <span class="o">=</span> <span class="n">_mm_extract_epi32</span><span class="p">(</span><span class="n">cnt</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
 <span class="kt">unsigned</span> <span class="n">k2</span> <span class="o">=</span> <span class="n">_mm_extract_epi32</span><span class="p">(</span><span class="n">cnt</span><span class="p">,</span> <span class="mi">2</span><span class="p">);</span>
 <span class="kt">unsigned</span> <span class="n">k3</span> <span class="o">=</span> <span class="n">_mm_extract_epi32</span><span class="p">(</span><span class="n">cnt</span><span class="p">,</span> <span class="mi">3</span><span class="p">);</span>
@@ -290,8 +285,7 @@ The position-counting sort also benefits from 64-bit case, most likely also due 
 <span class="n">dstVals</span><span class="p">[</span><span class="n">k1</span><span class="p">]</span> <span class="o">=</span> <span class="n">inVals</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">];</span>
 <span class="n">dstVals</span><span class="p">[</span><span class="n">k2</span><span class="p">]</span> <span class="o">=</span> <span class="n">inVals</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">2</span><span class="p">];</span>
 <span class="n">dstVals</span><span class="p">[</span><span class="n">k3</span><span class="p">]</span> <span class="o">=</span> <span class="n">inVals</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">3</span><span class="p">];</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>No computations are added for values at all! Only a minimal amount of additional time is spent for moving every value directly to its final location. It takes O(N) time, which is dominated by O(N^2) part for counting positions. Although the keys are restricted to be 32-bit integers (32-bit floats can be supported the same way), the values can be of any type.</p>
 <p>As for performance measurements, adding support for 32-bit values increases time per one sort for <strong>PCSort_Main</strong>:</p>
@@ -304,19 +298,18 @@ The position-counting sort also benefits from 64-bit case, most likely also due 
 If the values are 32-bit, then it is much easier to work with array-of-structures layout. Store value first, key then, and treat each key-value pair as 64-bit integer. Compare them as 64-bit integers and CMOV them as such, and you'll get values support for free on 64-bit platform.</p>
 <h3 id="compiler-issue"><a class="toclink" href="#compiler-issue">Compiler issue</a></h3>
 <p>I stumbled against a tiny compiler inefficiency. Visual C++ 64-bit compiler (and I guess other compilers too) generates unnecessary instruction for <code>_mm_extract_epi32</code> intrinsic. Look at the assembly code generated by compiler for extracting single position and moving a key to its final location:</p>
-<div class="highlight"><pre><span></span><span class="c">; 113  :  unsigned k2 = _mm_extract_epi32(cnt, 2);</span>
-<span class="c">; 117  :  dstKeys[k2] = inKeys[i+2];</span>
+<div class="highlight"><pre><span></span><code><span class="c1">; 113  :  unsigned k2 = _mm_extract_epi32(cnt, 2);</span>
+<span class="c1">; 117  :  dstKeys[k2] = inKeys[i+2];</span>
 
-<span class="c">;load inKeys[i+2] to eax:</span>
+<span class="c1">;load inKeys[i+2] to eax:</span>
 <span class="nf">mov</span>     <span class="no">eax</span><span class="p">,</span> <span class="no">DWORD</span> <span class="no">PTR</span> <span class="p">[</span><span class="no">rdx-16</span><span class="p">]</span>
-<span class="c">;extract k2 to ecx:</span>
+<span class="c1">;extract k2 to ecx:</span>
 <span class="nf">pextrd</span>  <span class="no">ecx</span><span class="p">,</span> <span class="no">xmm2</span><span class="p">,</span> <span class="mi">2</span>
-<span class="c">;zero-fill upper half of ecx</span>
+<span class="c1">;zero-fill upper half of ecx</span>
 <span class="nf">mov</span>     <span class="no">ecx</span><span class="p">,</span> <span class="no">ecx</span>
-<span class="c">;store eax to dstKeys[k2]:</span>
+<span class="c1">;store eax to dstKeys[k2]:</span>
 <span class="nf">mov</span>     <span class="no">DWORD</span> <span class="no">PTR</span> <span class="p">[</span><span class="no">r8</span><span class="err">+</span><span class="no">rcx</span><span class="p">*</span><span class="mi">4</span><span class="p">],</span> <span class="no">eax</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>For the first glance, the third instruction seems to do nothing. However, it was specifically inserted by compiler here, in order to clear the upper 32 bits of rcx register. What compiler does not know is that <code>pextrd</code> instruction already clears the upper 32 bits of 64-bit destination register, so the instruction is excessive.
 The performance impact is most likely minimal, but it is still strange to see such things. The same issue happens for <code><em>mm_movemask</em>*</code> intrinsics, see <a href="https://stackoverflow.com/questions/36017029/unnecessary-instructions-generated-for-mm-movemask-epi8-intrinsic-in-x64-mode">this question</a>.</p>
@@ -359,7 +352,7 @@ The performance impact is most likely minimal, but it is still strange to see su
     	<section>
 	<div id="pcs-comments-header" class="inline-menu">
 	<header>
-		<div>Comments (0)</div>
+		<div>Comments (2)</div>
 		<button type="button" title="Expand or collapse the comments section" class="icon-label" id="pcs-comments-collapse-button" onclick="CommentSystem.collapsible($('#pcs-comments'), $(this));">
 			<span class="nocss">expand</span>
 		</button>
@@ -367,7 +360,83 @@ The performance impact is most likely minimal, but it is still strange to see su
 	</header>
 	</div>
 	<div id="pcs-comments">
-		<p>There are no comments yet.</p>
+		<ul>
+			<li id="comment-1md">
+				<div class="comment-left">
+					<img    src="https://dirtyhandscoding.github.io/images/identicon\b13866d1d978644236a1b9d457d4b3b3.png"
+							alt="Avatar"
+							height="36"
+							width="36">
+					<a role="button" href="https://dirtyhandscoding.github.io/posts/vectorizing-small-fixed-size-sort.html#comment-1md" rel="bookmark" title="Link to this comment" class="comment-left-icon">
+						<span class="nocss">link</span>
+					</a><!--
+					--><button onclick="CommentSystem.setReply('1md', 'Touisteur');" title="Reply to this comment" class="comment-left-icon">
+						<span class="nocss">reply</span>
+					</button>
+				</div>
+				<div class="comment-body">
+					<div class="comment-self even">
+					<h4>
+							<a href="https://mobile.twitter.com/touisteur">Touisteur</a>
+					</h4>
+					<!-- <p>
+						Posted on -->
+						<div style="float: right">
+						<time datetime="2021-08-11T00:54:00+02:00" title="2021-08-11T00:54:00+02:00">(11.08.2021 at 00:54)</time>
+						</div>
+					<!-- </p> -->
+					<div class="pcs-comment-content" >
+						<p>Neat! It makes me think of prefix sums and all the things you can use them for.</p>
+<p>I'm thinking for a selection algorithm the 'moving the result cells in their new position' can be forsaken, but I'm wondering how it would end then instead.</p>
+<p>Once more a really excellent, excellent post. Can't wait to see what avx512 could bring here.</p>
+<p>Pure curiosity (and to connect dots): Can you (please?) share your use case(s?) for wanting to sort lots of small arrays so fast?</p>
+<p>Thanks a lot.</p>
+					</div>
+					</div>
+						<!--<hr>-->
+						<ul>
+										<li id="comment-2md">
+				<div class="comment-left">
+					<img    src="https://dirtyhandscoding.github.io/images/identicon\f34da67b9f39c15787aa7a9e932509bc.png"
+							alt="Avatar"
+							height="36"
+							width="36">
+					<a role="button" href="https://dirtyhandscoding.github.io/posts/vectorizing-small-fixed-size-sort.html#comment-2md" rel="bookmark" title="Link to this comment" class="comment-left-icon">
+						<span class="nocss">link</span>
+					</a><!--
+					--><button onclick="CommentSystem.setReply('2md', 'dirtyhandscoding');" title="Reply to this comment" class="comment-left-icon">
+						<span class="nocss">reply</span>
+					</button>
+				</div>
+				<div class="comment-body">
+					<div class="comment-self odd">
+					<h4>
+							dirtyhandscoding
+					</h4>
+					<!-- <p>
+						Posted on -->
+						<div style="float: right">
+						<time datetime="2021-08-11T11:46:00+07:00" title="2021-08-11T11:46:00+07:00">(11.08.2021 at 11:46)</time>
+						</div>
+					<!-- </p> -->
+					<div class="pcs-comment-content" >
+						<p>Only SSE is used in the article, not even AVX.
+The code repo contains AVX implementation, but it works slower than SSE.
+The size of the problem is very small, so it is hard to benefit from wider vectorization, and for greater size vectorized code will lose to <em>O(N log N)</em> solutions.
+So, I don't think AVX-512 will help here.</p>
+<p>Also, I think AVX-512 is still unavailable in consumer CPUs, so I cannot test it anyway.</p>
+<p>As for use case, I don't have one.
+I did it purely for fun after seeing many questions on stackoverflow.
+Looking at the links I provided at the beginning of the article, question posters did not describe their use cases too.</p>
+					</div>
+					</div>
+				</div>
+			</li>
+
+						</ul>
+				</div>
+			</li>
+		</ul>
 	<section>
 	<div display="none" id="pcs-comment-notreply-helper" />
 	<form id="pcs-comment-form" action="#">

@@ -94,14 +94,14 @@ now it is time to look into various technical difficulties and implementation de
 </ul>
 <p>To achieve this level of configurability, the core function is made template with all the parameters being template arguments. So the user may specify whatever settings he wants, and the compiler would generate and optimize this specific version of the algorithm. Obviously, all the compile-time constant checks are removed, along with any dead code they surround. The user can also use this function with different parameters at different places in a simple way.</p>
 <p>As the result, the <a href="https://github.com/stgatilov/utf8lut/blob/master/src/core/DecoderProcess.h">core of decoder</a> looks like this:</p>
-<div class="highlight"><pre><span></span><span class="cm">/* Template params:</span>
+<div class="highlight"><pre><span></span><code><span class="cm">/* Template params:</span>
 <span class="cm"> *   MaxBytes = 1, 2, 3</span>
 <span class="cm"> *   CheckExceed = false, true</span>
 <span class="cm"> *   Validate = false, true</span>
 <span class="cm"> *   OutputType = 2, 4        //UTF16/32</span>
 <span class="cm"> */</span>
 <span class="k">template</span><span class="o">&lt;</span><span class="kt">int</span> <span class="n">MaxBytes</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">CheckExceed</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">Validate</span><span class="p">,</span> <span class="kt">int</span> <span class="n">OutputType</span><span class="o">&gt;</span>
-<span class="k">struct</span> <span class="n">DecoderCore</span> <span class="p">{</span>
+<span class="k">struct</span> <span class="nc">DecoderCore</span> <span class="p">{</span>
     <span class="n">FORCEINLINE</span> <span class="kt">bool</span> <span class="k">operator</span><span class="p">()(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*&amp;</span><span class="n">ptrSource</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*&amp;</span><span class="n">ptrDest</span><span class="p">,</span> <span class="k">const</span> <span class="n">DecoderLutEntry</span><span class="o">&lt;</span><span class="n">Validate</span><span class="o">&gt;</span> <span class="o">*</span><span class="n">RESTRICT</span> <span class="n">lutTable</span><span class="p">)</span> <span class="p">{</span>
         <span class="k">static_assert</span><span class="p">(</span><span class="o">!</span><span class="n">Validate</span> <span class="o">||</span> <span class="n">CheckExceed</span><span class="p">,</span> <span class="s">&quot;Validate core mode requires CheckExceed enabled&quot;</span><span class="p">);</span>
         <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">RESTRICT</span> <span class="n">pSource</span> <span class="o">=</span> <span class="n">ptrSource</span><span class="p">;</span>
@@ -169,12 +169,11 @@ now it is time to look into various technical difficulties and implementation de
         <span class="p">}</span>
     <span class="p">}</span>
 <span class="p">};</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>There are many if-s, but most of them are compile-time constant and are wiped out by compiler. Obviously, writing all of the cases separately would cause a huge pain in maintainability. Indeed, one can port it to <a href="https://stackoverflow.com/questions/16522341/pseudo-generics-in-c">pseudo-templates in pure C</a>, but it would be much more clumsy.</p>
 <p>You have probably noticed that template arguments of <code>DecoderCore</code> struct are different from the parameters listed above. This is because many things like slow path and multistreaming are handled on the upper level. That is the level of processing a "buffer" of reasonable size, and there those exact parameters can be seen:</p>
-<div class="highlight"><pre><span></span><span class="k">enum</span> <span class="n">DecoderMode</span> <span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="k">enum</span> <span class="nc">DecoderMode</span> <span class="p">{</span>
     <span class="n">dmFast</span><span class="p">,</span>     <span class="c1">//decode only byte lengths under limit, no checks</span>
     <span class="n">dmFull</span><span class="p">,</span>     <span class="c1">//decode any UTF-8 chars (with fallback to slow version)</span>
     <span class="n">dmValidate</span><span class="p">,</span> <span class="c1">//decode any UTF-8 chars, validate input</span>
@@ -190,12 +189,11 @@ now it is time to look into various technical difficulties and implementation de
 <span class="k">class</span> <span class="nc">BufferDecoder</span> <span class="o">:</span> <span class="k">public</span> <span class="n">BaseBufferProcessor</span> <span class="p">{</span>
     <span class="p">...</span>
 <span class="p">};</span>
-</pre></div>
-
+</code></pre></div>
 
 <h2 id="slow-path"><a class="toclink" href="#slow-path">Slow path</a></h2>
 <p>The fast path supports characters of limited byte length, up to the whole basic multilingual plane. However, the text may contain some characters from supplementary planes, although it is unlikely that there are many of them. To make converters universally applicable, a fully scalar slow path is plugged into both decoder and encoder. The innermost loop can dynamically switch between the fast and the slow path, so a few supplementaries won't negatively affect overall performance.</p>
-<div class="highlight"><pre><span></span><span class="kt">bool</span> <span class="nf">ProcessSimple</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*&amp;</span><span class="n">inputPtr</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">inputEnd</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*&amp;</span><span class="n">outputPtr</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">isLastBlock</span><span class="p">)</span> <span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="kt">bool</span> <span class="nf">ProcessSimple</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*&amp;</span><span class="n">inputPtr</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">inputEnd</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*&amp;</span><span class="n">outputPtr</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">isLastBlock</span><span class="p">)</span> <span class="p">{</span>
     <span class="kt">bool</span> <span class="n">ok</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
     <span class="k">while</span> <span class="p">(</span><span class="n">inputPtr</span> <span class="o">&lt;=</span> <span class="n">inputEnd</span> <span class="o">-</span> <span class="mi">16</span><span class="p">)</span> <span class="p">{</span>
         <span class="n">ok</span> <span class="o">=</span> <span class="n">DecoderCore</span><span class="o">&lt;</span><span class="p">...</span><span class="o">&gt;</span><span class="p">()(</span><span class="n">inputPtr</span><span class="p">,</span> <span class="n">outputPtr</span><span class="p">,</span> <span class="n">ptrTable</span><span class="p">);</span>
@@ -208,27 +206,24 @@ now it is time to look into various technical difficulties and implementation de
         <span class="n">ok</span> <span class="o">=</span> <span class="n">DecodeTrivial</span><span class="p">(</span><span class="n">inputPtr</span><span class="p">,</span> <span class="n">inputEnd</span><span class="p">,</span> <span class="n">outputPtr</span><span class="p">);</span>
     <span class="k">return</span> <span class="n">ok</span><span class="p">;</span>
 <span class="p">}</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>The decoder's slow path consists of the excellent <a href="http://bjoern.hoehrmann.de/utf-8/decoder/dfa/">DFA-based algorithm by Bjoern Hoehrmann</a> and a bit of post processing: checking when new character is ready and writing it as one word or as two surrogates. Ironically, the DFA-based algorithm also heavily relies on a lookup table, just like the vectorized fast path. The encoder's slow path is custom-made. First it converts a surrogate pair into a full code point, then checks byte length and writes out bytes. The corresponding code can be found in <a href="https://github.com/stgatilov/utf8lut/blob/master/src/core/ProcessTrivial.h">ProcessTrivial.h</a>.</p>
 <h2 id="critical-path-and-hyperthreading"><a class="toclink" href="#critical-path-and-hyperthreading">Critical path and Hyperthreading</a></h2>
 <p>One major difference between encoding and decoding algorithms is how they advance pointers. Here are excerpts from the corresponding sections (<a href="https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-decoding-utf-8.html#advance-pointers">decode</a>, <a href="https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-encoding-utf-8.html#advance-pointers">encode</a>):</p>
-<div class="highlight"><pre><span></span><span class="c1">//decoding</span>
+<div class="highlight"><pre><span></span><code><span class="c1">//decoding</span>
 <span class="n">_mm_storeu_si128</span><span class="p">((</span><span class="kr">__m128i</span><span class="o">*</span><span class="p">)</span><span class="n">pDest</span><span class="p">,</span> <span class="n">sum</span><span class="p">);</span>
 <span class="n">pSource</span> <span class="o">+=</span> <span class="n">lookup</span><span class="p">.</span><span class="n">srcStep</span><span class="p">;</span>
 <span class="n">pDest</span> <span class="o">+=</span> <span class="n">lookup</span><span class="p">.</span><span class="n">dstStep</span><span class="p">;</span>
-</pre></div>
-
+</code></pre></div>
 
 <!---->
 
-<div class="highlight"><pre><span></span><span class="c1">//encoding</span>
+<div class="highlight"><pre><span></span><code><span class="c1">//encoding</span>
 <span class="n">_mm_storeu_si128</span><span class="p">((</span><span class="kr">__m128i</span> <span class="o">*</span><span class="p">)</span><span class="n">pDest</span><span class="p">,</span> <span class="n">res</span><span class="p">);</span>
 <span class="n">pDest</span> <span class="o">+=</span> <span class="n">lookup</span><span class="p">.</span><span class="n">dstStep</span><span class="p">;</span>
 <span class="n">pSource</span> <span class="o">+=</span> <span class="mi">16</span><span class="p">;</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>Why did we prefer using fixed input step in encoding? We could use dynamic step just like we did in decoding, then we could get rid of <a href="https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-encoding-utf-8.html#three-byte-characters">processing two halves separately</a>, probably using less instructions on average.</p>
 <p>Maybe it does not immediately catch attention, but fixed input step makes a huge difference in the performance characteristics of a loop. The difference stems from the fact that modern CPUs are essentially superscalar and perform out-of-order execution. Obviously, the more instructions CPU can do in parallel, the faster our loop will be on average, so it makes perfect sense for the CPU to execute several consecutive iterations of the whole loop in parallel. With fixed input step, the next iteration can be started immediately after the input pointer is advanced, which can be done before doing anything else inside the loop. The critical path of the loop body consists merely of moving input pointer by 16 (actually, moving output pointer has to be done sequentially too). So CPU can easily execute many iterations in parallel, without having to wait for anything. Whenever it stops on some high-latency instruction, it can simply pick up more instructions from the future and start working on them.</p>
@@ -247,7 +242,7 @@ now it is time to look into various technical difficulties and implementation de
 </div>
 
 <p>Here is how 4x multistreaming works. When user asks to convert a memory buffer (e.g. of size 64 KB), first of all we split this buffer into four equal parts. The splits are adjusted slightly, so that no UTF-8 character spans across several parts (it can be easily done thanks to self-synchronizing property of UTF-8). Initialize four input and four output pointers: one for each stream. Then write the main loop, inside which one conversion step is performed for every stream. Due to these streams being completely independent, CPU is free to reorder the streams processing relative to each other as it sees fit, thus hiding memory latency.</p>
-<div class="highlight"><pre><span></span><span class="c1">//split input buffer into four parts</span>
+<div class="highlight"><pre><span></span><code><span class="c1">//split input buffer into four parts</span>
 <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">splits</span><span class="p">[</span><span class="mi">5</span><span class="p">];</span>
 <span class="n">SplitRange</span><span class="p">(</span><span class="n">inputBuffer</span><span class="p">,</span> <span class="n">inputSize</span><span class="p">,</span> <span class="n">splits</span><span class="p">);</span>
 <span class="c1">//init input/output pointers</span>
@@ -287,8 +282,7 @@ now it is time to look into various technical difficulties and implementation de
 <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">ok2</span><span class="p">)</span> <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
 <span class="kt">bool</span> <span class="n">ok3</span> <span class="o">=</span> <span class="n">ProcessSimple</span><span class="p">(</span><span class="n">inputPtr3</span><span class="p">,</span> <span class="n">inputEnd3</span><span class="p">,</span> <span class="n">outputPtr3</span><span class="p">,</span> <span class="nb">true</span><span class="p">);</span>
 <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">ok3</span><span class="p">)</span> <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>The loop should be terminated when at least one of the pointers hits its end. After that we have to finish the remaining work of every stream sequentially. Here we hope that the text is relatively uniform in terms of byte lengths, so all the parts are processed at approximately the same average speed (measuring in bytes per iteration). Then the portion of data which will be processed without multistreaming will be rather small.</p>
 <p>The above code sample is somewhat simplified, you can see the actual code of multistreaming at the beginning of <code>_Process</code> method in <a href="https://github.com/stgatilov/utf8lut/blob/master/src/buffer/BufferDecoder.h">BufferDecoder.h</a>. The performance measurements with and without multistreaming are available at the <a href="https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-test-results.html#performance-evaluation">end of this article</a>. Of course, such multistreaming improvement is useless for our encoding algorithm.</p>
@@ -314,13 +308,12 @@ now it is time to look into various technical difficulties and implementation de
 
 <p>It is worth noting that multistreaming had large impact on this architecture. For instance, in ordinary single-stream mode, one can perform memory-to-memory conversion completely in-place, without any additional buffers. This is how <a href="http://man7.org/linux/man-pages/man3/iconv.3.html">iconv interface</a> works. With multiple streams however, there are several independent output buffers, so 1) the output data must be copied from these buffers, and 2) the input has to be split into chunks to keep additional memory requirements low. To avoid forcing this mess into user, plugins were created, which wrap these differences into relatively uniform manner. By the way, <a href="https://github.com/stgatilov/utf8lut/blob/master/src/iconv/iconv.h">iconv interface is also provided</a>, but with some quirks.</p>
 <p>Finally, there is <strong>ProcessorSelector</strong> template class on the Buffer level (in <a href="https://github.com/stgatilov/utf8lut/blob/master/src/buffer/ProcessorSelector.h">ProcessorSelector.h</a>), which simplifies creation of a buffer processor. It also supports some error correction (unless multistreaming is enabled). Here is how creating a processor with the selector looks like:</p>
-<div class="highlight"><pre><span></span><span class="c1">//type of UTF-8 to UTF-16 processor, with full validation and BMP plane support in fast path</span>
+<div class="highlight"><pre><span></span><code><span class="c1">//type of UTF-8 to UTF-16 processor, with full validation and BMP plane support in fast path</span>
 <span class="k">typedef</span> <span class="n">ProcessorSelector</span><span class="o">&lt;</span><span class="n">dfUtf8</span><span class="p">,</span> <span class="n">dfUtf16</span><span class="o">&gt;::</span><span class="n">WithOptions</span><span class="o">&lt;</span><span class="n">cmValidate</span><span class="p">,</span> <span class="mi">3</span><span class="o">&gt;::</span><span class="n">Processor</span> <span class="n">MyProcessor</span><span class="p">;</span>
 <span class="c1">//create new processor with error correction enabled</span>
 <span class="kt">int</span> <span class="n">errorsCount</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
 <span class="n">BaseBufferProcessor</span> <span class="o">*</span><span class="n">processor</span> <span class="o">=</span> <span class="n">MyProcessor</span><span class="o">::</span><span class="n">Create</span><span class="p">(</span><span class="o">&amp;</span><span class="n">errorsCount</span><span class="p">);</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>This processor can later be passed into various Message-level conversion functions (memory-to-memory or file-to-file conversion), or user can attach the plugins he wants and drive the conversion process manually.</p>
           <div class="series-neighbors">

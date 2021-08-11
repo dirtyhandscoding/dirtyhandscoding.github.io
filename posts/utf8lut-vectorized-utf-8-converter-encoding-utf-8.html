@@ -91,40 +91,35 @@
 
 <h3 id="get-lut-index"><a class="toclink" href="#get-lut-index">Get LUT index</a></h3>
 <p>First of all, we shift every 16-bit word right by 6 bits. It can probably be avoided right now, but this data will be helpful later for composing the second byte in UTF-8 characters.</p>
-<div class="highlight"><pre><span></span><span class="kr">__m128i</span> <span class="n">reg</span> <span class="o">=</span> <span class="n">_mm_loadu_si128</span><span class="p">((</span><span class="k">const</span> <span class="kr">__m128i</span> <span class="o">*</span><span class="p">)</span><span class="n">pSource</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><span class="kr">__m128i</span> <span class="n">reg</span> <span class="o">=</span> <span class="n">_mm_loadu_si128</span><span class="p">((</span><span class="k">const</span> <span class="kr">__m128i</span> <span class="o">*</span><span class="p">)</span><span class="n">pSource</span><span class="p">);</span>
 <span class="kr">__m128i</span> <span class="n">levelA</span> <span class="o">=</span> <span class="n">reg</span><span class="p">;</span>
 <span class="kr">__m128i</span> <span class="n">levelB</span> <span class="o">=</span> <span class="n">_mm_srli_epi16</span><span class="p">(</span><span class="n">reg</span><span class="p">,</span> <span class="mi">6</span><span class="p">);</span>
-</pre></div>
-
+</code></pre></div>
 
 <div class="center-content">
     <img src="https://dirtyhandscoding.github.io/images/8_utf8lut_3_encode/lut_index2.svg" class="w450"/>
 </div>
 
 <p>The two-byte UTF-8 characters can be easily detected by looking which words are larger than 0x007F. This is equivalent to <code>levelB</code> having any bit set, except for the lowest one:</p>
-<div class="highlight"><pre><span></span><span class="kr">__m128i</span> <span class="n">lenGe2</span> <span class="o">=</span> <span class="n">_mm_cmpgt_epi16</span><span class="p">(</span><span class="n">levelB</span><span class="p">,</span> <span class="n">_mm_set1_epi16</span><span class="p">(</span><span class="mh">0x0001U</span><span class="p">));</span>
-</pre></div>
-
+<div class="highlight"><pre><span></span><code><span class="kr">__m128i</span> <span class="n">lenGe2</span> <span class="o">=</span> <span class="n">_mm_cmpgt_epi16</span><span class="p">(</span><span class="n">levelB</span><span class="p">,</span> <span class="n">_mm_set1_epi16</span><span class="p">(</span><span class="mh">0x0001U</span><span class="p">));</span>
+</code></pre></div>
 
 <p>This results in a bitmask with 8 words, each spanning two bytes. Ideally, we should use<code>_mm_movemask_epi16</code> intrinsic to extract one bit from every 16-bit word, but such instruction does not exist in SSE. So we compact lower bytes using a byte shuffle and use <code>_mm_movemask_epi8</code> instead:</p>
-<div class="highlight"><pre><span></span><span class="kr">__m128i</span> <span class="n">lensAll</span> <span class="o">=</span> <span class="n">_mm_shuffle_epi8</span><span class="p">(</span><span class="n">lenGe2</span><span class="p">,</span> <span class="n">_mm_setr_epi8</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">));</span>
+<div class="highlight"><pre><span></span><code><span class="kr">__m128i</span> <span class="n">lensAll</span> <span class="o">=</span> <span class="n">_mm_shuffle_epi8</span><span class="p">(</span><span class="n">lenGe2</span><span class="p">,</span> <span class="n">_mm_setr_epi8</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="mi">-1</span><span class="p">,</span> <span class="mi">-1</span><span class="p">,</span> <span class="mi">-1</span><span class="p">,</span> <span class="mi">-1</span><span class="p">,</span> <span class="mi">-1</span><span class="p">,</span> <span class="mi">-1</span><span class="p">,</span> <span class="mi">-1</span><span class="p">,</span> <span class="mi">-1</span><span class="p">));</span>
 <span class="kt">uint32_t</span> <span class="n">mask</span> <span class="o">=</span> <span class="n">_mm_movemask_epi8</span><span class="p">(</span><span class="n">lensAll</span><span class="p">);</span>
-</pre></div>
-
+</code></pre></div>
 
 <h3 id="fetch-from-lut"><a class="toclink" href="#fetch-from-lut">Fetch from LUT</a></h3>
 <p>Now <code>mask</code> is a bitmask ranging from 0 to 255, and we use it for indexing a lookup table:</p>
-<div class="highlight"><pre><span></span><span class="k">const</span> <span class="n">EncoderLutEntry</span> <span class="o">&amp;</span><span class="n">lookup</span> <span class="o">=</span> <span class="n">lutTable</span><span class="p">[</span><span class="n">mask</span><span class="p">];</span>
-</pre></div>
-
+<div class="highlight"><pre><span></span><code><span class="k">const</span> <span class="n">EncoderLutEntry</span> <span class="o">&amp;</span><span class="n">lookup</span> <span class="o">=</span> <span class="n">lutTable</span><span class="p">[</span><span class="n">mask</span><span class="p">];</span>
+</code></pre></div>
 
 <p>If <code>EncoderLutEntry</code> is large, multiplication by size is inserted on assembly level. It can be spared by tweaking shuffle mask for <code>lensAll</code>.</p>
 <h3 id="shuffle"><a class="toclink" href="#shuffle">Shuffle</a></h3>
 <p>If you recall how UTF-8 is encoded (see <a href="https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-decoding-utf-8.html#input-data">table from previous part</a>), you will notice that the lower bits of UTF-8 output can be taken from the lower bits of <code>levelA</code> and <code>levelB</code> variables. The higher bits can then be overwritten with proper UTF-8 byte headers.</p>
 <p>SSE shuffle only operates on 16-byte registers, so both input and output must fit into 16 bytes. Since we consider every output character to take 1 or 2 bytes in UTF-8, the output surely fits into 16-byte register. As for <code>levelA</code> and <code>levelB</code> values, each of them contains eight 16-bit words, but we only need the lower half from every word. Hence, we can mix all of these lower bytes together into one register:</p>
-<div class="highlight"><pre><span></span><span class="kr">__m128i</span> <span class="n">levBA</span> <span class="o">=</span> <span class="n">_mm_xor_si128</span><span class="p">(</span><span class="n">levelB</span><span class="p">,</span> <span class="n">_mm_slli_epi16</span><span class="p">(</span><span class="n">levelA</span><span class="p">,</span> <span class="mi">8</span><span class="p">));</span>
-</pre></div>
-
+<div class="highlight"><pre><span></span><code><span class="kr">__m128i</span> <span class="n">levBA</span> <span class="o">=</span> <span class="n">_mm_xor_si128</span><span class="p">(</span><span class="n">levelB</span><span class="p">,</span> <span class="n">_mm_slli_epi16</span><span class="p">(</span><span class="n">levelA</span><span class="p">,</span> <span class="mi">8</span><span class="p">));</span>
+</code></pre></div>
 
 <div class="center-content">
     <img src="https://dirtyhandscoding.github.io/images/8_utf8lut_3_encode/levels2.svg" class="w700"/>
@@ -132,9 +127,8 @@
 
 <p>Now these bytes can be shuffled using the mask fetched from LUT:</p>
 <p>The mask only depends on which words are ASCII and which are not, and this information is present in the bitmask <code>mask</code> used as index, so proper lookup table can indeed be constructed.</p>
-<div class="highlight"><pre><span></span><span class="kr">__m128i</span> <span class="n">res</span> <span class="o">=</span> <span class="n">_mm_shuffle_epi8</span><span class="p">(</span><span class="n">levBA</span><span class="p">,</span> <span class="n">lookup</span><span class="p">.</span><span class="n">shuf</span><span class="p">);</span>
-</pre></div>
-
+<div class="highlight"><pre><span></span><code><span class="kr">__m128i</span> <span class="n">res</span> <span class="o">=</span> <span class="n">_mm_shuffle_epi8</span><span class="p">(</span><span class="n">levBA</span><span class="p">,</span> <span class="n">lookup</span><span class="p">.</span><span class="n">shuf</span><span class="p">);</span>
+</code></pre></div>
 
 <div class="center-content">
     <img src="https://dirtyhandscoding.github.io/images/8_utf8lut_3_encode/shuffle2.svg" class="w500"/>
@@ -142,19 +136,17 @@
 
 <h3 id="fix-headers"><a class="toclink" href="#fix-headers">Fix headers</a></h3>
 <p>It remains only to overwrite the higher bits with UTF-8 headers, and UTF-16 output will be obtained. This is achieved in the same way as we <a href="https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-decoding-utf-8.html#validation">validated headers in decoding</a>. LUT entry contains a 16-byte bitmask, showing which of the bits must be overwritten (depending on which bytes are 1-byte start, 2-byte start, or continuation byte). Only the last bit of the header is zero, so multiplying the bitmask by two produces the header itself.</p>
-<div class="highlight"><pre><span></span><span class="kr">__m128i</span> <span class="n">header</span> <span class="o">=</span> <span class="n">lookup</span><span class="p">.</span><span class="n">headerMask</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><span class="kr">__m128i</span> <span class="n">header</span> <span class="o">=</span> <span class="n">lookup</span><span class="p">.</span><span class="n">headerMask</span><span class="p">;</span>
 <span class="n">res</span> <span class="o">=</span> <span class="n">_mm_andnot_si128</span><span class="p">(</span><span class="n">header</span><span class="p">,</span> <span class="n">res</span><span class="p">);</span>
 <span class="n">res</span> <span class="o">=</span> <span class="n">_mm_xor_si128</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">_mm_add_epi8</span><span class="p">(</span><span class="n">header</span><span class="p">,</span> <span class="n">header</span><span class="p">));</span>
-</pre></div>
-
+</code></pre></div>
 
 <h3 id="advance-pointers"><a class="toclink" href="#advance-pointers">Advance pointers</a></h3>
 <p>Since we always process the whole 16-bytes of input, advancing input pointer is trivial. As for output pointer, we can put the number of bytes encoded into the LUT entry, since it varies depending on the type of characters.</p>
-<div class="highlight"><pre><span></span><span class="n">_mm_storeu_si128</span><span class="p">((</span><span class="kr">__m128i</span> <span class="o">*</span><span class="p">)</span><span class="n">pDest</span><span class="p">,</span> <span class="n">res</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><span class="n">_mm_storeu_si128</span><span class="p">((</span><span class="kr">__m128i</span> <span class="o">*</span><span class="p">)</span><span class="n">pDest</span><span class="p">,</span> <span class="n">res</span><span class="p">);</span>
 <span class="n">pDest</span> <span class="o">+=</span> <span class="n">lookup</span><span class="p">.</span><span class="n">dstStep</span><span class="p">;</span>
 <span class="n">pSource</span> <span class="o">+=</span> <span class="mi">16</span><span class="p">;</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>This is all for encoding characters up to U+07FF.
 Now let's see how supporting three-byte characters changes the algorithm.</p>
@@ -174,28 +166,25 @@ Now let's see how supporting three-byte characters changes the algorithm.</p>
 <h3 id="lut-indices"><a class="toclink" href="#lut-indices">LUT indices</a></h3>
 <p>We need full information about byte-lengths of all input characters. Every character will take 2 bits in the LUT index with three possible values. It does not matter how the these possible values look exactly, as long as they are different for every byte length. I tried several ways and chose the one which looked fastest to me.</p>
 <p>First, let's check which characters won't fit into 1 byte, and which characters won't fit into 2 bytes. This is done easily by comparing either the original word or the <code>levelB</code> shifted value against a threshold:</p>
-<div class="highlight"><pre><span></span><span class="kr">__m128i</span> <span class="n">reg</span> <span class="o">=</span> <span class="n">_mm_loadu_si128</span><span class="p">((</span><span class="k">const</span> <span class="kr">__m128i</span> <span class="o">*</span><span class="p">)</span><span class="n">pSource</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><span class="kr">__m128i</span> <span class="n">reg</span> <span class="o">=</span> <span class="n">_mm_loadu_si128</span><span class="p">((</span><span class="k">const</span> <span class="kr">__m128i</span> <span class="o">*</span><span class="p">)</span><span class="n">pSource</span><span class="p">);</span>
 <span class="kr">__m128i</span> <span class="n">levelB</span> <span class="o">=</span> <span class="n">_mm_srli_epi16</span><span class="p">(</span><span class="n">reg</span><span class="p">,</span> <span class="mi">6</span><span class="p">);</span>
 <span class="kr">__m128i</span> <span class="n">lenGe2</span> <span class="o">=</span> <span class="n">_mm_cmpgt_epi16</span><span class="p">(</span><span class="n">levelB</span><span class="p">,</span> <span class="n">_mm_set1_epi16</span><span class="p">(</span><span class="mh">0x0001U</span><span class="p">));</span>
 <span class="kr">__m128i</span> <span class="n">lenGe3</span> <span class="o">=</span> <span class="n">_mm_cmpgt_epi16</span><span class="p">(</span><span class="n">levelB</span><span class="p">,</span> <span class="n">_mm_set1_epi16</span><span class="p">(</span><span class="mh">0x001FU</span><span class="p">));</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>These two bitmasks together contain all the information we need, but they take 32 bytes. Obviously, they contains 16 words, each being 0x0000 or 0xFFFF. So we can compress every word into a byte and combine these bitmasks together:</p>
-<div class="highlight"><pre><span></span><span class="kr">__m128i</span> <span class="n">lensMix</span> <span class="o">=</span> <span class="n">_mm_xor_si128</span><span class="p">(</span><span class="n">_mm_srli_epi16</span><span class="p">(</span><span class="n">lenGe3</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span> <span class="n">lenGe2</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><span class="kr">__m128i</span> <span class="n">lensMix</span> <span class="o">=</span> <span class="n">_mm_xor_si128</span><span class="p">(</span><span class="n">_mm_srli_epi16</span><span class="p">(</span><span class="n">lenGe3</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span> <span class="n">lenGe2</span><span class="p">);</span>
 <span class="kt">uint32_t</span> <span class="n">allMask</span> <span class="o">=</span> <span class="n">_mm_movemask_epi8</span><span class="p">(</span><span class="n">lensMix</span><span class="p">);</span>
-</pre></div>
-
+</code></pre></div>
 
 <div class="center-content">
     <img src="https://dirtyhandscoding.github.io/images/8_utf8lut_3_encode/lut_index3.svg" class="w600"/>
 </div>
 
 <p>The lower 8 bits of <code>allMask</code> correspond to the first four characters, and the higher 8 bits correspond to the last four characters. Since shuffling would be performed separately for these halves, we should split them now:</p>
-<div class="highlight"><pre><span></span><span class="kt">uint32_t</span> <span class="n">mask0</span> <span class="o">=</span> <span class="p">(</span><span class="n">allMask</span> <span class="o">&amp;</span> <span class="mi">255U</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><span class="kt">uint32_t</span> <span class="n">mask0</span> <span class="o">=</span> <span class="p">(</span><span class="n">allMask</span> <span class="o">&amp;</span> <span class="mi">255U</span><span class="p">);</span>
 <span class="kt">uint32_t</span> <span class="n">mask1</span> <span class="o">=</span> <span class="p">(</span><span class="n">allMask</span> <span class="o">&gt;&gt;</span> <span class="mi">8U</span><span class="p">);</span>
-</pre></div>
-
+</code></pre></div>
 
 <h3 id="shuffles"><a class="toclink" href="#shuffles">Shuffles</a></h3>
 <p>The values to be shuffled are not ready yet. Since we shuffle each half separately, we want to obtain two 16-byte values: one should contain all the needed bytes for the first four characters, and another one should contain same data for the last four characters. For every character we need three bytes:</p>
@@ -205,15 +194,13 @@ Now let's see how supporting three-byte characters changes the algorithm.</p>
 <li><em>(C)</em> byte with word's 4 highest bits</li>
 </ul>
 <p>As usual, there are many ways to achieve this, and I'll show the one I found to be the fastest. First, let's take the original data and shift right by 4 bits the higher byte in every word. There is no SSE instruction to shift only odd bytes, but we can emulate it using <code>_mm_maddubs_epi16</code> intrinsic:</p>
-<div class="highlight"><pre><span></span><span class="kr">__m128i</span> <span class="n">levAC</span> <span class="o">=</span> <span class="n">_mm_maddubs_epi16</span><span class="p">(</span><span class="n">_mm_and_si128</span><span class="p">(</span><span class="n">reg</span><span class="p">,</span> <span class="n">_mm_set1_epi16</span><span class="p">(</span><span class="mh">0xF0FFU</span><span class="p">)),</span> <span class="n">_mm_set1_epi16</span><span class="p">(</span><span class="mh">0x1001U</span><span class="p">));</span>
-</pre></div>
-
+<div class="highlight"><pre><span></span><code><span class="kr">__m128i</span> <span class="n">levAC</span> <span class="o">=</span> <span class="n">_mm_maddubs_epi16</span><span class="p">(</span><span class="n">_mm_and_si128</span><span class="p">(</span><span class="n">reg</span><span class="p">,</span> <span class="n">_mm_set1_epi16</span><span class="p">(</span><span class="mh">0xF0FFU</span><span class="p">)),</span> <span class="n">_mm_set1_epi16</span><span class="p">(</span><span class="mh">0x1001U</span><span class="p">));</span>
+</code></pre></div>
 
 <p>Now <code>levAC</code> contains 8 words, and every word has <em>(A)</em> in its lower byte and <em>(C)</em> in its higher byte. Recall that we have already computed <em>(B)</em> in <code>levelB</code> variable when producing LUT index. Now we combine lower halves of these variables into <code>level0</code>, and higher halves into <code>level1</code>:</p>
-<div class="highlight"><pre><span></span><span class="kr">__m128i</span> <span class="n">levels0</span> <span class="o">=</span> <span class="n">_mm_unpacklo_epi64</span><span class="p">(</span><span class="n">levAC</span><span class="p">,</span> <span class="n">levelB</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><span class="kr">__m128i</span> <span class="n">levels0</span> <span class="o">=</span> <span class="n">_mm_unpacklo_epi64</span><span class="p">(</span><span class="n">levAC</span><span class="p">,</span> <span class="n">levelB</span><span class="p">);</span>
 <span class="kr">__m128i</span> <span class="n">levels1</span> <span class="o">=</span> <span class="n">_mm_unpackhi_epi64</span><span class="p">(</span><span class="n">levAC</span><span class="p">,</span> <span class="n">levelB</span><span class="p">);</span>
-</pre></div>
-
+</code></pre></div>
 
 <div class="center-content">
     <img src="https://dirtyhandscoding.github.io/images/8_utf8lut_3_encode/levels3.svg" class="w700"/>
@@ -222,82 +209,78 @@ Now let's see how supporting three-byte characters changes the algorithm.</p>
 
 <p>It does not matter how exactly the <em>(A)</em>, <em>(B)</em>, <em>(C)</em> bytes are packed in these values, as long as you properly account for their order when precomputing the shuffle mask.
 From now on, the processing is done separately for two halves. Shuffling allows us to move every byte into its final place in the UTF-8 output:</p>
-<div class="highlight"><pre><span></span><span class="k">const</span> <span class="n">EncoderLutEntry</span> <span class="o">&amp;</span><span class="n">lookup0</span> <span class="o">=</span> <span class="n">lutTable</span><span class="p">[</span><span class="n">mask0</span><span class="p">];</span>
+<div class="highlight"><pre><span></span><code><span class="k">const</span> <span class="n">EncoderLutEntry</span> <span class="o">&amp;</span><span class="n">lookup0</span> <span class="o">=</span> <span class="n">lutTable</span><span class="p">[</span><span class="n">mask0</span><span class="p">];</span>
 <span class="k">const</span> <span class="n">EncoderLutEntry</span> <span class="o">&amp;</span><span class="n">lookup1</span> <span class="o">=</span> <span class="n">lutTable</span><span class="p">[</span><span class="n">mask1</span><span class="p">];</span>
 <span class="kr">__m128i</span> <span class="n">res0</span> <span class="o">=</span> <span class="n">_mm_shuffle_epi8</span><span class="p">(</span><span class="n">levels0</span><span class="p">,</span> <span class="n">lookup0</span><span class="p">.</span><span class="n">shuf</span><span class="p">);</span>
 <span class="kr">__m128i</span> <span class="n">res1</span> <span class="o">=</span> <span class="n">_mm_shuffle_epi8</span><span class="p">(</span><span class="n">levels1</span><span class="p">,</span> <span class="n">lookup1</span><span class="p">.</span><span class="n">shuf</span><span class="p">);</span>
-</pre></div>
-
+</code></pre></div>
 
 <h3 id="headers-and-pointers"><a class="toclink" href="#headers-and-pointers">Headers and pointers</a></h3>
 <p>For every byte, we overwrite 1-4 highest bits with UTF-8 header:</p>
-<div class="highlight"><pre><span></span><span class="kr">__m128i</span> <span class="n">header0</span> <span class="o">=</span> <span class="n">lookup0</span><span class="p">.</span><span class="n">headerMask</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><span class="kr">__m128i</span> <span class="n">header0</span> <span class="o">=</span> <span class="n">lookup0</span><span class="p">.</span><span class="n">headerMask</span><span class="p">;</span>
 <span class="kr">__m128i</span> <span class="n">header1</span> <span class="o">=</span> <span class="n">lookup1</span><span class="p">.</span><span class="n">headerMask</span><span class="p">;</span>
 <span class="n">res0</span> <span class="o">=</span> <span class="n">_mm_andnot_si128</span><span class="p">(</span><span class="n">header0</span><span class="p">,</span> <span class="n">res0</span><span class="p">);</span>
 <span class="n">res1</span> <span class="o">=</span> <span class="n">_mm_andnot_si128</span><span class="p">(</span><span class="n">header1</span><span class="p">,</span> <span class="n">res1</span><span class="p">);</span>
 <span class="n">res0</span> <span class="o">=</span> <span class="n">_mm_xor_si128</span><span class="p">(</span><span class="n">res0</span><span class="p">,</span> <span class="n">_mm_add_epi8</span><span class="p">(</span><span class="n">header0</span><span class="p">,</span> <span class="n">header0</span><span class="p">));</span>
 <span class="n">res1</span> <span class="o">=</span> <span class="n">_mm_xor_si128</span><span class="p">(</span><span class="n">res1</span><span class="p">,</span> <span class="n">_mm_add_epi8</span><span class="p">(</span><span class="n">header1</span><span class="p">,</span> <span class="n">header1</span><span class="p">));</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>Lastly, we store every half separately and advance pointers. Of course, these instructions must be done in proper sequence:</p>
-<div class="highlight"><pre><span></span><span class="n">_mm_storeu_si128</span><span class="p">((</span><span class="kr">__m128i</span> <span class="o">*</span><span class="p">)</span><span class="n">pDest</span><span class="p">,</span> <span class="n">res0</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><span class="n">_mm_storeu_si128</span><span class="p">((</span><span class="kr">__m128i</span> <span class="o">*</span><span class="p">)</span><span class="n">pDest</span><span class="p">,</span> <span class="n">res0</span><span class="p">);</span>
 <span class="n">pDest</span> <span class="o">+=</span> <span class="n">lookup0</span><span class="p">.</span><span class="n">dstStep</span><span class="p">;</span>
 <span class="n">_mm_storeu_si128</span><span class="p">((</span><span class="kr">__m128i</span> <span class="o">*</span><span class="p">)</span><span class="n">pDest</span><span class="p">,</span> <span class="n">res1</span><span class="p">);</span>
 <span class="n">pDest</span> <span class="o">+=</span> <span class="n">lookup1</span><span class="p">.</span><span class="n">dstStep</span><span class="p">;</span>
 <span class="n">pSource</span> <span class="o">+=</span> <span class="mi">16</span><span class="p">;</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>Here finishes UTF-8 encoding algorithm with support for the whole BMP.</p>
 <hr>
 <h2 id="validation"><a class="toclink" href="#validation">Validation</a></h2>
 <p>Unlike UTF-8, validation of UTF-16 input is very simple.
 <strong>Surrogate words</strong> is the only possible problem in the input. They are the code points in range <code>[0xD800..U+E000)</code>, and we can check for them easily at the very beginning:</p>
-<div class="highlight"><pre><span></span><span class="kr">__m128i</span> <span class="n">diff</span> <span class="o">=</span> <span class="n">_mm_sub_epi16</span><span class="p">(</span><span class="n">reg</span><span class="p">,</span> <span class="n">_mm_set1_epi16</span><span class="p">(</span><span class="mh">0x5800U</span><span class="p">));</span>
+<div class="highlight"><pre><span></span><code><span class="kr">__m128i</span> <span class="n">diff</span> <span class="o">=</span> <span class="n">_mm_sub_epi16</span><span class="p">(</span><span class="n">reg</span><span class="p">,</span> <span class="n">_mm_set1_epi16</span><span class="p">(</span><span class="mh">0x5800U</span><span class="p">));</span>
 <span class="k">if</span> <span class="p">(</span><span class="n">_mm_movemask_epi8</span><span class="p">(</span><span class="n">_mm_cmplt_epi16</span><span class="p">(</span><span class="n">diff</span><span class="p">,</span> <span class="n">_mm_set1_epi16</span><span class="p">(</span><span class="mh">0x8800U</span><span class="p">)))</span> <span class="o">!=</span> <span class="mh">0x0000</span><span class="p">)</span>
     <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>Here we use the <a href="https://stackoverflow.com/a/17095534/556899">same trick</a> as before for checking range inclusion with one comparison.</p>
 <h2 id="full-code"><a class="toclink" href="#full-code">Full code</a></h2>
 <p>Here is the full listing again, with whole BMP support and validation:</p>
-<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
- 2
- 3
- 4
- 5
- 6
- 7
- 8
- 9
-10
-11
-12
-13
-14
-15
-16
-17
-18
-19
-20
-21
-22
-23
-24
-25
-26
-27
-28
-29
-30
-31
-32
-33
-34
-35</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="kr">__m128i</span> <span class="n">reg</span> <span class="o">=</span> <span class="n">_mm_loadu_si128</span><span class="p">((</span><span class="k">const</span> <span class="kr">__m128i</span> <span class="o">*</span><span class="p">)</span><span class="n">pSource</span><span class="p">);</span>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span>
+<span class="normal">29</span>
+<span class="normal">30</span>
+<span class="normal">31</span>
+<span class="normal">32</span>
+<span class="normal">33</span>
+<span class="normal">34</span>
+<span class="normal">35</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="kr">__m128i</span> <span class="n">reg</span> <span class="o">=</span> <span class="n">_mm_loadu_si128</span><span class="p">((</span><span class="k">const</span> <span class="kr">__m128i</span> <span class="o">*</span><span class="p">)</span><span class="n">pSource</span><span class="p">);</span>
 
 <span class="c1">//validate input</span>
 <span class="kr">__m128i</span> <span class="n">diff</span> <span class="o">=</span> <span class="n">_mm_sub_epi16</span><span class="p">(</span><span class="n">reg</span><span class="p">,</span> <span class="n">_mm_set1_epi16</span><span class="p">(</span><span class="mh">0x5800U</span><span class="p">));</span>
@@ -332,9 +315,8 @@ From now on, the processing is done separately for two halves. Shuffling allows 
 <span class="n">_mm_storeu_si128</span><span class="p">((</span><span class="kr">__m128i</span> <span class="o">*</span><span class="p">)</span><span class="n">pDest</span><span class="p">,</span> <span class="n">res1</span><span class="p">);</span>
 <span class="n">pDest</span> <span class="o">+=</span> <span class="n">lookup1</span><span class="p">.</span><span class="n">dstStep</span><span class="p">;</span>
 <span class="n">pSource</span> <span class="o">+=</span> <span class="mi">16</span><span class="p">;</span>
-</pre></div>
+</code></pre></div>
 </td></tr></table>
-
 <p>Note that this time lookup table contains only 256 entries. So even with 64 bytes per entry, it takes only 16 KB of space.</p>
 <h2 id="utf8lut-code"><a class="toclink" href="#utf8lut-code">utf8lut code</a></h2>
 <p>The algorithm described above is used at the "core" of the utf8lut library. The relevant files are:</p>

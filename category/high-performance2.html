@@ -55,13 +55,14 @@
 <span>| tags: <a href="https://dirtyhandscoding.github.io/tag/binary-search.html">binary search</a><a href="https://dirtyhandscoding.github.io/tag/cmov.html">cmov</a><a href="https://dirtyhandscoding.github.io/tag/iaca.html">iaca</a><a href="https://dirtyhandscoding.github.io/tag/simd.html">simd</a></span>
 </footer><!-- /.post-info -->                <p>While working on an implementation of merge sort promised in <a href="https://dirtyhandscoding.github.io/posts/vectorizing-stdmerge-with-vpermd-from-avx2-and-lookup-table.html">the previous article</a>, I realized that I'd like to use one neat little thing, which is worth its own post. It is a simple strategy for sorting or doing comparison-based tasks, which works wonderfully when input data is small enough.</p>
 <p>Suppose that we have a very small array and we want to sort it as fast as possible. Indeed, applying some fancy <em>O(N log N)</em> algorithm is not a good idea: although it has optimal asymptotic performance, its logic is too complicated to outperform simple bubble-sort-like algorithms which take <em>O(N^2)</em> time instead. That's why every well-optimized sorting algorithm based on quicksort (e.g. std::sort) or mergesort includes some simple quadratic algorithm which is run for sufficiently small subarrays like N &lt;= 32.</p>
-<p>What exactly should we strive for to get an algorithm efficient for small N? Here is the list of things to look for:
+<p>What exactly should we strive for to get an algorithm efficient for small N? Here is the list of things to look for:</p>
 <ol>
   <li>Avoid branches whenever possible: unpredictable ones are very slow.</li>
   <li>Reduce data dependency: this allows to fully utilize processing units in CPU pipeline.</li>
   <li>Prefer simple data access and manipulation patterns: this allows to vectorize the algorithm.</li>
   <li>Avoid complicated algorithms: they almost always fail on one of the previous points, and they sometimes do too much work for small inputs.</li>
-</ol></p>
+</ol>
+
 <p>I decided to start investigating a simpler problem first, which is solved by std::lower_bound: <u>given a sorted array of elements and a key, find index of the first array element greater or equal than the key</u>. And this investigation soon developed into a full-length standalone article.</p>
 
                 
@@ -89,6 +90,7 @@
             </article></li>
             </ol><!-- /#posts-list -->
 <p class="paginator">
+        <a href="https://dirtyhandscoding.github.io/category/high-performance.html">&#8647;</a>
         <a href="https://dirtyhandscoding.github.io/category/high-performance.html">&laquo;</a>
     Page 2 / 2
 </p>

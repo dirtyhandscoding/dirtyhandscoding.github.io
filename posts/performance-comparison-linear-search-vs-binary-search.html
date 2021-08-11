@@ -55,20 +55,21 @@
 </footer><!-- /.post-info -->      
       <p>While working on an implementation of merge sort promised in <a href="https://dirtyhandscoding.github.io/posts/vectorizing-stdmerge-with-vpermd-from-avx2-and-lookup-table.html">the previous article</a>, I realized that I'd like to use one neat little thing, which is worth its own post. It is a simple strategy for sorting or doing comparison-based tasks, which works wonderfully when input data is small enough.</p>
 <p>Suppose that we have a very small array and we want to sort it as fast as possible. Indeed, applying some fancy <em>O(N log N)</em> algorithm is not a good idea: although it has optimal asymptotic performance, its logic is too complicated to outperform simple bubble-sort-like algorithms which take <em>O(N^2)</em> time instead. That's why every well-optimized sorting algorithm based on quicksort (e.g. std::sort) or mergesort includes some simple quadratic algorithm which is run for sufficiently small subarrays like N &lt;= 32.</p>
-<p>What exactly should we strive for to get an algorithm efficient for small N? Here is the list of things to look for:
+<p>What exactly should we strive for to get an algorithm efficient for small N? Here is the list of things to look for:</p>
 <ol>
   <li>Avoid branches whenever possible: unpredictable ones are very slow.</li>
   <li>Reduce data dependency: this allows to fully utilize processing units in CPU pipeline.</li>
   <li>Prefer simple data access and manipulation patterns: this allows to vectorize the algorithm.</li>
   <li>Avoid complicated algorithms: they almost always fail on one of the previous points, and they sometimes do too much work for small inputs.</li>
-</ol></p>
+</ol>
+
 <p>I decided to start investigating a simpler problem first, which is solved by std::lower_bound: <u>given a sorted array of elements and a key, find index of the first array element greater or equal than the key</u>. And this investigation soon developed into a full-length standalone article.</p>
 
 
 <h2 id="binary-search"><a class="toclink" href="#binary-search">Binary search</a></h2>
 <p>The problem is typically solved with binary search in <em>O(log N)</em> time, but it might easily happen so that for small N simple linear algorithm would be faster. Of course, not all implementations of binary search are created equal: for small arrays branchless implementation is preferred. You can read about it for instance in <a href="https://blog.demofox.org/2017/06/20/simd-gpu-friendly-branchless-binary-search/">this demofox's blog post</a>. Here is a branchless implementation that we will use in the comparison later:</p>
-<div class="highlight"><pre><span></span><span class="kt">int</span> <span class="nf">binary_search_branchless</span> <span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="o">*</span><span class="n">arr</span><span class="p">,</span> <span class="kt">int</span> <span class="n">n</span><span class="p">,</span> <span class="kt">int</span> <span class="n">key</span><span class="p">)</span> <span class="p">{</span>
-    <span class="kt">intptr_t</span> <span class="n">pos</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><span class="kt">int</span> <span class="nf">binary_search_branchless</span> <span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="o">*</span><span class="n">arr</span><span class="p">,</span> <span class="kt">int</span> <span class="n">n</span><span class="p">,</span> <span class="kt">int</span> <span class="n">key</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kt">intptr_t</span> <span class="n">pos</span> <span class="o">=</span> <span class="mi">-1</span><span class="p">;</span>
     <span class="kt">intptr_t</span> <span class="n">logstep</span> <span class="o">=</span> <span class="n">bsr</span><span class="p">(</span><span class="n">n</span><span class="p">);</span>
     <span class="kt">intptr_t</span> <span class="n">step</span> <span class="o">=</span> <span class="kt">intptr_t</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="n">logstep</span><span class="p">;</span>
     <span class="k">while</span> <span class="p">(</span><span class="n">step</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
@@ -77,26 +78,24 @@
     <span class="p">}</span>
     <span class="k">return</span> <span class="n">pos</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
 <span class="p">}</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>This code only works properly when N+1 is power of two.
 In order to support arbitrary size of input array, some sort of modification is required. The best approach for it is described in <a href="https://www.pvk.ca/Blog/2012/07/03/binary-search-star-eliminates-star-branch-mispredictions/">this blog post from Paul Khuong</a>, which is: make the very first iteration special by using <code>step = n+1 - 2^logstep</code> instead of just <code>2^logstep</code>, so that regardless of comparison result the next search interval would have length <code>2^logstep</code>, including either the beginning of array or the end of array (note that two such possible intervals overlap, and this is <strong>not</strong> a problem).</p>
 <p>The comparison itself is included in the ternary operator, which is supposed to compile into <code>cmovXX</code> instruction. And it really happens (unless your compiler thinks that you compile for 486), according to assembly listing of the innermost loop:</p>
-<div class="highlight"><pre><span></span><span class="nl">$LL491@main:</span>
+<div class="highlight"><pre><span></span><code><span class="nl">$LL491@main:</span>
     <span class="nf">lea</span> <span class="no">rax</span><span class="p">,</span> <span class="no">QWORD</span> <span class="no">PTR</span> <span class="p">[</span><span class="no">rcx</span><span class="err">+</span><span class="no">rdx</span><span class="p">]</span>
     <span class="nf">cmp</span> <span class="no">DWORD</span> <span class="no">PTR</span> <span class="p">[</span><span class="no">rdi</span><span class="err">+</span><span class="no">rax</span><span class="p">*</span><span class="mi">4</span><span class="p">],</span> <span class="no">r8d</span>
     <span class="nf">cmovl</span> <span class="no">rdx</span><span class="p">,</span> <span class="no">rax</span>
     <span class="nf">sar</span> <span class="no">rcx</span><span class="p">,</span> <span class="mi">1</span>
     <span class="nf">test</span> <span class="no">rcx</span><span class="p">,</span> <span class="no">rcx</span>
     <span class="nf">jg</span> <span class="no">SHORT</span> <span class="no">$LL491@main</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>How good is this binary search implementation? It has no branches (point 1 from the above list), which is great. But it is inherently sequental (point 2): you cannot know which element to load on the next step until the element on the current step has been loaded and compared completely. Data access is scalar (point 3): you cannot vectorize it even if several keys are searched simultaneously.</p>
 <p>We can take closer look by using <a href="https://software.intel.com/en-us/articles/intel-architecture-code-analyzer">Intel Architecture Code Analyzer</a>: IACA is a small static analysis tool, which analyzes a snippet of code at instruction level. It assumes that the code piece is run in the infinite loop, that all branches are well-predicted and not taken, and that all memory accesses hit L1 cache (plus maybe some other assumptions). It is somewhat tricky to use with Visual C++ 64-bit compiler: you have to copy-paste the piece of code from assembly listing, surround it with markers (which are a bit wrong in iacaMarks.h by the way), then compile it with ml64.exe, and pass the resulting object file into iaca.exe.</p>
 <p>Here is what IACA says about the innermost loop:</p>
-<div class="highlight"><pre><span></span><span class="n">Throughput</span> <span class="n">Analysis</span> <span class="n">Report</span>
+<div class="highlight"><pre><span></span><code><span class="n">Throughput</span> <span class="n">Analysis</span> <span class="n">Report</span>
 <span class="o">--------------------------</span>
 <span class="n">Block</span> <span class="n">Throughput</span><span class="p">:</span> <span class="mf">2.15</span> <span class="n">Cycles</span>       <span class="n">Throughput</span> <span class="n">Bottleneck</span><span class="p">:</span> <span class="n">Dependency</span> <span class="n">chains</span> <span class="p">(</span><span class="n">possibly</span> <span class="n">between</span> <span class="n">iterations</span><span class="p">)</span>
 
@@ -111,20 +110,19 @@ In order to support arbitrary size of input array, some sort of modification is 
 <span class="o">|</span>  <span class="n">Uops</span>  <span class="o">|</span>  <span class="mi">0</span>  <span class="o">-</span> <span class="n">DV</span>  <span class="o">|</span>  <span class="mi">1</span>  <span class="o">|</span>  <span class="mi">2</span>  <span class="o">-</span>  <span class="n">D</span>  <span class="o">|</span>  <span class="mi">3</span>  <span class="o">-</span>  <span class="n">D</span>  <span class="o">|</span>  <span class="mi">4</span>  <span class="o">|</span>  <span class="mi">5</span>  <span class="o">|</span>  <span class="mi">6</span>  <span class="o">|</span>  <span class="mi">7</span>  <span class="o">|</span>    <span class="o">|</span>
 <span class="o">---------------------------------------------------------------------------------</span>
 <span class="o">|</span>   <span class="mi">1</span>    <span class="o">|</span>           <span class="o">|</span> <span class="mf">0.3</span> <span class="o">|</span>           <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span> <span class="mf">0.6</span> <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>    <span class="o">|</span> <span class="n">lea</span> <span class="n">rax</span><span class="p">,</span> <span class="n">ptr</span> <span class="p">[</span><span class="n">rdx</span><span class="o">+</span><span class="n">rcx</span><span class="o">*</span><span class="mi">1</span><span class="p">]</span>
-<span class="o">|</span>   <span class="mi">2</span>    <span class="o">|</span>           <span class="o">|</span> <span class="mf">0.6</span> <span class="o">|</span> <span class="mf">0.5</span>   <span class="mf">0.5</span> <span class="o">|</span> <span class="mf">0.5</span>   <span class="mf">0.5</span> <span class="o">|</span>     <span class="o">|</span> <span class="mf">0.4</span> <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>    <span class="o">|</span> <span class="nb">cmp</span> <span class="n">dword</span> <span class="n">ptr</span> <span class="p">[</span><span class="n">rdi</span><span class="o">+</span><span class="n">rax</span><span class="o">*</span><span class="mi">4</span><span class="p">],</span> <span class="n">r8d</span>
+<span class="o">|</span>   <span class="mi">2</span>    <span class="o">|</span>           <span class="o">|</span> <span class="mf">0.6</span> <span class="o">|</span> <span class="mf">0.5</span>   <span class="mf">0.5</span> <span class="o">|</span> <span class="mf">0.5</span>   <span class="mf">0.5</span> <span class="o">|</span>     <span class="o">|</span> <span class="mf">0.4</span> <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>    <span class="o">|</span> <span class="n">cmp</span> <span class="n">dword</span> <span class="n">ptr</span> <span class="p">[</span><span class="n">rdi</span><span class="o">+</span><span class="n">rax</span><span class="o">*</span><span class="mi">4</span><span class="p">],</span> <span class="n">r8d</span>
 <span class="o">|</span>   <span class="mi">1</span>    <span class="o">|</span> <span class="mf">0.4</span>       <span class="o">|</span>     <span class="o">|</span>           <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span> <span class="mf">0.6</span> <span class="o">|</span>     <span class="o">|</span>    <span class="o">|</span> <span class="n">cmovl</span> <span class="n">rdx</span><span class="p">,</span> <span class="n">rax</span>
 <span class="o">|</span>   <span class="mi">1</span>    <span class="o">|</span> <span class="mf">0.5</span>       <span class="o">|</span>     <span class="o">|</span>           <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span> <span class="mf">0.5</span> <span class="o">|</span>     <span class="o">|</span> <span class="n">CP</span> <span class="o">|</span> <span class="n">sar</span> <span class="n">rcx</span><span class="p">,</span> <span class="mh">0x1</span>
 <span class="o">|</span>   <span class="mi">1</span>    <span class="o">|</span> <span class="mf">0.6</span>       <span class="o">|</span>     <span class="o">|</span>           <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span> <span class="mf">0.4</span> <span class="o">|</span>     <span class="o">|</span> <span class="n">CP</span> <span class="o">|</span> <span class="n">test</span> <span class="n">rcx</span><span class="p">,</span> <span class="n">rcx</span>
 <span class="o">|</span>   <span class="mi">0</span><span class="n">F</span>   <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>           <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>    <span class="o">|</span> <span class="n">jnle</span> <span class="mh">0xffffffffffffffee</span>
 <span class="n">Total</span> <span class="n">Num</span> <span class="n">Of</span> <span class="n">Uops</span><span class="p">:</span> <span class="mi">6</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>So it says that bottleneck is "dependency chains" and it estimates single iteration of the loop in 2.15 cycles. The estimate is clearly wrong: it is easy to see that the first three instructions must be executed sequentally, and the first of them cannot start before that last of them from the previous iterations has finished. A load from L1 <a href="https://software.intel.com/en-us/forums/software-tuning-performance-optimization-platform-monitoring/topic/389767">costs 4 cycles</a> latency-wise, address generation and other three instructions take at least 1 cycle each. So the innermost loop should take 8 cycles per iteration. If we look how performance measurements increase from doubling N, we can estimate one iteration in 4-5 cycles throughput and 10 cycles latency: both are much greater that the estimate given by IACA.</p>
 <p>Since the loop in the binary search is very small (4-6 microops) and it goes for tiny number of iterations (e.g. 6 iterations for N = 64), one might suspect that the loop itself can take considerable time. That's why I have also implemented fully unrolled version of branchess binary search:</p>
-<div class="highlight"><pre><span></span><span class="k">template</span><span class="o">&lt;</span><span class="kt">intptr_t</span> <span class="n">MAXN</span><span class="o">&gt;</span> <span class="kt">int</span> <span class="n">binary_search_branchless_UR</span><span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="o">*</span><span class="n">arr</span><span class="p">,</span> <span class="kt">int</span> <span class="n">n</span><span class="p">,</span> <span class="kt">int</span> <span class="n">key</span><span class="p">)</span> <span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="k">template</span><span class="o">&lt;</span><span class="kt">intptr_t</span> <span class="n">MAXN</span><span class="o">&gt;</span> <span class="kt">int</span> <span class="n">binary_search_branchless_UR</span><span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="o">*</span><span class="n">arr</span><span class="p">,</span> <span class="kt">int</span> <span class="n">n</span><span class="p">,</span> <span class="kt">int</span> <span class="n">key</span><span class="p">)</span> <span class="p">{</span>
     <span class="n">assert</span><span class="p">(</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span> <span class="o">==</span> <span class="n">MAXN</span><span class="p">);</span>
-    <span class="kt">intptr_t</span> <span class="n">pos</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+    <span class="kt">intptr_t</span> <span class="n">pos</span> <span class="o">=</span> <span class="mi">-1</span><span class="p">;</span>
     <span class="cp">#define STEP(logstep) \</span>
 <span class="cp">        if ((1&lt;&lt;logstep) &lt; MAXN) \</span>
 <span class="cp">            pos = (arr[pos + (1&lt;&lt;logstep)] &lt; key ? pos + (1&lt;&lt;logstep) : pos);</span>
@@ -141,11 +139,10 @@ In order to support arbitrary size of input array, some sort of modification is 
     <span class="cp">#undef STEP</span>
     <span class="k">return</span> <span class="n">pos</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
 <span class="p">}</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>This is of course quite far from the code usable in real programming, but it allows us to ignore all the overhead from the binary search and look directly at its core. IACA provides the following information about the code of the function (N = 64):</p>
-<div class="highlight"><pre><span></span><span class="n">Throughput</span> <span class="n">Analysis</span> <span class="n">Report</span>
+<div class="highlight"><pre><span></span><code><span class="n">Throughput</span> <span class="n">Analysis</span> <span class="n">Report</span>
 <span class="o">--------------------------</span>
 <span class="n">Block</span> <span class="n">Throughput</span><span class="p">:</span> <span class="mf">29.00</span> <span class="n">Cycles</span>       <span class="n">Throughput</span> <span class="n">Bottleneck</span><span class="p">:</span> <span class="n">Dependency</span> <span class="n">chains</span> <span class="p">(</span><span class="n">possibly</span> <span class="n">between</span> <span class="n">iterations</span><span class="p">)</span>
 
@@ -162,34 +159,33 @@ In order to support arbitrary size of input array, some sort of modification is 
 <span class="o">|</span>   <span class="mi">1</span><span class="o">*</span>   <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>           <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>    <span class="o">|</span> <span class="n">mov</span> <span class="n">r9</span><span class="p">,</span> <span class="n">rcx</span>
 <span class="o">|</span>   <span class="mi">1</span>    <span class="o">|</span>           <span class="o">|</span> <span class="mf">1.0</span> <span class="o">|</span>           <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>    <span class="o">|</span> <span class="n">mov</span> <span class="n">eax</span><span class="p">,</span> <span class="mh">0x1f</span>
 <span class="o">|</span>   <span class="mi">1</span>    <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>           <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span> <span class="mf">1.0</span> <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>    <span class="o">|</span> <span class="ow">or</span> <span class="n">rcx</span><span class="p">,</span> <span class="mh">0xffffffffffffffff</span>
-<span class="o">|</span>   <span class="mi">2</span><span class="o">^</span>   <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span> <span class="mf">1.0</span>   <span class="mf">1.0</span> <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span> <span class="mf">1.0</span> <span class="o">|</span>     <span class="o">|</span> <span class="n">CP</span> <span class="o">|</span> <span class="nb">cmp</span> <span class="n">dword</span> <span class="n">ptr</span> <span class="p">[</span><span class="n">r9</span><span class="o">+</span><span class="mh">0x7c</span><span class="p">],</span> <span class="n">r8d</span>
+<span class="o">|</span>   <span class="mi">2</span><span class="o">^</span>   <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span> <span class="mf">1.0</span>   <span class="mf">1.0</span> <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span> <span class="mf">1.0</span> <span class="o">|</span>     <span class="o">|</span> <span class="n">CP</span> <span class="o">|</span> <span class="n">cmp</span> <span class="n">dword</span> <span class="n">ptr</span> <span class="p">[</span><span class="n">r9</span><span class="o">+</span><span class="mh">0x7c</span><span class="p">],</span> <span class="n">r8d</span>
 <span class="o">|</span>   <span class="mi">1</span>    <span class="o">|</span> <span class="mf">1.0</span>       <span class="o">|</span>     <span class="o">|</span>           <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span> <span class="n">CP</span> <span class="o">|</span> <span class="n">cmovnl</span> <span class="n">rax</span><span class="p">,</span> <span class="n">rcx</span>
-<span class="o">|</span>   <span class="mi">2</span>    <span class="o">|</span>           <span class="o">|</span> <span class="mf">1.0</span> <span class="o">|</span>           <span class="o">|</span> <span class="mf">1.0</span>   <span class="mf">1.0</span> <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span> <span class="n">CP</span> <span class="o">|</span> <span class="nb">cmp</span> <span class="n">dword</span> <span class="n">ptr</span> <span class="p">[</span><span class="n">r9</span><span class="o">+</span><span class="n">rax</span><span class="o">*</span><span class="mi">4</span><span class="o">+</span><span class="mh">0x40</span><span class="p">],</span> <span class="n">r8d</span>
+<span class="o">|</span>   <span class="mi">2</span>    <span class="o">|</span>           <span class="o">|</span> <span class="mf">1.0</span> <span class="o">|</span>           <span class="o">|</span> <span class="mf">1.0</span>   <span class="mf">1.0</span> <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span> <span class="n">CP</span> <span class="o">|</span> <span class="n">cmp</span> <span class="n">dword</span> <span class="n">ptr</span> <span class="p">[</span><span class="n">r9</span><span class="o">+</span><span class="n">rax</span><span class="o">*</span><span class="mi">4</span><span class="o">+</span><span class="mh">0x40</span><span class="p">],</span> <span class="n">r8d</span>
 <span class="o">|</span>   <span class="mi">1</span>    <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>           <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span> <span class="mf">1.0</span> <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>    <span class="o">|</span> <span class="n">lea</span> <span class="n">rdx</span><span class="p">,</span> <span class="n">ptr</span> <span class="p">[</span><span class="n">rax</span><span class="o">+</span><span class="mh">0x10</span><span class="p">]</span>
 <span class="o">|</span>   <span class="mi">1</span>    <span class="o">|</span> <span class="mf">1.0</span>       <span class="o">|</span>     <span class="o">|</span>           <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span> <span class="n">CP</span> <span class="o">|</span> <span class="n">cmovnl</span> <span class="n">rdx</span><span class="p">,</span> <span class="n">rax</span>
-<span class="o">|</span>   <span class="mi">2</span>    <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span> <span class="mf">1.0</span>   <span class="mf">1.0</span> <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span> <span class="mf">1.0</span> <span class="o">|</span>     <span class="o">|</span> <span class="n">CP</span> <span class="o">|</span> <span class="nb">cmp</span> <span class="n">dword</span> <span class="n">ptr</span> <span class="p">[</span><span class="n">r9</span><span class="o">+</span><span class="n">rdx</span><span class="o">*</span><span class="mi">4</span><span class="o">+</span><span class="mh">0x20</span><span class="p">],</span> <span class="n">r8d</span>
+<span class="o">|</span>   <span class="mi">2</span>    <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span> <span class="mf">1.0</span>   <span class="mf">1.0</span> <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span> <span class="mf">1.0</span> <span class="o">|</span>     <span class="o">|</span> <span class="n">CP</span> <span class="o">|</span> <span class="n">cmp</span> <span class="n">dword</span> <span class="n">ptr</span> <span class="p">[</span><span class="n">r9</span><span class="o">+</span><span class="n">rdx</span><span class="o">*</span><span class="mi">4</span><span class="o">+</span><span class="mh">0x20</span><span class="p">],</span> <span class="n">r8d</span>
 <span class="o">|</span>   <span class="mi">1</span>    <span class="o">|</span>           <span class="o">|</span> <span class="mf">1.0</span> <span class="o">|</span>           <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>    <span class="o">|</span> <span class="n">lea</span> <span class="n">rax</span><span class="p">,</span> <span class="n">ptr</span> <span class="p">[</span><span class="n">rdx</span><span class="o">+</span><span class="mh">0x8</span><span class="p">]</span>
 <span class="o">|</span>   <span class="mi">1</span>    <span class="o">|</span> <span class="mf">1.0</span>       <span class="o">|</span>     <span class="o">|</span>           <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span> <span class="n">CP</span> <span class="o">|</span> <span class="n">cmovnl</span> <span class="n">rax</span><span class="p">,</span> <span class="n">rdx</span>
-<span class="o">|</span>   <span class="mi">2</span>    <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>           <span class="o">|</span> <span class="mf">1.0</span>   <span class="mf">1.0</span> <span class="o">|</span>     <span class="o">|</span> <span class="mf">1.0</span> <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span> <span class="n">CP</span> <span class="o">|</span> <span class="nb">cmp</span> <span class="n">dword</span> <span class="n">ptr</span> <span class="p">[</span><span class="n">r9</span><span class="o">+</span><span class="n">rax</span><span class="o">*</span><span class="mi">4</span><span class="o">+</span><span class="mh">0x10</span><span class="p">],</span> <span class="n">r8d</span>
+<span class="o">|</span>   <span class="mi">2</span>    <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>           <span class="o">|</span> <span class="mf">1.0</span>   <span class="mf">1.0</span> <span class="o">|</span>     <span class="o">|</span> <span class="mf">1.0</span> <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span> <span class="n">CP</span> <span class="o">|</span> <span class="n">cmp</span> <span class="n">dword</span> <span class="n">ptr</span> <span class="p">[</span><span class="n">r9</span><span class="o">+</span><span class="n">rax</span><span class="o">*</span><span class="mi">4</span><span class="o">+</span><span class="mh">0x10</span><span class="p">],</span> <span class="n">r8d</span>
 <span class="o">|</span>   <span class="mi">1</span>    <span class="o">|</span>           <span class="o">|</span> <span class="mf">1.0</span> <span class="o">|</span>           <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>    <span class="o">|</span> <span class="n">lea</span> <span class="n">rcx</span><span class="p">,</span> <span class="n">ptr</span> <span class="p">[</span><span class="n">rax</span><span class="o">+</span><span class="mh">0x4</span><span class="p">]</span>
 <span class="o">|</span>   <span class="mi">1</span>    <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>           <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span> <span class="mf">1.0</span> <span class="o">|</span>     <span class="o">|</span> <span class="n">CP</span> <span class="o">|</span> <span class="n">cmovnl</span> <span class="n">rcx</span><span class="p">,</span> <span class="n">rax</span>
-<span class="o">|</span>   <span class="mi">2</span>    <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span> <span class="mf">1.0</span>   <span class="mf">1.0</span> <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span> <span class="mf">1.0</span> <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span> <span class="n">CP</span> <span class="o">|</span> <span class="nb">cmp</span> <span class="n">dword</span> <span class="n">ptr</span> <span class="p">[</span><span class="n">r9</span><span class="o">+</span><span class="n">rcx</span><span class="o">*</span><span class="mi">4</span><span class="o">+</span><span class="mh">0x8</span><span class="p">],</span> <span class="n">r8d</span>
+<span class="o">|</span>   <span class="mi">2</span>    <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span> <span class="mf">1.0</span>   <span class="mf">1.0</span> <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span> <span class="mf">1.0</span> <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span> <span class="n">CP</span> <span class="o">|</span> <span class="n">cmp</span> <span class="n">dword</span> <span class="n">ptr</span> <span class="p">[</span><span class="n">r9</span><span class="o">+</span><span class="n">rcx</span><span class="o">*</span><span class="mi">4</span><span class="o">+</span><span class="mh">0x8</span><span class="p">],</span> <span class="n">r8d</span>
 <span class="o">|</span>   <span class="mi">1</span>    <span class="o">|</span>           <span class="o">|</span> <span class="mf">1.0</span> <span class="o">|</span>           <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>    <span class="o">|</span> <span class="n">lea</span> <span class="n">rdx</span><span class="p">,</span> <span class="n">ptr</span> <span class="p">[</span><span class="n">rcx</span><span class="o">+</span><span class="mh">0x2</span><span class="p">]</span>
 <span class="o">|</span>   <span class="mi">1</span>    <span class="o">|</span> <span class="mf">1.0</span>       <span class="o">|</span>     <span class="o">|</span>           <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span> <span class="n">CP</span> <span class="o">|</span> <span class="n">cmovnl</span> <span class="n">rdx</span><span class="p">,</span> <span class="n">rcx</span>
-<span class="o">|</span>   <span class="mi">2</span>    <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>           <span class="o">|</span> <span class="mf">1.0</span>   <span class="mf">1.0</span> <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span> <span class="mf">1.0</span> <span class="o">|</span>     <span class="o">|</span> <span class="n">CP</span> <span class="o">|</span> <span class="nb">cmp</span> <span class="n">dword</span> <span class="n">ptr</span> <span class="p">[</span><span class="n">r9</span><span class="o">+</span><span class="n">rdx</span><span class="o">*</span><span class="mi">4</span><span class="o">+</span><span class="mh">0x4</span><span class="p">],</span> <span class="n">r8d</span>
+<span class="o">|</span>   <span class="mi">2</span>    <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>           <span class="o">|</span> <span class="mf">1.0</span>   <span class="mf">1.0</span> <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span> <span class="mf">1.0</span> <span class="o">|</span>     <span class="o">|</span> <span class="n">CP</span> <span class="o">|</span> <span class="n">cmp</span> <span class="n">dword</span> <span class="n">ptr</span> <span class="p">[</span><span class="n">r9</span><span class="o">+</span><span class="n">rdx</span><span class="o">*</span><span class="mi">4</span><span class="o">+</span><span class="mh">0x4</span><span class="p">],</span> <span class="n">r8d</span>
 <span class="o">|</span>   <span class="mi">1</span>    <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>           <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span> <span class="mf">1.0</span> <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>    <span class="o">|</span> <span class="n">lea</span> <span class="n">rax</span><span class="p">,</span> <span class="n">ptr</span> <span class="p">[</span><span class="n">rdx</span><span class="o">+</span><span class="mh">0x1</span><span class="p">]</span>
 <span class="o">|</span>   <span class="mi">1</span>    <span class="o">|</span> <span class="mf">1.0</span>       <span class="o">|</span>     <span class="o">|</span>           <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span> <span class="n">CP</span> <span class="o">|</span> <span class="n">cmovnl</span> <span class="n">rax</span><span class="p">,</span> <span class="n">rdx</span>
 <span class="o">|</span>   <span class="mi">1</span>    <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>           <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span> <span class="mf">1.0</span> <span class="o">|</span>     <span class="o">|</span> <span class="n">CP</span> <span class="o">|</span> <span class="n">inc</span> <span class="n">rax</span>
 <span class="n">Total</span> <span class="n">Num</span> <span class="n">Of</span> <span class="n">Uops</span><span class="p">:</span> <span class="mi">27</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>It is hard to say how IACA got 29 cycles per search. The critical path is marked properly: groups of cmov and cmp must go sequentally after each other, each group taking 7 cycles latency-wise, so latency of the whole code should be about 42 cycles. In the benchmark, the whole search takes 21 cycles throughput and 59 cycles latency, while doubling N adds 4-5 cycles more throughput and 8-9 cycles more latency. It seems that CPU manages to execute several consecutive searches in parallel thanks to pipelining, that's why throughput time is lower than latency time for branchless binary searches.</p>
 <p>I believe this is the best you can get from a binary search.</p>
 <h2 id="linear-search"><a class="toclink" href="#linear-search">Linear search</a></h2>
 <p>Things start to get more interesting when we try to invent a simple search algorithm working in <em>O(N)</em> time. Because there are actually several ways to do so.
 If you look the question <a href="https://stackoverflow.com/questions/2741859/how-fast-can-you-make-linear-search">"How fast can you make linear search?"</a> on stackoverflow, you will see a basic code like this:</p>
-<div class="highlight"><pre><span></span><span class="kt">int</span> <span class="nf">linearX_search_scalar</span> <span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="o">*</span><span class="n">arr</span><span class="p">,</span> <span class="kt">int</span> <span class="n">n</span><span class="p">,</span> <span class="kt">int</span> <span class="n">key</span><span class="p">)</span> <span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="kt">int</span> <span class="nf">linearX_search_scalar</span> <span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="o">*</span><span class="n">arr</span><span class="p">,</span> <span class="kt">int</span> <span class="n">n</span><span class="p">,</span> <span class="kt">int</span> <span class="n">key</span><span class="p">)</span> <span class="p">{</span>
     <span class="kt">intptr_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
     <span class="k">while</span> <span class="p">(</span><span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">)</span> <span class="p">{</span>
         <span class="k">if</span> <span class="p">(</span><span class="n">arr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">key</span><span class="p">)</span>
@@ -198,11 +194,10 @@ If you look the question <a href="https://stackoverflow.com/questions/2741859/ho
     <span class="p">}</span>
     <span class="k">return</span> <span class="n">i</span><span class="p">;</span>
 <span class="p">}</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>Most of the answers for the question are just optimized versions of this algorithm: even if they compare more than one element at a time (with SSE), they still break out when the desired element is found. For instance, the author of the question (Schani) suggests the following code in <a href="https://schani.wordpress.com/2010/04/30/linear-vs-binary-search">his blog post</a>:</p>
-<div class="highlight"><pre><span></span><span class="kt">int</span> <span class="nf">linearX_search_sse</span> <span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="o">*</span><span class="n">arr</span><span class="p">,</span> <span class="kt">int</span> <span class="n">n</span><span class="p">,</span> <span class="kt">int</span> <span class="n">key</span><span class="p">)</span> <span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="kt">int</span> <span class="nf">linearX_search_sse</span> <span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="o">*</span><span class="n">arr</span><span class="p">,</span> <span class="kt">int</span> <span class="n">n</span><span class="p">,</span> <span class="kt">int</span> <span class="n">key</span><span class="p">)</span> <span class="p">{</span>
     <span class="kr">__m128i</span> <span class="o">*</span><span class="n">in_data</span> <span class="o">=</span> <span class="p">(</span><span class="kr">__m128i</span><span class="o">*</span><span class="p">)</span><span class="n">arr</span><span class="p">;</span>
     <span class="kr">__m128i</span> <span class="n">key4</span> <span class="o">=</span> <span class="n">_mm_set1_epi32</span><span class="p">(</span><span class="n">key</span><span class="p">);</span>
     <span class="kt">intptr_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
@@ -222,22 +217,20 @@ If you look the question <a href="https://stackoverflow.com/questions/2741859/ho
     <span class="p">}</span>
     <span class="k">return</span> <span class="n">i</span> <span class="o">*</span> <span class="mi">4</span> <span class="o">+</span> <span class="n">bsf</span><span class="p">(</span><span class="o">~</span><span class="n">res</span><span class="p">);</span>
 <span class="p">}</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>This code has no issues from the list of things that may slow down the algorithm, except for one mispredicted branch. The branch which checks if the answer is found is never taken except for the very last iteration when the loop terminates (which may happen at random moment). Of course, single misprediction is not a problem in a long loop, but it may cause problems when we want to optimize a tiny loop. In fact, <a href="https://www.pvk.ca/Blog/2012/07/03/binary-search-star-eliminates-star-branch-mispredictions">Paul Khuong's blog post</a> claims that linear search is always slower than branchless binary search because of this single mispredicted branch. Luckily, there is a way to avoid branches completely.</p>
 <p>The idea is very simple: the sought-for index is precisely the number of elements in the array which are less than the key you search for. In fact, this criterion would work the same way even if you shuffle the input array randomly =) Here is the scalar implementation based on this criterion:</p>
-<div class="highlight"><pre><span></span><span class="kt">int</span> <span class="nf">linear_search_scalar</span> <span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="o">*</span><span class="n">arr</span><span class="p">,</span> <span class="kt">int</span> <span class="n">n</span><span class="p">,</span> <span class="kt">int</span> <span class="n">key</span><span class="p">)</span> <span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="kt">int</span> <span class="nf">linear_search_scalar</span> <span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="o">*</span><span class="n">arr</span><span class="p">,</span> <span class="kt">int</span> <span class="n">n</span><span class="p">,</span> <span class="kt">int</span> <span class="n">key</span><span class="p">)</span> <span class="p">{</span>
     <span class="kt">int</span> <span class="n">cnt</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
     <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
         <span class="n">cnt</span> <span class="o">+=</span> <span class="p">(</span><span class="n">arr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">key</span><span class="p">);</span>
     <span class="k">return</span> <span class="n">cnt</span><span class="p">;</span>
 <span class="p">}</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>For a vectorized implementation, we can compare a pack of four elements with the key, and then subtract the resulting masks (recall that they are -1 when comparison result is true) from the common accumulator. At the end we have to compute horizontal sum of the accumulator to get the total count. Finally, it is better to process several packs during single iteration (similar to unrolling) to reduce loop overhead. Here is the code:</p>
-<div class="highlight"><pre><span></span><span class="kt">int</span> <span class="nf">linear_search_sse</span> <span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="o">*</span><span class="n">arr</span><span class="p">,</span> <span class="kt">int</span> <span class="n">n</span><span class="p">,</span> <span class="kt">int</span> <span class="n">key</span><span class="p">)</span> <span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="kt">int</span> <span class="nf">linear_search_sse</span> <span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="o">*</span><span class="n">arr</span><span class="p">,</span> <span class="kt">int</span> <span class="n">n</span><span class="p">,</span> <span class="kt">int</span> <span class="n">key</span><span class="p">)</span> <span class="p">{</span>
     <span class="kr">__m128i</span> <span class="n">vkey</span> <span class="o">=</span> <span class="n">_mm_set1_epi32</span><span class="p">(</span><span class="n">key</span><span class="p">);</span>
     <span class="kr">__m128i</span> <span class="n">cnt</span> <span class="o">=</span> <span class="n">_mm_setzero_si128</span><span class="p">();</span>
     <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">;</span> <span class="n">i</span> <span class="o">+=</span> <span class="mi">16</span><span class="p">)</span> <span class="p">{</span>
@@ -252,12 +245,11 @@ If you look the question <a href="https://stackoverflow.com/questions/2741859/ho
     <span class="n">cnt</span> <span class="o">=</span> <span class="n">_mm_add_epi32</span><span class="p">(</span><span class="n">cnt</span><span class="p">,</span> <span class="n">_mm_shuffle_epi32</span><span class="p">(</span><span class="n">cnt</span><span class="p">,</span> <span class="n">SHUF</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">)));</span>
     <span class="k">return</span> <span class="n">_mm_cvtsi128_si32</span><span class="p">(</span><span class="n">cnt</span><span class="p">);</span>
 <span class="p">}</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>It requires the input array to be padded with sentinel elements INT_MAX until its size becomes divisible by 16. This requirement may be lifted by processing  at most 15 last elements with additional loop(s), but I suppose such a version would work somewhat slower than the version with sentinels.</p>
 <p>IACA provides the following info for the innermost loop of the code:</p>
-<div class="highlight"><pre><span></span><span class="n">Throughput</span> <span class="n">Analysis</span> <span class="n">Report</span>
+<div class="highlight"><pre><span></span><code><span class="n">Throughput</span> <span class="n">Analysis</span> <span class="n">Report</span>
 <span class="o">--------------------------</span>
 <span class="n">Block</span> <span class="n">Throughput</span><span class="p">:</span> <span class="mf">5.05</span> <span class="n">Cycles</span>       <span class="n">Throughput</span> <span class="n">Bottleneck</span><span class="p">:</span> <span class="n">Dependency</span> <span class="n">chains</span> <span class="p">(</span><span class="n">possibly</span> <span class="n">between</span> <span class="n">iterations</span><span class="p">)</span>
 
@@ -283,12 +275,11 @@ If you look the question <a href="https://stackoverflow.com/questions/2741859/ho
 <span class="o">|</span>   <span class="mi">1</span>    <span class="o">|</span> <span class="mf">0.5</span>       <span class="o">|</span>     <span class="o">|</span>           <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span> <span class="mf">0.5</span> <span class="o">|</span>     <span class="o">|</span>    <span class="o">|</span> <span class="n">sub</span> <span class="n">rdx</span><span class="p">,</span> <span class="mh">0x1</span>
 <span class="o">|</span>   <span class="mi">0</span><span class="n">F</span>   <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>           <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>    <span class="o">|</span> <span class="n">jnz</span> <span class="mh">0xffffffffffffffd4</span>
 <span class="n">Total</span> <span class="n">Num</span> <span class="n">Of</span> <span class="n">Uops</span><span class="p">:</span> <span class="mi">14</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>And again: I'm not sure how IACA got 5.05 cycles per iteration. Most of the work done each iteration is clearly independent between iterations, so in a theoretical infinite loop several consecutive iterations can be executed in parallel, thus hiding latency of memory loads and dependencies. As for performance measurements, going from 64 elements to 128 elements increases time by 12.4 ns, which is 6.2 cycles per iteration. The cost per iteration decreases to 5.5 cycles for larger N. Note that both latency and throughput measurements increase equally with increase of N, which confirms the fact that iterations are processed independently. Given that execution ports pressure is 4.5 cycles per iteration, spending 5.5 cycles is pretty efficient usage of hardware (compared to binary search).</p>
 <p>To make sure loop overhead is not critical, I have also implemented fully unrolled version of this vectorized implementation. For N = 64 it has four iterations unrolled, and here is its assembly code analyzed by IACA:</p>
-<div class="highlight"><pre><span></span><span class="n">Throughput</span> <span class="n">Analysis</span> <span class="n">Report</span>
+<div class="highlight"><pre><span></span><code><span class="n">Throughput</span> <span class="n">Analysis</span> <span class="n">Report</span>
 <span class="o">--------------------------</span>
 <span class="n">Block</span> <span class="n">Throughput</span><span class="p">:</span> <span class="mf">19.25</span> <span class="n">Cycles</span>       <span class="n">Throughput</span> <span class="n">Bottleneck</span><span class="p">:</span> <span class="n">FrontEnd</span><span class="p">,</span> <span class="n">Port1</span><span class="p">,</span> <span class="n">Port5</span>
 
@@ -343,14 +334,13 @@ If you look the question <a href="https://stackoverflow.com/questions/2741859/ho
 <span class="o">|</span>   <span class="mi">1</span>    <span class="o">|</span>           <span class="o">|</span> <span class="mf">1.0</span> <span class="o">|</span>           <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span> <span class="n">CP</span> <span class="o">|</span> <span class="n">vpaddd</span> <span class="n">xmm0</span><span class="p">,</span> <span class="n">xmm1</span><span class="p">,</span> <span class="n">xmm2</span>
 <span class="o">|</span>   <span class="mi">1</span>    <span class="o">|</span> <span class="mf">1.0</span>       <span class="o">|</span>     <span class="o">|</span>           <span class="o">|</span>           <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>     <span class="o">|</span>    <span class="o">|</span> <span class="n">vmovd</span> <span class="n">eax</span><span class="p">,</span> <span class="n">xmm0</span>
 <span class="n">Total</span> <span class="n">Num</span> <span class="n">Of</span> <span class="n">Uops</span><span class="p">:</span> <span class="mi">56</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>The broadwell execution ports 1 and 5 are fully saturated here, the beginning and the ending of the function take about 3 cycles throughput, so there is about 16 cycles spent on the middle part, which gives about 4 cycles per loop iteration (i.e. per 16 elements). Performance measurements fully confirm this estimate: going from 64 to 128 elements increases time by 8.3 ns, which is 4.15 cycles per iteration. For larger N, cost per loop iteration perfectly converges to 4 cycles. These statements are true both for throughput and latency performance.</p>
 <p>Finally, I have implemented AVX versions of the same algorithm (both in a loop and fully unrolled). They would also be present in comparison.</p>
 <h2 id="comparison"><a class="toclink" href="#comparison">Comparison</a></h2>
 <p>The testing code works as follows. Both keys and input elements are generated randomly and uniformly between 0 and N+1. The input array always has size N in form 2^k-1, not including one sentinel element INT_MAX. Several input arrays and several keys for search are generated before performance measurement. The search function is called in a loop (without inlining), different input array and key from the pre-generated sets are chosen on each iteration. The cumulative sum of all the answers is printed to console to make sure nothing is thrown away by optimizer. Here is the main loop:</p>
-<div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">start</span> <span class="o">=</span> <span class="n">clock</span><span class="p">();</span>
+<div class="highlight"><pre><span></span><code><span class="kt">int</span> <span class="n">start</span> <span class="o">=</span> <span class="n">clock</span><span class="p">();</span>
 <span class="kt">int</span> <span class="n">check</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
 <span class="k">static</span> <span class="k">const</span> <span class="kt">int</span> <span class="n">TRIES</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">&lt;&lt;</span><span class="mi">30</span><span class="p">)</span> <span class="o">/</span> <span class="n">SIZE</span><span class="p">;</span>
 <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">t</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">t</span> <span class="o">&lt;</span> <span class="n">TRIES</span><span class="p">;</span> <span class="n">t</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
@@ -365,15 +355,14 @@ If you look the question <a href="https://stackoverflow.com/questions/2741859/ho
 <span class="p">}</span>
 <span class="kt">double</span> <span class="n">elapsed</span> <span class="o">=</span> <span class="kt">double</span><span class="p">(</span><span class="n">clock</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">/</span> <span class="n">CLOCKS_PER_SEC</span><span class="p">;</span>
 <span class="n">printf</span><span class="p">(</span><span class="s">&quot;%8.1lf ns : %40s   (%d)</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="mf">1e+9</span> <span class="o">*</span> <span class="n">elapsed</span> <span class="o">/</span> <span class="n">TRIES</span><span class="p">,</span> <span class="n">search_name</span><span class="p">,</span> <span class="n">check</span><span class="p">);</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>Originally I wanted to measure only throughput performance, but after having compared the results of MSVC and GCC compilers I realized that I need a mode to measure latency performance too, which is achieved by making input array and key indices dependent on the result of the previous search.
 The constants ARR_SAMPLES and KEY_SAMPLES are chosen in such a way that the total size of all pre-generated input arrays is equal to the total size of all pre-generated search keys.</p>
 <p>There are several reasons for using such a testing environment. First of all, I don't want to include random number generation into performance measurement, that's why input data is generated beforehand. Secondly, I want to avoid branch predictor memorizing the course of execution completely, that's why there are many input arrays and many keys, which are rotated in the loop. It is important that the number of pre-generated keys is large enough. Lastly, I want to be able to emulate reading from prescribed cache level (L1D, L2), and this is approximated by setting the total size of all pre-generated input data appropriately. Unless said otherwise, all the results and plots are given for the fastest L1D cache: input data takes 64 KB of memory, of which input arrays take 32 KB and fit into cache precisely.</p>
 <p>All the measurements were done on Intel Core i3-5005U CPU (Broadwell, 2 GHz, no turbo boost). The code was compiled using VC++2017 x64 compiler with /O2 and /arch:AVX2 (unless noted otherwise).
 For all the plots below, the points on plot lines for binary search implementations have cross-like style, while the points for linear search implementations are marked with bold filled shapes. The plot lines are also grouped by color into: black = branching binary search, blue = branchless binary search, yellow = linear search with break, red/magenta = counting linear search (SSE/AVX).</p>
-<p>Here are the names of search implementations:
+<p>Here are the names of search implementations:</p>
 <ul>
   <li><code>binary_search_std</code>: direct call to std::lower_bound</li>
   <li><code>binary_search_simple</code>: basic binary search with branches</li>
@@ -384,59 +373,61 @@ For all the plots below, the points on plot lines for binary search implementati
   <li><code>linear_search_sse_UR</code>: counting linear search (SSE) - fully unrolled</li>
   <li><code>linear_search_avx</code>: counting linear search (AVX)</li>
   <li><code>linear_search_avx_UR</code>: counting linear search (AVX) - fully unrolled</li>
-</ul></p>
+</ul>
+
 <h3 id="initial-attempt"><a class="toclink" href="#initial-attempt">Initial attempt</a></h3>
 <p>Here is the plot I got initially with results of throughput performance measurement:
 <img src="https://dirtyhandscoding.github.io/images/2_lin_bin_search/plot_search_65536_thr_init.png" class="centered w600" /></p>
 <p>I spent considerable effort analyzing this plot and making conclusions out of it. I wrote a page of text about it =)
 Of course, I did notice how much performance differs for unrolled and looped versions of branchless binary search. But after looking into assembly output, I did not try to further investigate it. And then I tried to compile the code with GCC (just in case), which changed everything...</p>
-<p>With TDM GCC 5.1 x64, I got significantly different throughput performance for several search implementations. Linear searches work more or less in the same time (GCC being slightly slower), but the binary searches are tremendously different:
+<p>With TDM GCC 5.1 x64, I got significantly different throughput performance for several search implementations. Linear searches work more or less in the same time (GCC being slightly slower), but the binary searches are tremendously different:</p>
 <ol>
 <li><code>binary_search_std</code> improved from 60 ns to 47 ns</li>
 <li><code>binary_search_simple</code> improved from 49 ns to 16 ns</li>
 <li><code>binary_search_branchless</code> improved 25 ns to 11 ns</li>
 <li><code>binary_search_branchless_UR</code> worsened from 8 to 26 ns</li>
-</ol></p>
+</ol>
+
 <p>The point 1 is explained by different implementations of STL. The points 2 and 4 are caused by differences in <code>cmovXX</code> instructions generation: <code>binary_search_simple</code> uses cmov on GCC instead of branches (quite unexpectedly: branches were intended), and the assembly code of <code>binary_search_branchless_UR</code> is some terrible mess on GCC, including both cmov-s and branches mixed (that's really bad of GCC). The point 3 cannot be explained so easily: assembly outputs are very similar, and cmov-s are used in both of them.</p>
 <p>After having spent some time on blending one assembly code into the other one, I found the critical instruction which spoils everything for MSVC-generated assembly code:</p>
-<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
- 2
- 3
- 4
- 5
- 6
- 7
- 8
- 9
-10
-11
-12
-13
-14
-15
-16
-17
-18
-19
-20
-21
-22
-23
-24
-25
-26
-27</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="err">?</span><span class="nf">binary_search_branchless@@YAHPEBHHH@Z</span> <span class="no">PROC</span>
-<span class="nf">bsr</span> <span class="no">edx</span><span class="p">,</span> <span class="no">edx</span>         <span class="c">; intptr_t logstep = bsr(n);</span>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span></pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="err">?</span><span class="nf">binary_search_branchless@@YAHPEBHHH@Z</span> <span class="no">PROC</span>
+<span class="nf">bsr</span> <span class="no">edx</span><span class="p">,</span> <span class="no">edx</span>         <span class="c1">; intptr_t logstep = bsr(n);</span>
 <span class="nf">mov</span> <span class="no">eax</span><span class="p">,</span> <span class="mi">1</span>
-<span class="hll"><span class="nf">or</span> <span class="no">r9</span><span class="p">,</span> <span class="p">-</span><span class="mi">1</span>            <span class="c">; intptr_t pos = -1;</span>
-</span><span class="nf">shlx</span> <span class="no">rax</span><span class="p">,</span> <span class="no">rax</span><span class="p">,</span> <span class="no">rdx</span>   <span class="c">; intptr_t step = intptr_t(1) &lt;&lt; logstep;</span>
+<span class="hll"><span class="nf">or</span> <span class="no">r9</span><span class="p">,</span> <span class="mi">-1</span>            <span class="c1">; intptr_t pos = -1;</span>
+</span><span class="nf">shlx</span> <span class="no">rax</span><span class="p">,</span> <span class="no">rax</span><span class="p">,</span> <span class="no">rdx</span>   <span class="c1">; intptr_t step = intptr_t(1) &lt;&lt; logstep;</span>
 
-<span class="nf">test</span> <span class="no">rax</span><span class="p">,</span> <span class="no">rax</span>        <span class="c">; while (step &gt; 0) {</span>
+<span class="nf">test</span> <span class="no">rax</span><span class="p">,</span> <span class="no">rax</span>        <span class="c1">; while (step &gt; 0) {</span>
 <span class="nf">jle</span> <span class="no">SHORT</span> <span class="no">$LN13</span>
 <span class="nf">npad</span> <span class="mi">10</span>
 <span class="nl">$LL2:</span>
-    <span class="c">; pos = (arr[pos + step] &lt; key ? pos + step : pos);</span>
-    <span class="c">; step &gt;&gt;= 1;</span>
+    <span class="c1">; pos = (arr[pos + step] &lt; key ? pos + step : pos);</span>
+    <span class="c1">; step &gt;&gt;= 1;</span>
 
     <span class="nf">lea</span> <span class="no">rdx</span><span class="p">,</span> <span class="no">QWORD</span> <span class="no">PTR</span> <span class="p">[</span><span class="no">rax</span><span class="err">+</span><span class="no">r9</span><span class="p">]</span>
     <span class="nf">sar</span> <span class="no">rax</span><span class="p">,</span> <span class="mi">1</span>
@@ -446,24 +437,22 @@ Of course, I did notice how much performance differs for unrolled and looped ver
     <span class="nf">test</span> <span class="no">rax</span><span class="p">,</span> <span class="no">rax</span>
 <span class="nf">jg</span> <span class="no">SHORT</span> <span class="no">$LL2</span>
 
-<span class="nf">lea</span> <span class="no">rax</span><span class="p">,</span> <span class="no">QWORD</span> <span class="no">PTR</span> <span class="p">[</span><span class="no">rdx</span><span class="err">+</span><span class="mi">1</span><span class="p">]</span>   <span class="c">; return pos + 1;</span>
+<span class="nf">lea</span> <span class="no">rax</span><span class="p">,</span> <span class="no">QWORD</span> <span class="no">PTR</span> <span class="p">[</span><span class="no">rdx</span><span class="err">+</span><span class="mi">1</span><span class="p">]</span>   <span class="c1">; return pos + 1;</span>
 <span class="nf">ret</span> <span class="mi">0</span>
 <span class="nl">$LN13:</span>
-<span class="nf">lea</span> <span class="no">rax</span><span class="p">,</span> <span class="no">QWORD</span> <span class="no">PTR</span> <span class="p">[</span><span class="no">r9</span><span class="err">+</span><span class="mi">1</span><span class="p">]</span>      <span class="c">; return pos + 1;</span>
+<span class="nf">lea</span> <span class="no">rax</span><span class="p">,</span> <span class="no">QWORD</span> <span class="no">PTR</span> <span class="p">[</span><span class="no">r9</span><span class="err">+</span><span class="mi">1</span><span class="p">]</span>      <span class="c1">; return pos + 1;</span>
 <span class="nf">ret</span> <span class="mi">0</span>
 <span class="err">?</span><span class="nf">binary_search_branchless@@YAHPEBHHH@Z</span> <span class="no">ENDP</span>
-</pre></div>
+</code></pre></div>
 </td></tr></table>
-
 <p>The instruction "or r9, -1" on 4-th line is a cunning way of putting -1 into register: it takes only 4 bytes of machine code, while the obvious "mov r9, -1" takes 7 bytes of machine code. It is very similar to the "xor eax, eax" hack for zeroing a register, which every CPU understands today and <a href="https://stackoverflow.com/a/18027854/556899">handles during register renaming</a>. Unfortunately, there is no special handling of instruction "or r9, -1" in Broadwell or other x86 architectures, so false dependency is created: CPU assumes that the new value of r9 register depends on its previous value, which is not set before that in the function. Since the function is called over and over again, most likely the previous value is assigned in line 17 of the previous function call, and it is set to the answer of search. As a result, CPU cannot start executing the next search without knowing the result of the previous one, hence latency is actually measured on MSVC instead of throughput.</p>
 <p>This explains why MSVC version is so much slower than that of GCC. If we look into latency measurements (provided below), we'll see the values for <code>binary_search_branchless</code> there equal to those on the plot above.
 The issue can be circumvented by assigning value -1 from non-const global variable, then MSVC has to load it from memory (hopefully from L1D) with mov instruction:</p>
-<div class="highlight"><pre><span></span><span class="kt">intptr_t</span> <span class="n">MINUS_ONE</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><span class="kt">intptr_t</span> <span class="n">MINUS_ONE</span> <span class="o">=</span> <span class="mi">-1</span><span class="p">;</span>
 <span class="kt">int</span> <span class="nf">binary_search_branchless</span> <span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="o">*</span><span class="n">arr</span><span class="p">,</span> <span class="kt">int</span> <span class="n">n</span><span class="p">,</span> <span class="kt">int</span> <span class="n">key</span><span class="p">)</span> <span class="p">{</span>
     <span class="c1">//intptr_t pos = -1;            //generates &quot;or r9, -1&quot; on MSVC -- false dependency harms throughput</span>
     <span class="kt">intptr_t</span> <span class="n">pos</span> <span class="o">=</span> <span class="n">MINUS_ONE</span><span class="p">;</span>       <span class="c1">//workaround for MSVC: generates mov without dependency</span>
-</pre></div>
-
+</code></pre></div>
 
 <h3 id="revised-code"><a class="toclink" href="#revised-code">Revised code</a></h3>
 <p>After I resolved the issue with MSVC code gen, I decided that I should measure both throughput and latency time. Here are the results for revised code (throughput and latency performance):</p>
@@ -472,17 +461,18 @@ The issue can be circumvented by assigning value -1 from non-const global variab
     <img src="https://dirtyhandscoding.github.io/images/2_lin_bin_search/plot_search_65536_lat.png" class="w550" />
 </div>
 
-<p>Here are some facts about the results:
+<p>Here are some facts about the results:</p>
 <ol>
 <li>For a binary search, branchless implementation is much faster than branching one: almost four times faster in throughput sense and two times faster by latency. I think it would remain so even if support for non-power-of-two array lengths was added to branchless implementation.</li>
 <li>Full unrolling of branchless binary search (with exactly known number of comparisons to do) makes search faster by about 30% in throughput sense. The difference in latency is negligible: 3-4 cycles.</li>
 <li>It is hard to ensure that binary search written in C++ is branchless on every platform, every compiler and every set of settings. I realized this after looking at GCC's work: it managed to miracously emit cmov in once case and stupidly screw cmov-s in the other place. Also, MSVC screws the last cmov in <code>binary_search_branchless_UR</code> if it is inlined into the benchmark code. There is no way to get cmov-s reliably except for using assembly.</li>
 <li>Latency time of branchless binary search is twice as large as throughput time. I suppose it means that CPU runs two searches in parallel when they are independent. However, it can be harder to ensure such independence in real workflow, when binary search is not the only computation done in the hot loop.</li>
 <li>Counting linear search is faster than linear search with break for small N. This is because linear search with break executes unpredictable branch (which does not happen for N = 16 because it always needs one iteration). There is about 60% improvement in throughput for N = 32, and about 35% improvement for N = 64 (less improvement in latency). It seems that the branch costs about 10 cycles in both throughput and latency.</li>
-<li>The linear search with break becomes faster than counting linear search shortly after N = 128. For N = 1024 it is 80% faster, and I guess the performance ratio should converge to two at infinity. This happens because linear search with break processes only half of input array on average, while counting linear search always goes through the whole array. It is questionable whether it is a huge benefit, given that for N &gt; 128 branchless binary search is faster and reads substantially less data anyway.</li>
+<li>The linear search with break becomes faster than counting linear search shortly after N = 128. For N = 1024 it is 80% faster, and I guess the performance ratio should converge to two at infinity. This happens because linear search with break processes only half of input array on average, while counting linear search always goes through the whole array. It is questionable whether it is a huge benefit, given that for N > 128 branchless binary search is faster and reads substantially less data anyway.</li>
 <li>For counting linear search, AVX version is noticeably faster only for N = 64, and for larger N it is about 50% faster. Perhaps more efficient AVX implementation would achieve better ratio. As for full unrolling, it gives another almost 50% boost for large N (like N = 256 or more), althrough for small N its benefit is again much less noticeable.</li>
-<li>As for binary vs linear search competition, the situation is different for throughput and latency. For throughput performance, branchless binary search is slower for N &lt; 64 (by at most 30%) and faster for N &gt; 64, although the fully unrolled version of it is as fast as SSE linear search even for N = 16 and N = 32. For latency performance, branchless binary search catches up with SSE linear search only for N between 128 and 256 (double that for AVX), and it is slower by up to 50% for N = 32 and N = 64.</li>
-</ol></p>
+<li>As for binary vs linear search competition, the situation is different for throughput and latency. For throughput performance, branchless binary search is slower for N < 64 (by at most 30%) and faster for N > 64, although the fully unrolled version of it is as fast as SSE linear search even for N = 16 and N = 32. For latency performance, branchless binary search catches up with SSE linear search only for N between 128 and 256 (double that for AVX), and it is slower by up to 50% for N = 32 and N = 64.</li>
+</ol>
+
 <h3 id="additional-plots"><a class="toclink" href="#additional-plots">Additional plots</a></h3>
 <p>We can also estimate how much time per element is required for each search. Here are the plot where elapsed time is reported per array element (recall that you have to multiply by two to convert from ns to cycles):</p>
 <div class="center-content">
@@ -551,7 +541,7 @@ These images can be helpful to estimate the cost of single step of a binary sear
     	<section>
 	<div id="pcs-comments-header" class="inline-menu">
 	<header>
-		<div>Comments (10)</div>
+		<div>Comments (12)</div>
 		<button type="button" title="Expand or collapse the comments section" class="icon-label" id="pcs-comments-collapse-button" onclick="CommentSystem.collapsible($('#pcs-comments'), $(this));">
 			<span class="nocss">expand</span>
 		</button>
@@ -880,6 +870,73 @@ Presumably, this allows the loop to just do one non-trivial addition operation (
 Give it a try!</p>
 					</div>
 					</div>
+				</div>
+			</li>
+			<li id="comment-11md">
+				<div class="comment-left">
+					<img    src="https://dirtyhandscoding.github.io/images/identicon\b13866d1d978644236a1b9d457d4b3b3.png"
+							alt="Avatar"
+							height="36"
+							width="36">
+					<a role="button" href="https://dirtyhandscoding.github.io/posts/performance-comparison-linear-search-vs-binary-search.html#comment-11md" rel="bookmark" title="Link to this comment" class="comment-left-icon">
+						<span class="nocss">link</span>
+					</a><!--
+					--><button onclick="CommentSystem.setReply('11md', 'Touisteur');" title="Reply to this comment" class="comment-left-icon">
+						<span class="nocss">reply</span>
+					</button>
+				</div>
+				<div class="comment-body">
+					<div class="comment-self even">
+					<h4>
+							<a href="https://mobile.twitter.com/touisteur">Touisteur</a>
+					</h4>
+					<!-- <p>
+						Posted on -->
+						<div style="float: right">
+						<time datetime="2021-08-11T00:45:00+02:00" title="2021-08-11T00:45:00+02:00">(11.08.2021 at 00:45)</time>
+						</div>
+					<!-- </p> -->
+					<div class="pcs-comment-content" >
+						<p>Hi, I'm wondering whether this technique could be used for selection tasks. Like 'find the N-th-biggest (or -smallest) element of a small (up to 64-elements) unsorted array' without sorting/moving the original data.</p>
+<p>For each <code>a[i]</code> of the array <code>a[64]</code> count (from 0 to 63) the number of elements bigger (or smaller) than <code>a[i]</code>. Then locate the one with value N with some other magic...</p>
+<p>Very, very insightful and inspiring.. Thanks!</p>
+					</div>
+					</div>
+						<!--<hr>-->
+						<ul>
+										<li id="comment-12md">
+				<div class="comment-left">
+					<img    src="https://dirtyhandscoding.github.io/images/identicon\f34da67b9f39c15787aa7a9e932509bc.png"
+							alt="Avatar"
+							height="36"
+							width="36">
+					<a role="button" href="https://dirtyhandscoding.github.io/posts/performance-comparison-linear-search-vs-binary-search.html#comment-12md" rel="bookmark" title="Link to this comment" class="comment-left-icon">
+						<span class="nocss">link</span>
+					</a><!--
+					--><button onclick="CommentSystem.setReply('12md', 'dirtyhandscoding');" title="Reply to this comment" class="comment-left-icon">
+						<span class="nocss">reply</span>
+					</button>
+				</div>
+				<div class="comment-body">
+					<div class="comment-self odd">
+					<h4>
+							dirtyhandscoding
+					</h4>
+					<!-- <p>
+						Posted on -->
+						<div style="float: right">
+						<time datetime="2021-08-11T11:26:00+07:00" title="2021-08-11T11:26:00+07:00">(11.08.2021 at 11:26)</time>
+						</div>
+					<!-- </p> -->
+					<div class="pcs-comment-content" >
+						<p>Yes, indeed it can be used to compute order statistics.</p>
+<p>For instance, see it <a href="https://stackoverflow.com/questions/33307957/calling-stdnth-element-function-extremely-frequently/33325864#33325864">applied to median of 23 elements</a>.</p>
+					</div>
+					</div>
+				</div>
+			</li>
+
+						</ul>
 				</div>
 			</li>
 		</ul>

@@ -310,6 +310,8 @@ Doing so in debug build is rather questionable idea. Depending on CRT version, c
 </li>
 </ul>
 <p>I hope this example ruins the myth that Debug build is slow because it lacks optimization, and that two-digit slowdown is inevitable. Indeed, you still need Debug build to simplify debugging all the nasty issues, but I think Fast Debug build should be the default one used for debugging.</p>
+<p><strong>UPDATE:</strong> Since Visual Studio 2019, functions are <a href="https://developercommunity.visualstudio.com/t/edit-and-continue-seems-to-disable-constexpr-and-i/1318576">never inlined when Edit and Continue is enabled</a>.
+The measurements above were done on VS 2017. There is no way to make /Ob1 inlining work with Edit and Continue in VS 2019 and 2022.</p>
 <h2 id="localized-tuning"><a class="toclink" href="#localized-tuning">Localized tuning</a></h2>
 <p>If debug speed really matters to you, you shouldn't stop at tweaking global settings. In most cases there are few places in the program which waste considerable amount of time. Usually these places are well-written and are almost never touched with debugger. If a bit of code spends time but does not need to be debugged, it's better to enable optimization on it locally.</p>
 <h5 id="third-party-libraries"><a class="toclink" href="#third-party-libraries">Third-party libraries</a></h5>

@@ -5,28 +5,28 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
 <url>
 <loc>https://dirtyhandscoding.github.io/</loc>
-<lastmod>2021-08-11T11:51:38-00:00</lastmod>
+<lastmod>2022-07-18T08:23:45-00:00</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
 
 <url>
 <loc>https://dirtyhandscoding.github.io/archives.html</loc>
-<lastmod>2021-08-11T11:51:38-00:00</lastmod>
+<lastmod>2022-07-18T08:23:45-00:00</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
 
 <url>
 <loc>https://dirtyhandscoding.github.io/tags.html</loc>
-<lastmod>2021-08-11T11:51:38-00:00</lastmod>
+<lastmod>2022-07-18T08:23:45-00:00</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
 
 <url>
 <loc>https://dirtyhandscoding.github.io/categories.html</loc>
-<lastmod>2021-08-11T11:51:38-00:00</lastmod>
+<lastmod>2022-07-18T08:23:45-00:00</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
@@ -40,7 +40,7 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
 <url>
 <loc>https://dirtyhandscoding.github.io/posts/fast-debug-in-visual-c.html</loc>
-<lastmod>2020-06-17T18:15:00+07:00</lastmod>
+<lastmod>2022-07-18T08:25:00+07:00</lastmod>
 <changefreq>monthly</changefreq>
 <priority>0.7</priority>
 </url>
@@ -110,7 +110,7 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
 <url>
 <loc>https://dirtyhandscoding.github.io/category/cc.html</loc>
-<lastmod>2020-06-17T18:15:00+05:32</lastmod>
+<lastmod>2022-07-18T08:25:00+05:32</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
@@ -138,28 +138,28 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
 <url>
 <loc>https://dirtyhandscoding.github.io/tag/cpp.html</loc>
-<lastmod>2020-06-17T18:15:00+05:32</lastmod>
+<lastmod>2022-07-18T08:25:00+05:32</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
 
 <url>
 <loc>https://dirtyhandscoding.github.io/tag/msvc.html</loc>
-<lastmod>2020-06-17T18:15:00+05:32</lastmod>
+<lastmod>2022-07-18T08:25:00+05:32</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
 
 <url>
 <loc>https://dirtyhandscoding.github.io/tag/debug.html</loc>
-<lastmod>2020-06-17T18:15:00+05:32</lastmod>
+<lastmod>2022-07-18T08:25:00+05:32</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
 
 <url>
 <loc>https://dirtyhandscoding.github.io/tag/release.html</loc>
-<lastmod>2020-06-17T18:15:00+05:32</lastmod>
+<lastmod>2022-07-18T08:25:00+05:32</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>

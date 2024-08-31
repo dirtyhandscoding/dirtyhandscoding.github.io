@@ -79,7 +79,7 @@
 
 <p>After I got familiar to existing fabfile tasks, I realized that I want some sort of watch &amp; live reload option similar to what <a href="https://github.com/webpack/webpack-dev-server">wevpack-dev-server</a> provides. Following the <a href="https://merlijn.vandeen.nl/2015/pelican-livereload.html">article by Merlijn van Deen</a>, I have added a <code>livereload</code> task to <code>fabfile.py</code>. It is based on <a href="https://pypi.org/project/livereload/">livereload</a> Python package and requires installing browser extension. Unlike the cited article, I later extended the livereload task to also watch over theme and config files:</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">livereload</span><span class="p">():</span>
-    <span class="sd">&quot;&quot;&quot;Serve site at http://localhost:5500/ automatically livereload in browser&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Serve site at http://localhost:5500/ automatically livereload in browser&quot;&quot;&quot;</span>
     <span class="c1"># adapted from: https://merlijn.vandeen.nl/2015/pelican-livereload.html</span>
     <span class="n">p</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="k">def</span> <span class="nf">build_content</span><span class="p">():</span>
@@ -174,31 +174,31 @@ So I decided to concentrate more on the visual look of a theme and chose <a href
 </code></pre></div>
 
 <p>Then I refactored <code>main.css</code> so that all width-related sizes were computed from a single variable. I added a <code>main-width</code> variable on <code>body</code> (which is sort of global):</p>
-<div class="highlight"><pre><span></span><code><span class="nt">body</span> <span class="p">{</span>
-    <span class="nv">--main-width</span><span class="p">:</span> <span class="mi">1200</span><span class="kt">px</span><span class="p">;</span>
-    <span class="k">background</span><span class="p">:</span> <span class="mh">#f2f3f3</span><span class="p">;</span>
-    <span class="c">/*...*/</span>
+<div class="highlight"><pre><span></span><code><span class="nt">body</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nv">--main-width</span><span class="p">:</span><span class="w"> </span><span class="mi">1200</span><span class="kt">px</span><span class="p">;</span>
+<span class="w">    </span><span class="k">background</span><span class="p">:</span><span class="w"> </span><span class="mh">#f2f3f3</span><span class="p">;</span>
+<span class="w">    </span><span class="c">/*...*/</span>
 <span class="p">}</span>
 </code></pre></div>
 
 <p>And fixed all places where the width of the text area was used implicitly. Now it is deduced via <code>calc</code> function, e.g.:</p>
-<div class="highlight"><pre><span></span><code><span class="p">#</span><span class="nn">content</span> <span class="p">{</span>
-    <span class="c">/*...*/</span>
-    <span class="k">padding</span><span class="p">:</span> <span class="mi">20</span><span class="kt">px</span> <span class="mi">20</span><span class="kt">px</span><span class="p">;</span>
-    <span class="k">width</span><span class="p">:</span> <span class="nb">calc</span><span class="p">(</span><span class="nf">var</span><span class="p">(</span><span class="nv">--main-width</span><span class="p">)</span> <span class="o">-</span> <span class="mi">40</span><span class="kt">px</span><span class="p">);</span>
-    <span class="c">/*...*/</span>
+<div class="highlight"><pre><span></span><code><span class="p">#</span><span class="nn">content</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c">/*...*/</span>
+<span class="w">    </span><span class="k">padding</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="kt">px</span><span class="w"> </span><span class="mi">20</span><span class="kt">px</span><span class="p">;</span>
+<span class="w">    </span><span class="k">width</span><span class="p">:</span><span class="w"> </span><span class="nb">calc</span><span class="p">(</span><span class="nf">var</span><span class="p">(</span><span class="nv">--main-width</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">40</span><span class="kt">px</span><span class="p">);</span>
+<span class="w">    </span><span class="c">/*...*/</span>
 <span class="p">}</span>
 </code></pre></div>
 
 <p>Finally, I added logic of choosing smaller values of <code>main-width</code> if browser screen width is not wide enough (using media queries):</p>
-<div class="highlight"><pre><span></span><code><span class="p">@</span><span class="k">media</span> <span class="nt">screen</span> <span class="nt">and</span> <span class="o">(</span><span class="nt">max-width</span><span class="o">:</span> <span class="nt">1400px</span><span class="o">)</span> <span class="p">{</span>
-    <span class="nt">body</span> <span class="p">{</span>
-        <span class="nv">--main-width</span><span class="p">:</span> <span class="mi">1000</span><span class="kt">px</span><span class="p">;</span>
-    <span class="p">}</span>
+<div class="highlight"><pre><span></span><code><span class="p">@</span><span class="k">media</span><span class="w"> </span><span class="nt">screen</span><span class="w"> </span><span class="nt">and</span><span class="w"> </span><span class="o">(</span><span class="nt">max-width</span><span class="o">:</span><span class="w"> </span><span class="nt">1400px</span><span class="o">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">body</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nv">--main-width</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="kt">px</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
-<span class="p">@</span><span class="k">media</span> <span class="nt">screen</span> <span class="nt">and</span> <span class="o">(</span><span class="nt">max-width</span><span class="o">:</span> <span class="nt">1100px</span><span class="o">)</span> <span class="p">{</span>
-    <span class="nt">body</span> <span class="p">{</span>
-        <span class="nv">--main-width</span><span class="p">:</span> <span class="mi">800</span><span class="kt">px</span><span class="p">;</span>
+<span class="p">@</span><span class="k">media</span><span class="w"> </span><span class="nt">screen</span><span class="w"> </span><span class="nt">and</span><span class="w"> </span><span class="o">(</span><span class="nt">max-width</span><span class="o">:</span><span class="w"> </span><span class="nt">1100px</span><span class="o">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">body</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nv">--main-width</span><span class="p">:</span><span class="w"> </span><span class="mi">800</span><span class="kt">px</span><span class="p">;</span>
 <span class="c">/* ... more cases follow */</span>
 </code></pre></div>
 
@@ -209,10 +209,10 @@ So I decided to concentrate more on the visual look of a theme and chose <a href
 </div>
 
 <p>To ensure that buttons are correctly moved to the next line on overflow, it is enough to do the following:</p>
-<div class="highlight"><pre><span></span><code><span class="p">#</span><span class="nn">banner</span> <span class="nt">nav</span> <span class="p">{</span>
-    <span class="k">overflow</span><span class="p">:</span> <span class="kc">auto</span><span class="p">;</span>
-    <span class="k">min-height</span><span class="p">:</span> <span class="mi">40</span><span class="kt">px</span><span class="p">;</span>  <span class="c">/* instead of &quot;height: 40px;&quot; */</span>
-    <span class="c">/*...*/</span>
+<div class="highlight"><pre><span></span><code><span class="p">#</span><span class="nn">banner</span><span class="w"> </span><span class="nt">nav</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">overflow</span><span class="p">:</span><span class="w"> </span><span class="kc">auto</span><span class="p">;</span>
+<span class="w">    </span><span class="k">min-height</span><span class="p">:</span><span class="w"> </span><span class="mi">40</span><span class="kt">px</span><span class="p">;</span><span class="w">  </span><span class="c">/* instead of &quot;height: 40px;&quot; */</span>
+<span class="w">    </span><span class="c">/*...*/</span>
 <span class="p">}</span>
 </code></pre></div>
 
@@ -260,9 +260,9 @@ So I decided to concentrate more on the visual look of a theme and chose <a href
 <h4 id="featured-article"><a class="toclink" href="#featured-article">Featured article</a></h4>
 <p>I disabled featured article on all the index pages (in <code>index.html</code> template). My articles are usually too long, and having a featured article makes index pages indistinguishable from article pages.</p>
 <div class="highlight"><pre><span></span><code><span class="x">    :::jinja</span>
-<span class="x">    </span><span class="c">{# note: DISPLAY_FEATURED_ARTICLE = False in pelicanconf.py #}</span><span class="x"></span>
-<span class="x">    </span><span class="c">{# First item #}</span><span class="x"></span>
-<span class="x">    </span><span class="cp">{%</span> <span class="k">if</span> <span class="nv">DISPLAY_FEATURED_ARTICLE</span> <span class="k">and</span> <span class="nb">loop</span><span class="nv">.first</span> <span class="k">and</span> <span class="k">not</span> <span class="nv">articles_page.has_previous</span><span class="o">()</span> <span class="cp">%}</span><span class="x"></span>
+<span class="x">    </span><span class="c">{# note: DISPLAY_FEATURED_ARTICLE = False in pelicanconf.py #}</span>
+<span class="x">    </span><span class="c">{# First item #}</span>
+<span class="x">    </span><span class="cp">{%</span> <span class="k">if</span> <span class="nv">DISPLAY_FEATURED_ARTICLE</span> <span class="k">and</span> <span class="nb">loop</span><span class="nv">.first</span> <span class="k">and</span> <span class="k">not</span> <span class="nv">articles_page.has_previous</span><span class="o">()</span> <span class="cp">%}</span>
 <span class="x">        &lt;aside id=&quot;featured&quot; class=&quot;body&quot;&gt;</span>
 </code></pre></div>
 
@@ -302,11 +302,11 @@ So I decided to concentrate more on the visual look of a theme and chose <a href
 </ol>
 <h2 id="tipue-search"><a class="toclink" href="#tipue-search">Tipue search</a></h2>
 <p>The <code>blueidea</code> theme has builtin integration with <a href="https://duckduckgo.com/">duckduckgo</a> search engine. The whole integration is trivial: when you enter some text into search box, trivial javascript callback redirects you to <code>duckduckgo.com</code> address with entered text and your site in http parameters:</p>
-<div class="highlight"><pre><span></span><code><span class="cp">{%</span> <span class="k">if</span> <span class="nv">DISPLAY_SEARCH_FORM</span> -<span class="cp">%}</span><span class="x"></span>
+<div class="highlight"><pre><span></span><code><span class="cp">{%</span> <span class="k">if</span> <span class="nv">DISPLAY_SEARCH_FORM</span> -<span class="cp">%}</span>
 <span class="x">    &lt;form id=&quot;search&quot; action&quot;#&quot; onsubmit=&quot;javascript:window.open(&#39;https://duckduckgo.com/?q=&#39;+document.getElementById(&#39;keywords&#39;).value+&#39;+site:</span><span class="cp">{{</span> <span class="nv">SITEURL</span> <span class="cp">}}</span><span class="x">&#39;);&quot;&gt;</span>
 <span class="x">        &lt;input id=&quot;keywords&quot; type=&quot;text&quot; /&gt;</span>
 <span class="x">    &lt;/form&gt;</span>
-<span class="cp">{%</span> <span class="k">endif</span> <span class="cp">%}</span><span class="x"></span>
+<span class="cp">{%</span> <span class="k">endif</span> <span class="cp">%}</span>
 </code></pre></div>
 
 <p>This relies on external search engine and has its benefits and drawbacks. The main benefit is that google is much more intelligent and surely can do some <a href="https://en.wikipedia.org/wiki/Stemming">stemming</a> on your query. The drawback is that this search will only work properly after the up-to-date version of site gets visited by <a href="https://en.wikipedia.org/wiki/Web_crawler">search engine crawlers</a>.</p>
@@ -363,16 +363,16 @@ However, I had to change it quite heavily. Also, I had to write all the styles m
 The whole commenting section is collapsible. In fact, it is collapsed by default (unless javascript is disabled). This is <a href="http://oncrashreboot.com/elegant-best-pelican-theme-features#collapsible-comments">one of the arguments</a> used to popularize <code>elegant</code> theme =)</p>
 <p>The collapsing and expanding is done by javascript code, animation is done via css transition. I was quite unhappy that there is no way to animate <code>max-height</code> to the actual height of the content, so I had to do some hacks:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">//getting height of potentially hidden element: https://stackoverflow.com/a/2345813/556899</span>
-<span class="kd">var</span> <span class="nx">previousStyle</span> <span class="o">=</span> <span class="nx">content</span><span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&quot;style&quot;</span><span class="p">);</span>
-<span class="nx">content</span><span class="p">.</span><span class="nx">css</span><span class="p">({</span><span class="nx">position</span><span class="o">:</span> <span class="s1">&#39;absolute&#39;</span><span class="p">,</span> <span class="nx">visibility</span><span class="o">:</span> <span class="s1">&#39;hidden&#39;</span><span class="p">,</span> <span class="nx">display</span><span class="o">:</span> <span class="s1">&#39;block&#39;</span><span class="p">,</span> <span class="nx">maxHeight</span><span class="o">:</span> <span class="s1">&#39;none&#39;</span><span class="p">});</span>
-<span class="nx">fullHeight</span> <span class="o">=</span> <span class="nx">content</span><span class="p">.</span><span class="nx">height</span><span class="p">()</span> <span class="o">+</span> <span class="mf">100</span><span class="p">;</span>
-<span class="nx">content</span><span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&quot;style&quot;</span><span class="p">,</span> <span class="nx">previousStyle</span> <span class="o">||</span> <span class="s2">&quot;&quot;</span><span class="p">);</span>
+<span class="kd">var</span><span class="w"> </span><span class="nx">previousStyle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">content</span><span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&quot;style&quot;</span><span class="p">);</span>
+<span class="nx">content</span><span class="p">.</span><span class="nx">css</span><span class="p">({</span><span class="nx">position</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;absolute&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">visibility</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;hidden&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">display</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;block&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">maxHeight</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;none&#39;</span><span class="p">});</span>
+<span class="nx">fullHeight</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">content</span><span class="p">.</span><span class="nx">height</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mf">100</span><span class="p">;</span>
+<span class="nx">content</span><span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&quot;style&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">previousStyle</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="p">);</span>
 </code></pre></div>
 
 <p>And another hack was needed to trigger transition when I change <code>max-height</code> property:</p>
-<div class="highlight"><pre><span></span><code><span class="nx">content</span><span class="p">.</span><span class="nx">css</span><span class="p">({</span><span class="nx">maxHeight</span><span class="o">:</span> <span class="p">(</span><span class="nx">isExpanding</span> <span class="o">?</span> <span class="mf">0</span> <span class="o">:</span> <span class="nx">fullHeight</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;px&#39;</span><span class="p">});</span>
-<span class="nx">content</span><span class="p">.</span><span class="nx">css</span><span class="p">(</span><span class="s1">&#39;maxHeight&#39;</span><span class="p">);</span>   <span class="c1">//why is this needed?</span>
-<span class="nx">content</span><span class="p">.</span><span class="nx">css</span><span class="p">({</span><span class="nx">maxHeight</span><span class="o">:</span> <span class="p">(</span><span class="nx">isExpanding</span> <span class="o">?</span> <span class="nx">fullHeight</span> <span class="o">:</span> <span class="mf">0</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;px&#39;</span><span class="p">});</span>
+<div class="highlight"><pre><span></span><code><span class="nx">content</span><span class="p">.</span><span class="nx">css</span><span class="p">({</span><span class="nx">maxHeight</span><span class="o">:</span><span class="w"> </span><span class="p">(</span><span class="nx">isExpanding</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="mf">0</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="nx">fullHeight</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s1">&#39;px&#39;</span><span class="p">});</span>
+<span class="nx">content</span><span class="p">.</span><span class="nx">css</span><span class="p">(</span><span class="s1">&#39;maxHeight&#39;</span><span class="p">);</span><span class="w">   </span><span class="c1">//why is this needed?</span>
+<span class="nx">content</span><span class="p">.</span><span class="nx">css</span><span class="p">({</span><span class="nx">maxHeight</span><span class="o">:</span><span class="w"> </span><span class="p">(</span><span class="nx">isExpanding</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="nx">fullHeight</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="mf">0</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s1">&#39;px&#39;</span><span class="p">});</span>
 </code></pre></div>
 
 <p><strong>View email source.</strong>
@@ -387,9 +387,9 @@ I added a link to page where it is explained how to configure Chrome to open mai
 To distinguish consecutive comments from each other, every even comment has gray background.  Astonishingly, css even has a rule <code>nth-child(2n)</code> for it, which is used in <code>blueidea</code> styles for Disqus comments. However, it works incorrectly with nested enumerations.
 The problem is fixed by assigning <code>even</code>/<code>odd</code> classes to comments during html generation. Notice the <a href="https://stackoverflow.com/a/49699589/556899">namespace hack</a> to circumvent <a href="https://stackoverflow.com/questions/18755046/jinja2-nested-loop-counter">scoping rules of jinja</a>:</p>
 <div class="highlight"><pre><span></span><code><span class="x">&lt;ul&gt;</span>
-<span class="cp">{%</span> <span class="k">set</span> <span class="nv">recursive_counter</span> <span class="o">=</span> <span class="nv">namespace</span><span class="o">(</span><span class="nv">a</span><span class="o">=</span><span class="m">0</span><span class="o">)</span> <span class="cp">%}</span><span class="x"></span>
-<span class="cp">{%</span> <span class="k">for</span> <span class="nv">comment</span> <span class="k">in</span> <span class="nv">article.comments</span> <span class="k">recursive</span> <span class="cp">%}</span><span class="x"></span>
-<span class="x">    </span><span class="cp">{%</span> <span class="k">set</span> <span class="nv">recursive_counter.a</span> <span class="o">=</span> <span class="nv">recursive_counter.a</span> <span class="o">+</span> <span class="m">1</span> <span class="cp">%}</span><span class="x"></span>
+<span class="cp">{%</span> <span class="k">set</span> <span class="nv">recursive_counter</span> <span class="o">=</span> <span class="nv">namespace</span><span class="o">(</span><span class="nv">a</span><span class="o">=</span><span class="m">0</span><span class="o">)</span> <span class="cp">%}</span>
+<span class="cp">{%</span> <span class="k">for</span> <span class="nv">comment</span> <span class="k">in</span> <span class="nv">article.comments</span> <span class="k">recursive</span> <span class="cp">%}</span>
+<span class="x">    </span><span class="cp">{%</span> <span class="k">set</span> <span class="nv">recursive_counter.a</span> <span class="o">=</span> <span class="nv">recursive_counter.a</span> <span class="o">+</span> <span class="m">1</span> <span class="cp">%}</span>
 <span class="x">    &lt;li id=&quot;comment-</span><span class="cp">{{</span><span class="nv">comment.slug</span><span class="cp">}}</span><span class="x">&quot;&gt;</span>
 <span class="x">        &lt;div class=&quot;comment-left&quot;&gt;</span>
 <span class="x">            &lt;!-- ... --&gt;</span>
@@ -398,17 +398,17 @@ The problem is fixed by assigning <code>even</code>/<code>odd</code> classes to 
 <span class="x">            &lt;div class=&quot;comment-self </span><span class="cp">{{</span><span class="s1">&#39;even&#39;</span> <span class="k">if</span> <span class="nv">recursive_counter.a</span> <span class="o">%</span> <span class="m">2</span> <span class="k">else</span> <span class="s1">&#39;odd&#39;</span><span class="cp">}}</span><span class="x">&quot;&gt;</span>
 <span class="x">                &lt;!-- ... --&gt;</span>
 <span class="x">                &lt;div class=&quot;pcs-comment-content&quot; </span><span class="c">{# class used as id in comments.js#}</span><span class="x">&gt;</span>
-<span class="x">                    </span><span class="cp">{{</span> <span class="nv">comment.content</span> <span class="cp">}}</span><span class="x"></span>
+<span class="x">                    </span><span class="cp">{{</span> <span class="nv">comment.content</span> <span class="cp">}}</span>
 <span class="x">                &lt;/div&gt;</span>
 <span class="x">            &lt;/div&gt;</span>
-<span class="x">            </span><span class="cp">{%</span> <span class="k">if</span> <span class="nv">comment.replies</span> <span class="cp">%}</span><span class="x"></span>
+<span class="x">            </span><span class="cp">{%</span> <span class="k">if</span> <span class="nv">comment.replies</span> <span class="cp">%}</span>
 <span class="x">                &lt;ul&gt;</span>
-<span class="x">                    </span><span class="cp">{{</span> <span class="nb">loop</span><span class="o">(</span><span class="nv">comment.replies</span><span class="o">)</span> <span class="cp">}}</span><span class="x"></span>
+<span class="x">                    </span><span class="cp">{{</span> <span class="nb">loop</span><span class="o">(</span><span class="nv">comment.replies</span><span class="o">)</span> <span class="cp">}}</span>
 <span class="x">                &lt;/ul&gt;</span>
-<span class="x">            </span><span class="cp">{%</span> <span class="k">endif</span> <span class="cp">%}</span><span class="x"></span>
+<span class="x">            </span><span class="cp">{%</span> <span class="k">endif</span> <span class="cp">%}</span>
 <span class="x">        &lt;/div&gt;</span>
 <span class="x">    &lt;/li&gt;</span>
-<span class="cp">{%</span> <span class="k">endfor</span> <span class="cp">%}</span><span class="x"></span>
+<span class="cp">{%</span> <span class="k">endfor</span> <span class="cp">%}</span>
 <span class="x">&lt;/ul&gt;</span>
 </code></pre></div>
 
@@ -493,7 +493,7 @@ The problem is fixed by assigning <code>even</code>/<code>odd</code> classes to 
     	<section>
 	<div id="pcs-comments-header" class="inline-menu">
 	<header>
-		<div>Comments (0)</div>
+		<div>Comments (2)</div>
 		<button type="button" title="Expand or collapse the comments section" class="icon-label" id="pcs-comments-collapse-button" onclick="CommentSystem.collapsible($('#pcs-comments'), $(this));">
 			<span class="nocss">expand</span>
 		</button>
@@ -501,7 +501,86 @@ The problem is fixed by assigning <code>even</code>/<code>odd</code> classes to 
 	</header>
 	</div>
 	<div id="pcs-comments">
-		<p>There are no comments yet.</p>
+		<ul>
+			<li id="comment-1md">
+				<div class="comment-left">
+					<img    src="https://dirtyhandscoding.github.io/images/identicon\998de7125331820e01dfaced2fa64e56.png"
+							alt="Avatar"
+							height="36"
+							width="36">
+					<a role="button" href="https://dirtyhandscoding.github.io/posts/blog-migrated-to-pelican-and-github-pages.html#comment-1md" rel="bookmark" title="Link to this comment" class="comment-left-icon">
+						<span class="nocss">link</span>
+					</a><!--
+					--><button onclick="CommentSystem.setReply('1md', 'Paul%20Lee');" title="Reply to this comment" class="comment-left-icon">
+						<span class="nocss">reply</span>
+					</button>
+				</div>
+				<div class="comment-body">
+					<div class="comment-self even">
+					<h4>
+							Paul Lee
+					</h4>
+					<!-- <p>
+						Posted on -->
+						<div style="float: right">
+						<time datetime="2024-08-10T00:06:00-04:00" title="2024-08-10T00:06:00-04:00">(10.08.2024 at 00:06)</time>
+						</div>
+					<!-- </p> -->
+					<div class="pcs-comment-content" >
+						<p>I found this excellent description when searching for live uses of the Python package, pelican_comment_system.
+I'm intrigued by the solution. It feels retro-minimalist and complements the philosophy of static sites.
+I like the fact that it's available directly within the Python ecosystem.
+Thanks for thoroughly documenting your experiences and innovations.</p>
+					</div>
+					</div>
+						<!--<hr>-->
+						<ul>
+										<li id="comment-2md">
+				<div class="comment-left">
+					<img    src="https://dirtyhandscoding.github.io/images/identicon\f34da67b9f39c15787aa7a9e932509bc.png"
+							alt="Avatar"
+							height="36"
+							width="36">
+					<a role="button" href="https://dirtyhandscoding.github.io/posts/blog-migrated-to-pelican-and-github-pages.html#comment-2md" rel="bookmark" title="Link to this comment" class="comment-left-icon">
+						<span class="nocss">link</span>
+					</a><!--
+					--><button onclick="CommentSystem.setReply('2md', 'dirtyhandscoding');" title="Reply to this comment" class="comment-left-icon">
+						<span class="nocss">reply</span>
+					</button>
+				</div>
+				<div class="comment-body">
+					<div class="comment-self odd">
+					<h4>
+							dirtyhandscoding
+					</h4>
+					<!-- <p>
+						Posted on -->
+						<div style="float: right">
+						<time datetime="2024-08-31T15:18:00+02:00" title="2024-08-31T15:18:00+02:00">(31.08.2024 at 15:18)</time>
+						</div>
+					<!-- </p> -->
+					<div class="pcs-comment-content" >
+						<p>Yes, email-based comments are the most "static" ones.
+But now (almost 6 years later) I can also mention some downsides:</p>
+<p><strong>1)</strong> It takes long time from when comment is sent to when it appears on website.
+It means fast-paced conversations in comments are simply impossible.
+Also, the reader might be confused on whether his comment is not yet applied or got lost somewhere.
+I guess reader does not get a notification about reply, unless he uses RSS/atom feed.</p>
+<p><strong>2)</strong> Author takes the maintenance burden to be ready to update the blog at any moment.
+For instance, I have just moved to a new country.
+When I received your comment, I realized that the most recent version of my blog existed only on my main PC, which was still packaged.
+That's why your comment appeared 3 week later than it should =)
+Data loss can be a problem too... I guess should finally find some mercurial hosting.
+Also I did not touch the blog in several years, so I had to dive in and upgrade some stuff.</p>
+					</div>
+					</div>
+				</div>
+			</li>
+
+						</ul>
+				</div>
+			</li>
+		</ul>
 	<section>
 	<div display="none" id="pcs-comment-notreply-helper" />
 	<form id="pcs-comment-form" action="#">

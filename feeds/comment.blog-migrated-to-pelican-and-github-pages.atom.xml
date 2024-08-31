@@ -1,2 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Dirty hands coding - Comments: Blog migrated to Pelican and GitHub pages</title><link href="https://dirtyhandscoding.github.io/posts/blog-migrated-to-pelican-and-github-pages.html/" rel="alternate"></link><link href="/feeds/comment.blog-migrated-to-pelican-and-github-pages.atom.xml" rel="self"></link><id>https://dirtyhandscoding.github.io/posts/blog-migrated-to-pelican-and-github-pages.html/</id><updated>2022-07-18T21:01:20Z</updated><subtitle></subtitle></feed>
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Dirty hands coding - Comments: Blog migrated to Pelican and GitHub pages</title><link href="https://dirtyhandscoding.github.io/posts/blog-migrated-to-pelican-and-github-pages.html/" rel="alternate"></link><link href="/feeds/comment.blog-migrated-to-pelican-and-github-pages.atom.xml" rel="self"></link><id>https://dirtyhandscoding.github.io/posts/blog-migrated-to-pelican-and-github-pages.html/</id><updated>2024-08-31T15:18:00+02:00</updated><entry><title>Posted by: dirtyhandscoding</title><link href="https://dirtyhandscoding.github.io/posts/blog-migrated-to-pelican-and-github-pages.html/#comment-2md" rel="alternate"></link><published>2024-08-31T15:18:00+02:00</published><updated>2024-08-31T15:18:00+02:00</updated><author><name>dirtyhandscoding</name></author><id>tag:dirtyhandscoding.github.io,2024-08-31:/posts/blog-migrated-to-pelican-and-github-pages.html//comment-2md</id><summary type="html">&lt;p&gt;Yes, email-based comments are the most "static" ones.
+But now (almost 6 years later) I can also mention some downsides:&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;1)&lt;/strong&gt; It takes long time from when comment is sent to when it appears on website.
+It means fast-paced conversations in comments are simply impossible.
+Also, the reader might be …&lt;/p&gt;</summary><content type="html">&lt;p&gt;Yes, email-based comments are the most "static" ones.
+But now (almost 6 years later) I can also mention some downsides:&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;1)&lt;/strong&gt; It takes long time from when comment is sent to when it appears on website.
+It means fast-paced conversations in comments are simply impossible.
+Also, the reader might be confused on whether his comment is not yet applied or got lost somewhere.
+I guess reader does not get a notification about reply, unless he uses RSS/atom feed.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;2)&lt;/strong&gt; Author takes the maintenance burden to be ready to update the blog at any moment.
+For instance, I have just moved to a new country.
+When I received your comment, I realized that the most recent version of my blog existed only on my main PC, which was still packaged.
+That's why your comment appeared 3 week later than it should =)
+Data loss can be a problem too... I guess should finally find some mercurial hosting.
+Also I did not touch the blog in several years, so I had to dive in and upgrade some stuff.&lt;/p&gt;</content><category term="Uncategorized"></category></entry><entry><title>Posted by: Paul Lee</title><link href="https://dirtyhandscoding.github.io/posts/blog-migrated-to-pelican-and-github-pages.html/#comment-1md" rel="alternate"></link><published>2024-08-10T00:06:00-04:00</published><updated>2024-08-10T00:06:00-04:00</updated><author><name>Paul Lee</name></author><id>tag:dirtyhandscoding.github.io,2024-08-10:/posts/blog-migrated-to-pelican-and-github-pages.html//comment-1md</id><summary type="html">&lt;p&gt;I found this excellent description when searching for live uses of the Python package, pelican_comment_system.
+I'm intrigued by the solution. It feels retro-minimalist and complements the philosophy of static sites.
+I like the fact that it's available directly within the Python ecosystem.
+Thanks for thoroughly documenting your experiences and innovations …&lt;/p&gt;</summary><content type="html">&lt;p&gt;I found this excellent description when searching for live uses of the Python package, pelican_comment_system.
+I'm intrigued by the solution. It feels retro-minimalist and complements the philosophy of static sites.
+I like the fact that it's available directly within the Python ecosystem.
+Thanks for thoroughly documenting your experiences and innovations.&lt;/p&gt;</content><category term="Uncategorized"></category></entry></feed>

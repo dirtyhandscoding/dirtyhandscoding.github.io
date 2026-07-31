@@ -5,28 +5,28 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
 <url>
 <loc>https://dirtyhandscoding.github.io/</loc>
-<lastmod>2024-08-31T16:17:38-00:00</lastmod>
+<lastmod>2026-07-31T21:47:32-00:00</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
 
 <url>
 <loc>https://dirtyhandscoding.github.io/archives.html</loc>
-<lastmod>2024-08-31T16:17:38-00:00</lastmod>
+<lastmod>2026-07-31T21:47:32-00:00</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
 
 <url>
 <loc>https://dirtyhandscoding.github.io/tags.html</loc>
-<lastmod>2024-08-31T16:17:38-00:00</lastmod>
+<lastmod>2026-07-31T21:47:32-00:00</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
 
 <url>
 <loc>https://dirtyhandscoding.github.io/categories.html</loc>
-<lastmod>2024-08-31T16:17:38-00:00</lastmod>
+<lastmod>2026-07-31T21:47:32-00:00</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
@@ -118,13 +118,6 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url>
 <loc>https://dirtyhandscoding.github.io/category/high-performance.html</loc>
 <lastmod>2019-08-04T15:31:00+05:32</lastmod>
-<changefreq>daily</changefreq>
-<priority>0.3</priority>
-</url>
-
-<url>
-<loc>https://dirtyhandscoding.github.io/category/the-dark-mod.html</loc>
-<lastmod>2017-07-19T10:49:00+05:32</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>

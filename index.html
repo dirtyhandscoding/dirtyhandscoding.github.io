@@ -43,6 +43,45 @@
                     <ol id="posts-list" class="hfeed" start="2">
             <li><article class="hentry">
                 <header>
+                    <h1><a href="https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-introduction.html" rel="bookmark"
+                           title="Permalink to Natvis-like experience with GDB pretty printers. Introduction">Natvis-like experience with GDB pretty printers</a></h1>
+                </header>
+
+                <div class="entry-content">
+<footer class="post-info">
+        <span>31 July 2026</span>
+	        <span>| in <a href="https://dirtyhandscoding.github.io/category/cc.html">C/C++</a></span>
+<span>| tags: <a href="https://dirtyhandscoding.github.io/tag/cpp.html">cpp</a><a href="https://dirtyhandscoding.github.io/tag/debug.html">debug</a><a href="https://dirtyhandscoding.github.io/tag/gdb.html">gdb</a><a href="https://dirtyhandscoding.github.io/tag/natvis.html">natvis</a></span>
+</footer><!-- /.post-info -->                <p>Over the years of working on <a href="https://www.thedarkmod.com">TheDarkMod</a> game, we have amassed 1K lines of natvis code, 95 type definitions in total. <a href="https://learn.microsoft.com/en-us/visualstudio/debugger/create-custom-views-of-native-objects?view=visualstudio">Natvis</a> has become an inherent part of good debugging experience, but it is available only on Windows. This story is about my attempt to extend this experience to the Linux side.</p>
+<p>This multipart article explains how to reimplement most of the inherent natvis features on top of GDB pretty printers, provides a declarative approach to pretty printers similar to how natvis works, gives a solid deep-printing implementation similar to that of MSVC, and discusses the major issues of GDB value inspection system.</p>
+                    <div class="series-summary">
+        <p>This article consists of many parts:</p>
+            <ol class="parts">
+        <li class="active">
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-introduction.html'>Introduction</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-implementing-natvis-features.html'>Implementing natvis features</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-natvis-like-declarative-printers.html'>Natvis-like declarative printers</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-auto-summary.html'>Auto-summary</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-debugging-and-ides.html'>Debugging and IDEs</a>
+        </li>
+    </ol>
+
+    </div>
+
+                <a class="readmore" href="https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-introduction.html">read more</a>
+                </div><!-- /.entry-content -->
+            </article></li>
+
+            <li><article class="hentry">
+                <header>
                     <h1><a href="https://dirtyhandscoding.github.io/posts/fast-debug-in-visual-c.html" rel="bookmark"
                            title="Permalink to Fast Debug in Visual C++">Fast Debug in Visual C++</a></h1>
                 </header>
@@ -97,25 +136,6 @@
     </div>
 
                 <a class="readmore" href="https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-introduction.html">read more</a>
-                </div><!-- /.entry-content -->
-            </article></li>
-
-            <li><article class="hentry">
-                <header>
-                    <h1><a href="https://dirtyhandscoding.github.io/posts/improvements-to-symbolsort-tool-for-c-code-bloat-analysis.html" rel="bookmark"
-                           title="Permalink to Improvements to SymbolSort tool for C++ code bloat analysis">Improvements to SymbolSort tool for C++ code bloat analysis</a></h1>
-                </header>
-
-                <div class="entry-content">
-<footer class="post-info">
-        <span>27 May 2018</span>
-	        <span>| in <a href="https://dirtyhandscoding.github.io/category/cc.html">C/C++</a></span>
-<span>| tags: <a href="https://dirtyhandscoding.github.io/tag/cpp.html">cpp</a><a href="https://dirtyhandscoding.github.io/tag/bloat.html">bloat</a><a href="https://dirtyhandscoding.github.io/tag/build.html">build</a><a href="https://dirtyhandscoding.github.io/tag/msvc.html">msvc</a></span>
-</footer><!-- /.post-info -->                <p>It is known that code bloat <a href="https://dirtyhandscoding.github.io/posts/on-cpp-code-bloat.html">significantly increases build times in C++</a>. The question is: how can we quantify code bloat? How can we see things which are compiled too many times or the things which generate too much object code? How can we know which places would benefit most from improvement efforts?</p>
-<p>This article is about an excellent tool called <a href="https://github.com/adrianstone55/SymbolSort">SymbolSort</a>, which produces useful code bloat statistics in a project of any size. In particular, the article describes a few improvements which I have implemented recently to provide more useful analysis.</p>
-
-                
-                <a class="readmore" href="https://dirtyhandscoding.github.io/posts/improvements-to-symbolsort-tool-for-c-code-bloat-analysis.html">read more</a>
                 </div><!-- /.entry-content -->
             </article></li>
             </ol><!-- /#posts-list -->

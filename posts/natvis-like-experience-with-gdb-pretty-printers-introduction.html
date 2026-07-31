@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <!-- load favicon from /images -->
+        <link rel="icon" type="image/png" href="/images/favicon.png" />
+        <!-- stgatilov: properly detect device width on a mobile -->
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/> 
+
+        <meta charset="utf-8" />
+        <title>Natvis-like experience with GDB pretty printers. Introduction</title>
+        <link rel="stylesheet" href="https://dirtyhandscoding.github.io/theme/css/main.css" />
+        <link href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Dirty hands coding Atom Feed" />
+        <link href="/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="Dirty hands coding RSS Feed" />
+
+        <!--[if IE]>
+            <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+        <![endif]-->
+</head>
+
+<body id="index" class="home">
+        <header id="banner" class="body">
+                <h1><a href="https://dirtyhandscoding.github.io/">Dirty hands coding </a></h1>
+                <nav><ul>
+                    <li><a href="/archives.html">ARCHIVES</a></li>
+                    <li><a href="/categories.html">CATEGORIES</a></li>
+                    <li><a href="/tags.html">TAGS</a></li>
+                    <li><a href="/pages/contact.html">CONTACT</a></li>
+                </ul>
+<form class="navbar-search" action="https://dirtyhandscoding.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);">
+                        <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input">
+                    </form>
+                </nav>
+<div id="submenu">
+                    <ul>
+                            <li class="active"><a href="https://dirtyhandscoding.github.io/category/cc.html">C/C++</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/high-performance.html">High performance</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/uncategorized.html">Uncategorized</a></li>
+                    </ul>
+                <div>
+        </header><!-- /#banner -->
+<section id="content" class="body">
+  <article>
+    <header>
+      <h1 class="entry-title">
+        <a href="https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-introduction.html" rel="bookmark"
+           title="Permalink to Natvis-like experience with GDB pretty printers. Introduction">Natvis-like experience with GDB pretty printers. Introduction</a></h1>
+    </header>
+
+    <div class="entry-content">
+<footer class="post-info">
+        <span>31 July 2026</span>
+	        <span>| in <a href="https://dirtyhandscoding.github.io/category/cc.html">C/C++</a></span>
+<span>| tags: <a href="https://dirtyhandscoding.github.io/tag/cpp.html">cpp</a><a href="https://dirtyhandscoding.github.io/tag/debug.html">debug</a><a href="https://dirtyhandscoding.github.io/tag/gdb.html">gdb</a><a href="https://dirtyhandscoding.github.io/tag/natvis.html">natvis</a></span>
+</footer><!-- /.post-info -->          <div class="series-summary series-in-article">
+        <p>This article is part 1 of the <span class="series-name">Natvis-like experience with GDB pretty printers</span> series:</p>
+            <ol class="parts">
+        <li class="active">
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-introduction.html'>Introduction</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-implementing-natvis-features.html'>Implementing natvis features</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-natvis-like-declarative-printers.html'>Natvis-like declarative printers</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-auto-summary.html'>Auto-summary</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-debugging-and-ides.html'>Debugging and IDEs</a>
+        </li>
+    </ol>
+
+    </div>
+
+      <p>Over the years of working on <a href="https://www.thedarkmod.com">TheDarkMod</a> game, we have amassed 1K lines of natvis code, 95 type definitions in total. <a href="https://learn.microsoft.com/en-us/visualstudio/debugger/create-custom-views-of-native-objects?view=visualstudio">Natvis</a> has become an inherent part of good debugging experience, but it is available only on Windows. This story is about my attempt to extend this experience to the Linux side.</p>
+<p>This multipart article explains how to reimplement most of the inherent natvis features on top of GDB pretty printers, provides a declarative approach to pretty printers similar to how natvis works, gives a solid deep-printing implementation similar to that of MSVC, and discusses the major issues of GDB value inspection.</p>
+
+
+<h2 id="thedarkmod"><a class="toclink" href="#thedarkmod">TheDarkMod</a></h2>
+<p>TheDarkMod is the game started off the Doom 3 engine, which was made in years 2000-2004. Thus, the codebase has some properties which might seem unconventional for many C++ programmers:</p>
+<ol>
+<li>
+<p><strong>Not Invented Here</strong> is a norm in gamedev. STL was not used by Doom 3, so custom containers are used almost everywhere in the code: <code>idList</code> instead of <code>std::vector</code>, <code>idStr</code> instead of <code>std::string</code>, etc.</p>
+</li>
+<li>
+<p><strong>C with classes</strong> is the general way of doing things, some parts of the renderer code were inherited from the older idTech engine and are in pure C. It is very typical to see intrusive linked lists with the <code>next</code> pointer being an explicitly declared member of a class.</p>
+</li>
+<li>
+<p><strong>Entity hierarchy</strong> is a wide inheritance hierarchy containing all kind of game objects. Entity-Component-System architecture was not known yet. <code>idEntity</code> base class has 49 directly derived classes. It is also a god object: 109 direct members and sizeof = 2376 bytes.</p>
+</li>
+</ol>
+<p>Here are some links to the code:</p>
+<ul>
+<li><a href="https://github.com/stgatilov/darkmod_src/tree/trunk/sys/msvc/natvis">sys/msvc/natvis</a>: the original natvis definitions for MSVC</li>
+<li><a href="https://github.com/stgatilov/darkmod_src/tree/trunk/sys/linux/gdbpp">sys/linux/gdbpp</a>: work-in-progress GDB pretty printers</li>
+<li><a href="https://github.com/stgatilov/darkmod_src/blob/trunk/sys/linux/gdbpp/tdmuc_base.py">sys/linux/gdbpp/tdmuc_base.py</a>: most of the code described in this article is in this file</li>
+</ul>
+<h2 id="debugger-selection"><a class="toclink" href="#debugger-selection">Debugger selection</a></h2>
+<p>My first idea was to just use a debugger which supports natvis, since a few of them claim to have such a support. But I was quickly disappointed:</p>
+<ul>
+<li>
+<p><strong>VS Code</strong> properly supports natvis only with Visual C++ debugger (<a href="https://code.visualstudio.com/docs/cpp/natvis">reference</a>). A limited portion of natvis is supported on Linux in MIEngine, implemented on top of <a href="https://sourceware.org/gdb/current/onlinedocs/gdb.html/GDB_002fMI.html">GDB MI</a>. It does not work well, and hangs up all the time.</p>
+</li>
+<li>
+<p><strong>CLion</strong> supports natvis only on Windows + MSVC toolchain (<a href="https://www.jetbrains.com/help/clion/configuring-debugger-options.html">reference</a>). Interestingly, natvis support has been implemented in a fork of LLDB. Some work is being done to extend it to Linux (<a href="https://youtrack.jetbrains.com/issue/CPP-35297">issue</a>), but it was not there when I looked into it.</p>
+</li>
+</ul>
+<p>So I started looking at alternative frameworks for customizing value visualization in the debugger:</p>
+<ul>
+<li>
+<p><a href="https://sourceware.org/gdb/current/onlinedocs/gdb.html/Pretty-Printing.html">GDB pretty printers</a> is the Python framework native to GDB. So it is supported in CLion, VS Code, and many more IDEs, as long as they run on top of GDB.</p>
+</li>
+<li>
+<p><a href="https://lldb.llvm.org/use/variable.html">LLDB data formatters</a> is a similar Python framework native to LLDB. Supposedly supported by most IDEs as long as LLDB debugger is used.</p>
+</li>
+<li>
+<p><a href="https://doc.qt.io/qtcreator/creator-debugging-helpers.html">QtCreator debugging helpers</a> get an honorable mention. It is also a Python framework that works mainly in QtCreator. Since recently, it is also supported by CLion (<a href="https://blog.jetbrains.com/clion/2025/02/introducing-qt-renderers/">reference</a>).</p>
+</li>
+</ul>
+<p>I quickly discarded QtCreator options since it would tie us to a relatively unpopular IDE, and decided to pick either GDB or LLDB depending on which of them feels better. I gave up on LLDB data formatters after I realized that even enumerating the elements of an array requires non-trivial code with manual address computation and many interactions with the LLDB type system (see e.g. <a href="https://github.com/sdonegan/Qt5DataFormatters/blob/develop/Qt5DataFormatters.py#L53">QVector formatter</a>).</p>
+<p>The main problems of all the natvis alternatives are: <strong>steep learning curve</strong> and <strong>high cost of error</strong>. Natvis is very compact and easy to use: after looking at a few examples you are ready to go. If you screw up, you'll see the raw data members in the Watch, and an error message in natvis diagnostics. But these alternative frameworks require you to know Python and have extensive API documentation. A lot of useful behavior which is provided out of the box in natvis is missing in GDB, so you have to implement it yourself in Python. And if you mess it up, you can easily get frozen GDB. And diagnostics are not always easy to get: exceptions and stdout messages can be silently swallowed or delayed.</p>
+<h2 id="example"><a class="toclink" href="#example">Example</a></h2>
+<p>Here is an example of natvis for a typical std::vector-like container:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&lt;Type</span><span class="w"> </span><span class="na">Name=</span><span class="s">&quot;idList&amp;lt;*&amp;gt;&quot;</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nt">&lt;DisplayString&gt;</span>[{num}]<span class="w"> </span>{list,[num]na}<span class="nt">&lt;/DisplayString&gt;</span>
+<span class="w">    </span><span class="nt">&lt;Expand&gt;</span>
+<span class="w">        </span><span class="nt">&lt;ArrayItems&gt;</span>
+<span class="w">            </span><span class="nt">&lt;Size&gt;</span>num<span class="nt">&lt;/Size&gt;</span>
+<span class="w">            </span><span class="nt">&lt;ValuePointer&gt;</span>list<span class="nt">&lt;/ValuePointer&gt;</span>
+<span class="w">        </span><span class="nt">&lt;/ArrayItems&gt;</span>
+<span class="w">    </span><span class="nt">&lt;/Expand&gt;</span>
+<span class="nt">&lt;/Type&gt;</span>
+</code></pre></div>
+
+<p>And here is its equivalent in GDB pretty printers (without registration code):</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">idListPrinter</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">display_hint</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;array&#39;</span>
+
+    <span class="k">def</span> <span class="nf">to_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">[</span><span class="s1">&#39;num&#39;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="s1">&#39;[</span><span class="si">%d</span><span class="s1">]&#39;</span> <span class="o">%</span> <span class="n">n</span>
+
+    <span class="k">def</span> <span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">[</span><span class="s1">&#39;num&#39;</span><span class="p">])</span>
+        <span class="n">pArr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">[</span><span class="s1">&#39;list&#39;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+            <span class="k">yield</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="n">pArr</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+</code></pre></div>
+
+<p>Here is how it looks in MSVC and CLion:</p>
+<div class="center-content">
+    <img src="https://dirtyhandscoding.github.io/images/B_gdb_pretty_printers/example_idlist_clion.png" style="width:100%; max-width:230px" />
+    <img src="https://dirtyhandscoding.github.io/images/B_gdb_pretty_printers/example_idlist_msvc.png" style="width:100%; max-width:400px" />
+</div>
+
+<p>They are not strictly equivalent though, because the GDB version lacks some noticeable features:</p>
+<ol>
+<li>The natvis version displays a few first elements straight in the display string, so often I see the contents without even having to expand it. And it does not hang while doing so.</li>
+<li>The natvis version has a special <code>[raw]</code> child, which contains all the raw members of the class. It is useful on the rare occasions when I want to see capacity or address of the array.</li>
+</ol>
+<p>After a lot of hard work, I have managed to implement both of these features on top on GDB pretty printers.</p>
+<h2 id="inspection-model"><a class="toclink" href="#inspection-model">Inspection model</a></h2>
+<p>One thing in common between all the frameworks is that you basically customize two things for each type:</p>
+<ul>
+<li><strong>Display string</strong> or <strong>summary</strong>: a short plain text that you see instead of the value of the variable.</li>
+<li><strong>Children</strong>: the list of children inside variable, each children having a name and a value.</li>
+</ul>
+<p>At the beginning, I hoped that correct GDB pretty printers would work in any debugger that runs on top of GDB, but I turned out to be wrong! In fact, most of the IDEs I tested don't work properly, which I believe is caused by the clash between two different value inspection models:</p>
+<ul>
+<li>
+<p><strong>Lazily expanded tree</strong>. You see display string for the value. You can click the value to expand it and see its children. Then you can click on some children to expand them further, etc. Very similar to a typical filesystem browser. This is how  GUI debuggers normally work.</p>
+</li>
+<li>
+<p><strong>Deep printing</strong>. You print out the display string of the value, then enumerate all of its children and recursively print them out. As the result, you see the complete contents of the value as one long text. This is how command line debuggers normally work, since they lack mouse interactions.</p>
+</li>
+</ul>
+<p>Deep printing model has one major problem: it can often traverse/print too much. If the children tree has cross-links, then the output can grow exponentially. If the children graph has loops, then deep-printing hangs completely. One can avoid such issue by forbidding to expand a child of pointer/reference type, but such a limitation makes value inspection useless in most applications. Even filesystems today are not trees because of all the directory links! GDB employs simple remedies like limiting print depth and width, but they are not reliable: imagine a large array and a large binary tree, where every element contains an expandable pointer to the root.</p>
+<p>This becomes an ever-present pain with GDB pretty printers. Deep-printing model is so ingrained into the GDB mindset, it is very easy to invoke it accidentally, either by writing pretty printers incorrectly, or by doing something wrong on IDE side. Scrupulously following the lazy expansion model depends on the specific IDE debugger and is not guaranteed by the GDB itself.</p>
+<p>Interestingly, this is specifically a GDB problem. Deep printing can be safe and fast if done properly. MSVC debugger does since forever: it deep-prints every value that misses a custom natvis DisplayString. I have also implemented proper deep-printing on top of GDB API, as you will see in <a href="https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-auto-summary.html">the auto-summary chapter</a>.</p>
+          <div class="series-neighbors">
+        <p class="series-next">
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-implementing-natvis-features.html'>
+                Part 2: Implementing natvis features
+            </a>
+            <span class="arrow-right"></span>
+        </p>
+    </div>
+
+    </div><!-- /.entry-content -->
+    <section>
+        <div id="post-share-links" class="inline-menu">
+            <div>Share on:</div>
+            <a href="https://twitter.com/intent/tweet?text=Natvis-like%20experience%20with%20GDB%20pretty%20printers.%20Introduction&url=https%3A//dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-introduction.html" target="_blank" class="icon-label" title="Share on Twitter">Twitter</a><!--
+            --><a href="http://www.facebook.com/sharer/sharer.php?u=https%3A//dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-introduction.html" target="_blank" class="icon-label" title="Share on Facebook">Facebook</a><!--
+            --><a href="https://plus.google.com/share?url=https%3A//dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-introduction.html" target="_blank" class="icon-label" title="Share on Google Plus">Google+</a><!--
+            --><a href="https://sharetodiaspora.github.io/?title=Natvis-like%20experience%20with%20GDB%20pretty%20printers.%20Introduction&url=https%3A//dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-introduction.html" target="_blank" class="icon-label" title="Share on Diaspora">Diaspora*</a><!--
+            --><a href="https://news.ycombinator.com/submitlink?t=Natvis-like%20experience%20with%20GDB%20pretty%20printers.%20Introduction&u=https%3A//dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-introduction.html" target="_blank" class="icon-label" title="Share on HackerNews">HackerNews</a><!--
+            --><a href="mailto:?subject=Natvis-like%20experience%20with%20GDB%20pretty%20printers.%20Introduction&amp;body=https%3A//dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-introduction.html" target="_blank" class="icon-label" title="Share via Email">Email</a>
+        </div>
+    </section>
+    
+    			<!--<script type="text/javascript" src="http://code.jquery.com/jquery-2.1.4.min.js"></script>-->
+		<script src="https://dirtyhandscoding.github.io/theme/js/jquery.min.js"></script>
+	<script type="text/javascript" src="https://dirtyhandscoding.github.io/theme/pelican_comment_system/comments.js"></script>
+	<script type="text/javascript">
+		$(document).ready(function() {
+			CommentSystem.email_user   = "itiswrongemail";
+			CommentSystem.email_domain = "outlook.com";
+
+			$('#pcs-comment-form').on("submit",
+				function( event )
+				{
+					event.preventDefault();
+					$(location).attr('href', CommentSystem.getMailtoLink("natvis-like-experience-with-gdb-pretty-printers-introduction"));
+				}
+			);
+		});
+	</script>
+
+    	<section>
+	<div id="pcs-comments-header" class="inline-menu">
+	<header>
+		<div>Comments (0)</div>
+		<button type="button" title="Expand or collapse the comments section" class="icon-label" id="pcs-comments-collapse-button" onclick="CommentSystem.collapsible($('#pcs-comments'), $(this));">
+			<span class="nocss">expand</span>
+		</button>
+			<a href="https://dirtyhandscoding.github.io/feeds/comment.natvis-like-experience-with-gdb-pretty-printers-introduction.atom.xml" class="icon-label">atom feed: comments</a>
+	</header>
+	</div>
+	<div id="pcs-comments">
+		<p>There are no comments yet.</p>
+	<section>
+	<div display="none" id="pcs-comment-notreply-helper" />
+	<form id="pcs-comment-form" action="#">
+		<fieldset>
+		<legend>Add a Comment</legend>
+		<div id="pcs-comment-tab-inputs">
+			<input type="hidden" id="pcs-comment-form-input-replyto"/>
+			<label for="pcs-comment-form-input-name">Name</label>
+			<input  id="pcs-comment-form-input-name" type="text" size="40" placeholder="Enter your name or nickname" />
+			<br/>
+			<label for="pcs-comment-form-input-website">Website</label>
+			<input  id="pcs-comment-form-input-website" type="text" size="40" placeholder="Enter your website (optional)" />
+			<br/>
+			<label for="pcs-comment-form-input-empty">Empty</label>
+			<input  id="pcs-comment-form-input-empty" type="text" size="30" placeholder="Do NOT enter anything here!" />
+			<label   for="pcs-comment-form-input-textarea">Your Comment</label>
+			<br/>
+			<textarea id="pcs-comment-form-input-textarea" rows="7" cols="40" placeholder="Enter your comment (markdown is allowed)"></textarea>
+		</div>
+		<div id="pcs-comment-tab-message" style="display:none">
+			<textarea readonly rows="10" cols="40"></textarea>
+		</div>
+
+		<button type="submit"
+				id="pcs-comment-form-button-submit"
+				title="Create mailto link and open it in default email client &#10;Note: you have to send the email to post comment"
+				>Post via email</button>
+		<button type="button"
+				id="pcs-comment-form-button-message"
+				title="See the text of email message to be sent &#10;Note: you can copy it and send manually"
+				onclick="CommentSystem.viewEmail(&quot;natvis-like-experience-with-gdb-pretty-printers-introduction&quot;);"
+				>View email text</button>
+		<a target="_blank"
+				id="pcs-comment-gmail-config-help"
+				title="How to configure Chrome to open mailto links in Gmail..."
+				href="https://productforums.google.com/forum/#!topic/gmail/JtWVPbUfh-o"
+				>?</a>
+		</fieldset>
+
+		<!--			<a href="https://dirtyhandscoding.github.io/feeds/comment.natvis-like-experience-with-gdb-pretty-printers-introduction.atom.xml">
+				Comment Atom Feed
+			</a>
+-->
+	</form>
+	<script>CommentSystem.displayReplyTo();</script>
+</section>
+
+	</div>
+	<script>
+		$('#pcs-comments').css({display: "none"});
+		$('#pcs-comments-collapse-button').addClass('collapsed');
+	</script>
+</section>
+
+  </article>
+</section>
+        <section id="extras" class="body">
+                <div class="social">
+                        <h2>social</h2>
+                        <ul>
+                            <li><a href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate">atom feed</a></li>
+                            <li><a href="/feeds/all.rss.xml" type="application/rss+xml" rel="alternate">rss feed</a></li>
+
+                        </ul>
+                </div><!-- /.social -->
+        </section><!-- /#extras -->
+
+        <footer id="contentinfo" class="body">
+                <p>Powered by <a href="http://getpelican.com/">Pelican</a>. Theme <a href="https://github.com/blueicefield/pelican-blueidea/">blueidea</a>, customized to personal taste.</p>
+        </footer><!-- /#contentinfo -->
+
+</body>
+</html>

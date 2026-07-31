@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <!-- load favicon from /images -->
+        <link rel="icon" type="image/png" href="/images/favicon.png" />
+        <!-- stgatilov: properly detect device width on a mobile -->
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/> 
+
+        <meta charset="utf-8" />
+        <title>Natvis-like experience with GDB pretty printers. Natvis-like declarative printers</title>
+        <link rel="stylesheet" href="https://dirtyhandscoding.github.io/theme/css/main.css" />
+        <link href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Dirty hands coding Atom Feed" />
+        <link href="/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="Dirty hands coding RSS Feed" />
+
+        <!--[if IE]>
+            <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+        <![endif]-->
+</head>
+
+<body id="index" class="home">
+        <header id="banner" class="body">
+                <h1><a href="https://dirtyhandscoding.github.io/">Dirty hands coding </a></h1>
+                <nav><ul>
+                    <li><a href="/archives.html">ARCHIVES</a></li>
+                    <li><a href="/categories.html">CATEGORIES</a></li>
+                    <li><a href="/tags.html">TAGS</a></li>
+                    <li><a href="/pages/contact.html">CONTACT</a></li>
+                </ul>
+<form class="navbar-search" action="https://dirtyhandscoding.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);">
+                        <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input">
+                    </form>
+                </nav>
+<div id="submenu">
+                    <ul>
+                            <li class="active"><a href="https://dirtyhandscoding.github.io/category/cc.html">C/C++</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/high-performance.html">High performance</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/uncategorized.html">Uncategorized</a></li>
+                    </ul>
+                <div>
+        </header><!-- /#banner -->
+<section id="content" class="body">
+  <article>
+    <header>
+      <h1 class="entry-title">
+        <a href="https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-natvis-like-declarative-printers.html" rel="bookmark"
+           title="Permalink to Natvis-like experience with GDB pretty printers. Natvis-like declarative printers">Natvis-like experience with GDB pretty printers. Natvis-like declarative printers</a></h1>
+    </header>
+
+    <div class="entry-content">
+<footer class="post-info">
+        <span>31 July 2026</span>
+	        <span>| in <a href="https://dirtyhandscoding.github.io/category/cc.html">C/C++</a></span>
+<span>| tags: <a href="https://dirtyhandscoding.github.io/tag/cpp.html">cpp</a><a href="https://dirtyhandscoding.github.io/tag/debug.html">debug</a><a href="https://dirtyhandscoding.github.io/tag/gdb.html">gdb</a><a href="https://dirtyhandscoding.github.io/tag/natvis.html">natvis</a></span>
+</footer><!-- /.post-info -->          <div class="series-summary series-in-article">
+        <p>This article is part 3 of the <span class="series-name">Natvis-like experience with GDB pretty printers</span> series:</p>
+            <ol class="parts">
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-introduction.html'>Introduction</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-implementing-natvis-features.html'>Implementing natvis features</a>
+        </li>
+        <li class="active">
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-natvis-like-declarative-printers.html'>Natvis-like declarative printers</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-auto-summary.html'>Auto-summary</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-debugging-and-ides.html'>Debugging and IDEs</a>
+        </li>
+    </ol>
+
+    </div>
+
+      <p>One of the issues I have with pretty printers is that they look much more verbose than natvis: every printer has to be a separate class with 3 methods. And it gives a lot of room for error even in trivial cases. So I implemented something similar to natvis: a concise and partially declarative approach for creating pretty printers. Fully declarative way is not a good idea because it would be a new isolated world. I'd like to be able to interoperate with some Python code. And I definitely don't try to emulate natvis exactly in all the fine details: that would be too hard to achieve.</p>
+<p>For example, creation of a pretty printers for a simple 3D vector with members <code>x</code>, <code>y</code>, <code>z</code> looks like this:</p>
+<div class="highlight"><pre><span></span><code><span class="n">make_simple_printer</span><span class="p">(</span><span class="s1">&#39;idVec3&#39;</span><span class="p">,</span> <span class="s1">&#39;({$x}, {$y}, {$z})&#39;</span><span class="p">),</span>
+</code></pre></div>
+
+<div class="center-content">
+    <img src="https://dirtyhandscoding.github.io/images/B_gdb_pretty_printers/simple_printer_idvec3.png" style="width: 100%; max-width: 403px" />
+</div>
+
+<p>In this case we don't specify children, so the raw members are displayed on expansion. The substring <code>{$x}</code> is a placeholder which is replaced with the display string of the member <code>x</code>.</p>
+<p>Note that in MSVC we don't even need to have a natvis definition for such a struct, because the debugger by default enumerates all the members with their values in the display string. Such a behavior is reproduced with <a href="https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-auto-summary.html">auto-summary</a>. However, by default GDB leaves display string empty.</p>
+<p>The 3D matrix internally has just one member <code>idVec3 mat[3]</code>, but we want to immediately see three 3D vectors on expansion. So we can override children using the third argument:</p>
+<div class="highlight"><pre><span></span><code><span class="n">make_simple_printer</span><span class="p">(</span><span class="s1">&#39;idMat3&#39;</span><span class="p">,</span> <span class="s1">&#39;3 x 3 matrix&#39;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="p">[(</span><span class="s1">&#39;[</span><span class="si">%d</span><span class="s1">]&#39;</span> <span class="o">%</span> <span class="n">i</span><span class="p">,</span> <span class="n">v</span><span class="p">[</span><span class="s1">&#39;mat&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">)]),</span>
+</code></pre></div>
+
+<div class="center-content">
+    <img src="https://dirtyhandscoding.github.io/images/B_gdb_pretty_printers/simple_printer_idmat3.png" class="width: 100%; max-width: 484px" />
+</div>
+
+<p>The display string is just "3 x 3 matrix" here, and the third argument is a lambda producing the list of children for a given gdb.Value.</p>
+<p>The 6D vector stores its coordinates in an array <code>float p[6]</code> too, but we want to see named coordinates:</p>
+<div class="highlight"><pre><span></span><code><span class="n">make_simple_printer</span><span class="p">(</span><span class="s1">&#39;idVec6&#39;</span><span class="p">,</span> <span class="s1">&#39;({@x}, {@y}, {@z}, {@u}, {@v}, {@w})&#39;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="n">v</span><span class="p">[</span><span class="s1">&#39;p&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="n">v</span><span class="p">[</span><span class="s1">&#39;p&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="n">v</span><span class="p">[</span><span class="s1">&#39;p&#39;</span><span class="p">][</span><span class="mi">2</span><span class="p">],</span>
+    <span class="s1">&#39;u&#39;</span><span class="p">:</span> <span class="n">v</span><span class="p">[</span><span class="s1">&#39;p&#39;</span><span class="p">][</span><span class="mi">3</span><span class="p">],</span> <span class="s1">&#39;v&#39;</span><span class="p">:</span> <span class="n">v</span><span class="p">[</span><span class="s1">&#39;p&#39;</span><span class="p">][</span><span class="mi">4</span><span class="p">],</span> <span class="s1">&#39;w&#39;</span><span class="p">:</span> <span class="n">v</span><span class="p">[</span><span class="s1">&#39;p&#39;</span><span class="p">][</span><span class="mi">5</span><span class="p">],</span>
+<span class="p">}),</span>
+</code></pre></div>
+
+<div class="center-content">
+    <img src="https://dirtyhandscoding.github.io/images/B_gdb_pretty_printers/simple_printer_idvec6.png" class="width: 100%; max-width: 711px" />
+</div>
+
+<p>Notice that placeholders look like <code>{@x}</code> here: in this case the display string of the child named <code>x</code> is taken, as produced by the lambda in the third argument.</p>
+<p>Also, the children are described as a dictionary here instead of as a list of key-value tuples. Both alternatives are supported: list of tuples is more native for pretty-printers, but dictionary often looks cleaner.</p>
+<p>Here is an example of an array-like structure:</p>
+<div class="highlight"><pre><span></span><code><span class="n">make_simple_printer</span><span class="p">(</span><span class="s1">&#39;idWinding&#39;</span><span class="p">,</span> <span class="s1">&#39;winding[{$numPoints}]&#39;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="p">[(</span><span class="s1">&#39;numPoints&#39;</span><span class="p">,</span> <span class="n">This</span><span class="p">)]</span> <span class="o">+</span> <span class="n">array_children_list</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;p&#39;</span><span class="p">],</span> <span class="n">v</span><span class="p">[</span><span class="s1">&#39;numPoints&#39;</span><span class="p">])),</span>
+</code></pre></div>
+
+<div class="center-content">
+    <img src="https://dirtyhandscoding.github.io/images/B_gdb_pretty_printers/simple_printer_idwinding.png" class="width: 100%; max-width: 314px" />
+</div>
+
+<p>The special value <code>This</code> is used to say "take the same-named member from the main gdb.Value". It does not add anything new, is just a minor shortcut for simple cases.</p>
+<p>The same result can be achieved with the dictionary syntax and the caret character <code>^</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="n">make_simple_printer</span><span class="p">(</span><span class="s1">&#39;idWinding&#39;</span><span class="p">,</span> <span class="s1">&#39;winding[{$numPoints}]&#39;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s1">&#39;numPoints&#39;</span><span class="p">:</span> <span class="n">This</span><span class="p">,</span>
+    <span class="s1">&#39;^&#39;</span><span class="p">:</span> <span class="n">array_children_list</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;p&#39;</span><span class="p">],</span> <span class="n">v</span><span class="p">[</span><span class="s1">&#39;numPoints&#39;</span><span class="p">]),</span>
+<span class="p">}),</span>
+</code></pre></div>
+
+<p>If the name of a child starts with a caret, then it has special meaning: the corresponding value is inlined into the current list of children. In this case the elements of the array are inlined to become direct children of <code>idWinding</code>.</p>
+<p>Inlining is most typically used to display all raw members of the class, similar to <code>&lt;ExpandedItem&gt;this,!&lt;/ExpandedItem&gt;</code> in natvis:</p>
+<div class="highlight"><pre><span></span><code><span class="n">make_simple_printer</span><span class="p">(</span><span class="s1">&#39;idDecl&#39;</span><span class="p">,</span> <span class="s1">&#39;{@base_}&#39;</span><span class="p">,</span> <span class="n">class_attribs</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;allow_derived&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span> <span class="n">structure</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s1">&#39;^&#39;</span><span class="p">:</span> <span class="n">raw_children_inline</span><span class="p">(</span><span class="n">v</span><span class="p">),</span>
+    <span class="s1">&#39;@base_&#39;</span><span class="p">:</span> <span class="n">v</span><span class="p">[</span><span class="s1">&#39;base&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">dereference</span><span class="p">(),</span>
+<span class="p">}),</span>
+</code></pre></div>
+
+<div class="center-content">
+    <img src="https://dirtyhandscoding.github.io/images/B_gdb_pretty_printers/simple_printer_iddecl.png" style="width: 100%; max-width: 561px" />
+</div>
+
+<p>The synthetic raw child <code>raw_child_expandable</code> can be inserted just the same way, despite being a single tuple. Notice also that it is possible to set pretty-printer class attributes like <code>allow_derived</code> (recall that it enables this printer for the types derived from <code>idWinding</code>).</p>
+<p>A child is hidden if its name starts with email sign <code>@</code>: it can be used in display string, but is not shown when the value is expanded in debugger. It makes sense for <code>idDecl</code> printer because raw members already include <code>base</code>, so <code>@base_</code> exists just to dereference the pointer and get rid of its address.</p>
+<p>In natvis one can just write <code>{base,na}</code> in display string to drop address. Similarly, it is possible to add asterisk to deference the value:</p>
+<div class="highlight"><pre><span></span><code><span class="n">make_simple_printer</span><span class="p">(</span><span class="s1">&#39;idDecl&#39;</span><span class="p">,</span> <span class="s1">&#39;{$base:*}&#39;</span><span class="p">,</span> <span class="n">class_attribs</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;allow_derived&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}),</span>
+</code></pre></div>
+
+<p>It is not necessary to inline everything though! It is possible to have nested children inside synthetics, meaning that the third argument can be a tree in the general case:</p>
+<div class="highlight"><pre><span></span><code><span class="n">make_simple_printer</span><span class="p">(</span><span class="s1">&#39;idMaterial&#39;</span><span class="p">,</span> <span class="s1">&#39;{$base:*}&#39;</span><span class="p">,</span> <span class="n">structure</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s1">&#39;^&#39;</span><span class="p">:</span> <span class="n">raw_children_inline</span><span class="p">(</span><span class="n">v</span><span class="p">),</span>
+    <span class="s1">&#39;[stages]&#39;</span><span class="p">:</span> <span class="n">array_children_list</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;stages&#39;</span><span class="p">],</span> <span class="n">v</span><span class="p">[</span><span class="s1">&#39;numStages&#39;</span><span class="p">]),</span>
+    <span class="s1">&#39;[interactionGroups]&#39;</span><span class="p">:</span> <span class="n">array_children_list</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;interactionGroupStarts&#39;</span><span class="p">],</span> <span class="nb">int</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;numInteractionGroups&#39;</span><span class="p">])</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span>
+<span class="p">}),</span>
+</code></pre></div>
+
+<div class="center-content">
+    <img src="https://dirtyhandscoding.github.io/images/B_gdb_pretty_printers/simple_printer_idmaterial_synthetics.png" style="width: 100%; max-width: 486px" />
+</div>
+
+<p>This is a very typical example where we only want to add a few synthetic children in order to see some arrays and linked lists which are behind raw pointers and are otherwise not inspectable. Both synthetics are created automatically inside the implementation.</p>
+<p>The only issue with <code>idMaterial</code> definition is that contents of the synthetics are evaluated when <code>idMaterial</code> value is expanded, even if we never expand the synthetics themselves. Most of the time it is undesirable. To make synthetic content lazily evaluated, we have to add yet another lambda and wrap it into <code>make_synthetic</code>. Here is one example where traversing the linked lists all the time would be too expensive:</p>
+<div class="highlight"><pre><span></span><code><span class="n">make_simple_printer</span><span class="p">(</span><span class="s1">&#39;idRenderEntityLocal&#39;</span><span class="p">,</span> <span class="s1">&#39;{$parms}&#39;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s1">&#39;^&#39;</span><span class="p">:</span> <span class="n">raw_children_inline</span><span class="p">(</span><span class="n">v</span><span class="p">),</span>
+    <span class="s1">&#39;[World Area]&#39;</span><span class="p">:</span> <span class="n">idListPrinter</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;world&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">dereference</span><span class="p">()[</span><span class="s1">&#39;portalAreas&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;index&#39;</span><span class="p">])),</span>
+    <span class="s1">&#39;[All Interactions]&#39;</span><span class="p">:</span> <span class="n">make_synthetic</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">linked_list_children_list</span><span class="p">(</span>
+        <span class="n">v</span><span class="p">[</span><span class="s1">&#39;firstInteraction&#39;</span><span class="p">],</span>
+        <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="n">n</span><span class="o">.</span><span class="n">dereference</span><span class="p">()[</span><span class="s1">&#39;entityNext&#39;</span><span class="p">]</span>
+    <span class="p">)),</span>
+    <span class="s1">&#39;[All RefAreas]&#39;</span><span class="p">:</span> <span class="n">make_synthetic</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">linked_list_children_list</span><span class="p">(</span>
+        <span class="n">v</span><span class="p">[</span><span class="s1">&#39;entityRefs&#39;</span><span class="p">],</span>
+        <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="n">n</span><span class="o">.</span><span class="n">dereference</span><span class="p">()[</span><span class="s1">&#39;next&#39;</span><span class="p">],</span>
+        <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="n">idListPrinter</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;world&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">dereference</span><span class="p">()[</span><span class="s1">&#39;portalAreas&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">dereference</span><span class="p">()[</span><span class="s1">&#39;areaIdx&#39;</span><span class="p">]))</span>
+    <span class="p">)),</span>
+<span class="p">}),</span>
+</code></pre></div>
+
+<p>Surely it does not look very clean with three-level lambdas =)
+I guess this extra lambda is not that necessary after all. As we <a href="https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-debugging-and-ides.html#performance">will discover later</a>, CLion calls <code>children</code> method before a value is expanded anyway, and we should exploit generators to minimize the performance burden of this.</p>
+<p>For the sake of comparison, here is the original natvis definition for <code>idRenderEntityLocal</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&lt;Type</span><span class="w"> </span><span class="na">Name=</span><span class="s">&quot;idRenderEntityLocal&quot;</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nt">&lt;DisplayString</span><span class="w"> </span><span class="na">IncludeView=</span><span class="s">&quot;simple&quot;</span><span class="nt">&gt;</span>{parms,view(simple)}<span class="nt">&lt;/DisplayString&gt;</span>
+<span class="w">    </span><span class="nt">&lt;DisplayString&gt;</span>idRenderEntity:<span class="w"> </span>{parms,view(simple)}<span class="nt">&lt;/DisplayString&gt;</span>
+<span class="w">    </span><span class="nt">&lt;Expand&gt;</span>
+<span class="w">        </span><span class="nt">&lt;ExpandedItem&gt;</span>this,!<span class="nt">&lt;/ExpandedItem&gt;</span>
+<span class="w">        </span><span class="nt">&lt;Item</span><span class="w"> </span><span class="na">Condition=</span><span class="s">&quot;parms.entityNum==0&quot;</span><span class="w"> </span><span class="na">Name=</span><span class="s">&quot;[World Area]&quot;</span><span class="w"> </span><span class="na">ExcludeView=</span><span class="s">&quot;raw&quot;</span><span class="nt">&gt;</span>world-&gt;portalAreas[index]<span class="nt">&lt;/Item&gt;</span>
+<span class="w">        </span><span class="nt">&lt;Synthetic</span><span class="w"> </span><span class="na">Name=</span><span class="s">&quot;[All Interactions]&quot;</span><span class="w"> </span><span class="na">ExcludeView=</span><span class="s">&quot;raw&quot;</span><span class="nt">&gt;</span>
+<span class="w">            </span><span class="nt">&lt;Expand&gt;</span>
+<span class="w">                </span><span class="nt">&lt;LinkedListItems&gt;</span>
+<span class="w">                    </span><span class="nt">&lt;HeadPointer&gt;</span>firstInteraction<span class="nt">&lt;/HeadPointer&gt;</span>
+<span class="w">                    </span><span class="nt">&lt;NextPointer&gt;</span>entityNext<span class="nt">&lt;/NextPointer&gt;</span>
+<span class="w">                    </span><span class="nt">&lt;ValueNode&gt;</span>this<span class="nt">&lt;/ValueNode&gt;</span>
+<span class="w">                </span><span class="nt">&lt;/LinkedListItems&gt;</span>
+<span class="w">            </span><span class="nt">&lt;/Expand&gt;</span>
+<span class="w">        </span><span class="nt">&lt;/Synthetic&gt;</span>
+<span class="w">        </span><span class="nt">&lt;Synthetic</span><span class="w"> </span><span class="na">Name=</span><span class="s">&quot;[All refAreas]&quot;</span><span class="w"> </span><span class="na">ExcludeView=</span><span class="s">&quot;raw&quot;</span><span class="nt">&gt;</span>
+<span class="w">            </span><span class="nt">&lt;Expand&gt;</span>
+<span class="w">                </span><span class="nt">&lt;LinkedListItems&gt;</span>
+<span class="w">                    </span><span class="nt">&lt;HeadPointer&gt;</span>entityRefs<span class="nt">&lt;/HeadPointer&gt;</span>
+<span class="w">                    </span><span class="nt">&lt;NextPointer&gt;</span>next<span class="nt">&lt;/NextPointer&gt;</span>
+<span class="w">                    </span><span class="nt">&lt;ValueNode&gt;</span>((idRenderWorldLocal*)gameRenderWorld)-&gt;portalAreas[areaIdx]<span class="nt">&lt;/ValueNode&gt;</span>
+<span class="w">                </span><span class="nt">&lt;/LinkedListItems&gt;</span>
+<span class="w">            </span><span class="nt">&lt;/Expand&gt;</span>
+<span class="w">        </span><span class="nt">&lt;/Synthetic&gt;</span>
+<span class="w">    </span><span class="nt">&lt;/Expand&gt;</span>
+<span class="nt">&lt;/Type&gt;</span>
+</code></pre></div>
+
+<p>The two are not exactly equivalent of course: there is some tweaking with simple view in natvis, and <code>[World Area]</code> synthetic is displayed only on condition.</p>
+<h2 id="implementation"><a class="toclink" href="#implementation">Implementation</a></h2>
+<p>I think it is clear that implementing this <code>make_simple_printer</code> function is totally possible with  all the building blocks provided in <a href="https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-implementing-natvis-features.html">the previous chapter</a>. This has little to do with GDB API and pretty printers, it is mostly an exercise in general Python programming. I provide the full code just below for completeness, you can skip it if you are not interested.</p>
+<div class="highlight"><pre><span></span><code><span class="n">This</span> <span class="o">=</span> <span class="s1">&#39;$%#this#%$&#39;</span>
+
+<span class="c1"># Children tree is a json-like structure like this:</span>
+<span class="c1"># {</span>
+<span class="c1">#     &#39;size&#39;: 15,                   # member &#39;size&#39; = 15</span>
+<span class="c1">#     &#39;parent&#39;: This,               # member &#39;parent&#39; = self.value[&#39;parent&#39;] (taken from &#39;this&#39; object)</span>
+<span class="c1">#     &#39;duration&#39;: gdb.Value(...),   # member with specified gdb.Value</span>
+<span class="c1">#     &#39;@hidden&#39;: gdb.Value(...)     # hidden member: not displayed, but can be referenced in display string</span>
+<span class="c1">#     &#39;extra&#39;: {                    # synthetic member: can be expanded to see its contents</span>
+<span class="c1">#         &#39;angle&#39;: 179.0</span>
+<span class="c1">#         &#39;analysed&#39;: gdb.Value(...),</span>
+<span class="c1">#     },</span>
+<span class="c1">#     &#39;^dsfsd&#39;: raw_child_expandable(value),    # add expandable synthetic with all raw members (key name ignored)</span>
+<span class="c1">#     &#39;^oiwer&#39;: raw_children_inline(value),     # list all raw members here (key name ignored)</span>
+<span class="c1">#     &#39;^ivnfd&#39;: [(&#39;a&#39;: 7), (&#39;b&#39;): 15]           # in general case, &#39;^???&#39; means &quot;insert this child/children list here&quot;</span>
+<span class="c1"># }</span>
+<span class="c1">#</span>
+<span class="c1"># Formatted display string looks similar to Python format string, for example:</span>
+<span class="c1">#   &#39;From {@parent} under angle {@extra.angle}: {@hidden}&#39;</span>
+<span class="c1"># The placeholders are surrounded with {}, and can be of two types:</span>
+<span class="c1">#   {@path} --- use value from children tree under specified path</span>
+<span class="c1">#   {$name} --- use self.value[name], i.e. take from &#39;this&#39; object</span>
+<span class="c1"># You can also add format specification after colon:</span>
+<span class="c1">#   {$ptrToObject:*} --- take ptrToObject member and dereference it before display</span>
+<span class="c1">#   {$mystruct:a} --- generate auto-summary for mystruct member (not recommended)</span>
+
+
+<span class="c1"># given children tree as described above, or a lambda that returns it,</span>
+<span class="c1"># returns same tree with all the values resolved as gdb.Value, &#39;this&#39; no longer needed</span>
+<span class="k">def</span> <span class="nf">preprocess_children_tree</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span> <span class="n">thisValue</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">tree</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">raw_children_inline</span><span class="p">(</span><span class="n">thisValue</span><span class="p">)</span>   <span class="c1"># default if tree not specified</span>
+    <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">tree</span><span class="p">):</span>
+        <span class="n">structure</span> <span class="o">=</span> <span class="n">tree</span><span class="p">(</span><span class="n">thisValue</span><span class="p">)</span>             <span class="c1"># typically the tree is behind lambda</span>
+
+    <span class="k">def</span> <span class="nf">preprocess_structure_recursive</span><span class="p">(</span><span class="n">tree</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">tree</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">tree</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>           <span class="c1"># dict literal is alternative to list of tuples</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">tree</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">key</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;^&#39;</span><span class="p">):</span>             <span class="c1"># insert value = list of key/value tuples (or one)</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                    <span class="n">result</span> <span class="o">+=</span> <span class="n">val</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">val</span> <span class="o">==</span> <span class="n">This</span><span class="p">:</span>  <span class="c1"># use member of &#39;this&#39; by name</span>
+                <span class="n">val</span> <span class="o">=</span> <span class="n">thisValue</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="p">(</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">list</span><span class="p">)):</span>         <span class="c1"># synthetic subobject</span>
+                <span class="n">val</span> <span class="o">=</span> <span class="n">preprocess_structure_recursive</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">gdb</span><span class="o">.</span><span class="n">Value</span><span class="p">):</span>            <span class="c1"># normal value</span>
+                <span class="k">pass</span>
+            <span class="k">else</span><span class="p">:</span>                                       <span class="c1"># primitives like int, float, string</span>
+                <span class="n">val</span> <span class="o">=</span> <span class="n">gdb</span><span class="o">.</span><span class="n">Value</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="k">return</span> <span class="n">preprocess_structure_recursive</span><span class="p">(</span><span class="n">structure</span><span class="p">)</span>
+
+<span class="c1"># tracked against total memory limit of g_gdb_helper_table table</span>
+<span class="k">def</span> <span class="nf">estimate_size_of_preprocessed_tree</span><span class="p">(</span><span class="n">tree</span><span class="p">):</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">tree</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">res</span> <span class="o">+=</span> <span class="n">estimate_size_of_preprocessed_tree</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+        <span class="n">res</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="o">.</span><span class="n">bytes</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">res</span>
+
+<span class="c1"># pretty-printer-like class used for synthetic objects</span>
+<span class="c1"># note: unlike true PP, it accepts its contents instead of gdb.Value</span>
+<span class="c1"># so it can only be used from inside convert_preprocessed_tree_into_children_list</span>
+<span class="k">class</span> <span class="nc">ContainerPrinter</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tree</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tree</span> <span class="o">=</span> <span class="n">tree</span>
+    <span class="k">def</span> <span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">convert_preprocessed_tree_into_children_list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="p">)</span>
+
+<span class="c1"># converts the result of preprocess_children_tree to be returned from &#39;children&#39; method of pretty printer</span>
+<span class="k">def</span> <span class="nf">convert_preprocessed_tree_into_children_list</span><span class="p">(</span><span class="n">tree</span><span class="p">):</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">tree</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">key</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;@&#39;</span><span class="p">):</span>     <span class="c1"># hidden</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">embed_printer_for_value</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">ContainerPrinter</span><span class="p">,</span> <span class="n">size</span> <span class="o">=</span> <span class="n">estimate_size_of_preprocessed_tree</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">result</span>
+
+<span class="c1"># find member by name (or even path) inside the preprocessed children tree</span>
+<span class="c1"># this is used by the feature: {@mystuff.data.first} in display string</span>
+<span class="k">def</span> <span class="nf">fetch_from_preprocessed_tree</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+    <span class="k">assert</span> <span class="n">tree</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+    <span class="n">parts</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
+    <span class="n">node</span> <span class="o">=</span> <span class="n">tree</span>
+    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">parts</span><span class="p">:</span>
+        <span class="n">nnode</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">node</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="n">p</span> <span class="ow">or</span> <span class="n">k</span> <span class="o">==</span> <span class="s1">&#39;@&#39;</span> <span class="o">+</span> <span class="n">p</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="n">nnode</span> <span class="ow">is</span> <span class="kc">None</span>
+                <span class="n">nnode</span> <span class="o">=</span> <span class="n">v</span>
+        <span class="n">node</span> <span class="o">=</span> <span class="n">nnode</span>
+    <span class="k">return</span> <span class="n">node</span>
+
+<span class="c1"># creates string from special &#39;format string&#39;, gdb value of &#39;this&#39; and optionally preprocessed children tree</span>
+<span class="k">def</span> <span class="nf">compose_formatted_display_string</span><span class="p">(</span><span class="nb">format</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">tree</span><span class="p">):</span>
+    <span class="n">pieces</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">Formatter</span><span class="p">()</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="nb">format</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="k">for</span> <span class="n">text</span><span class="p">,</span> <span class="n">placeholder</span><span class="p">,</span> <span class="n">specs</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">pieces</span><span class="p">:</span>
+        <span class="n">res</span> <span class="o">+=</span> <span class="n">text</span>
+        <span class="k">if</span> <span class="n">placeholder</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">placeholder</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;@&#39;</span><span class="p">):</span>
+                <span class="n">member</span> <span class="o">=</span> <span class="n">fetch_from_preprocessed_tree</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span> <span class="n">placeholder</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+            <span class="k">elif</span> <span class="n">placeholder</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;$&#39;</span><span class="p">):</span>
+                <span class="n">member</span> <span class="o">=</span> <span class="n">value</span><span class="p">[</span><span class="n">placeholder</span><span class="p">[</span><span class="mi">1</span><span class="p">:]]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="kc">False</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="s1">&#39;*&#39;</span> <span class="ow">in</span> <span class="n">specs</span><span class="p">:</span>
+                    <span class="n">member</span> <span class="o">=</span> <span class="n">member</span><span class="o">.</span><span class="n">dereference</span><span class="p">()</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">member</span> <span class="o">=</span> <span class="s1">&#39;err&#39;</span>
+            <span class="k">if</span> <span class="n">ENABLE_AUTO_SUMMARY</span> <span class="ow">and</span> <span class="n">specs</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;a&#39;</span><span class="p">):</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="n">AutoDisplayStringPrinter</span><span class="p">(</span><span class="n">member</span><span class="p">)</span><span class="o">.</span><span class="n">to_string</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="n">display_string</span><span class="p">(</span><span class="n">member</span><span class="p">)</span>
+            <span class="n">res</span> <span class="o">+=</span> <span class="nb">str</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">res</span>
+
+<span class="c1"># Makes pretty-printer using simply and mostly declarative format.</span>
+<span class="c1"># The return value can be registered directly in TdmPrettyPrinterCollection.</span>
+<span class="c1">#   typename: C++ class name (can be wildcard)</span>
+<span class="c1">#   format: will be shown as &#39;display string&#39;, placeholders like {...} are replaced</span>
+<span class="c1">#   structure: json-like structure that describes &#39;children&#39;, possibly with synthetic subchildren</span>
+<span class="c1"># See large comment above for syntax and possibilities of display string format and json-like structure.</span>
+<span class="c1"># Note: if structure is None, then you can&#39;t use {@smth} placeholders in display string.</span>
+<span class="k">def</span> <span class="nf">make_simple_printer</span><span class="p">(</span><span class="n">typename</span><span class="p">,</span> <span class="nb">format</span><span class="p">,</span> <span class="n">structure</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">class_attribs</span> <span class="o">=</span> <span class="p">{}):</span>
+    <span class="k">class</span> <span class="nc">SimplePrinter</span><span class="p">:</span>
+        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">structure</span> <span class="o">=</span> <span class="n">preprocess_children_tree</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">to_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">ENABLE_AUTO_SUMMARY</span> <span class="ow">and</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">SimplePrinter</span><span class="p">,</span> <span class="s1">&#39;auto_summary&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">get_auto_summary_as_string</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">compose_formatted_display_string</span><span class="p">(</span><span class="nb">format</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">structure</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">convert_preprocessed_tree_into_children_list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">structure</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">typename</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="n">SimplePrinter</span><span class="p">,</span> <span class="s1">&#39;wildcard&#39;</span><span class="p">,</span> <span class="n">typename</span><span class="p">)</span>
+        <span class="n">SimplePrinter</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+=</span> <span class="s1">&#39;(</span><span class="si">%s</span><span class="s1">)&#39;</span> <span class="o">%</span> <span class="n">typename</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">class_attribs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="n">SimplePrinter</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">SimplePrinter</span>
+</code></pre></div>
+          <div class="series-neighbors">
+        <p class="series-prev">
+            <span class="arrow-left"></span>
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-implementing-natvis-features.html'>
+                Part 2: Implementing natvis features
+            </a>
+        </p>
+        <p class="series-next">
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-auto-summary.html'>
+                Part 4: Auto-summary
+            </a>
+            <span class="arrow-right"></span>
+        </p>
+    </div>
+
+    </div><!-- /.entry-content -->
+    
+    			<!--<script type="text/javascript" src="http://code.jquery.com/jquery-2.1.4.min.js"></script>-->
+		<script src="https://dirtyhandscoding.github.io/theme/js/jquery.min.js"></script>
+	<script type="text/javascript" src="https://dirtyhandscoding.github.io/theme/pelican_comment_system/comments.js"></script>
+	<script type="text/javascript">
+		$(document).ready(function() {
+			CommentSystem.email_user   = "itiswrongemail";
+			CommentSystem.email_domain = "outlook.com";
+
+			$('#pcs-comment-form').on("submit",
+				function( event )
+				{
+					event.preventDefault();
+					$(location).attr('href', CommentSystem.getMailtoLink("natvis-like-experience-with-gdb-pretty-printers-natvis-like-declarative-printers"));
+				}
+			);
+		});
+	</script>
+
+    	<section>
+	<div id="pcs-comments-header" class="inline-menu">
+	<header>
+		<div>Comments (0)</div>
+		<button type="button" title="Expand or collapse the comments section" class="icon-label" id="pcs-comments-collapse-button" onclick="CommentSystem.collapsible($('#pcs-comments'), $(this));">
+			<span class="nocss">expand</span>
+		</button>
+			<a href="https://dirtyhandscoding.github.io/feeds/comment.natvis-like-experience-with-gdb-pretty-printers-natvis-like-declarative-printers.atom.xml" class="icon-label">atom feed: comments</a>
+	</header>
+	</div>
+	<div id="pcs-comments">
+		<p>There are no comments yet.</p>
+	<section>
+	<div display="none" id="pcs-comment-notreply-helper" />
+	<form id="pcs-comment-form" action="#">
+		<fieldset>
+		<legend>Add a Comment</legend>
+		<div id="pcs-comment-tab-inputs">
+			<input type="hidden" id="pcs-comment-form-input-replyto"/>
+			<label for="pcs-comment-form-input-name">Name</label>
+			<input  id="pcs-comment-form-input-name" type="text" size="40" placeholder="Enter your name or nickname" />
+			<br/>
+			<label for="pcs-comment-form-input-website">Website</label>
+			<input  id="pcs-comment-form-input-website" type="text" size="40" placeholder="Enter your website (optional)" />
+			<br/>
+			<label for="pcs-comment-form-input-empty">Empty</label>
+			<input  id="pcs-comment-form-input-empty" type="text" size="30" placeholder="Do NOT enter anything here!" />
+			<label   for="pcs-comment-form-input-textarea">Your Comment</label>
+			<br/>
+			<textarea id="pcs-comment-form-input-textarea" rows="7" cols="40" placeholder="Enter your comment (markdown is allowed)"></textarea>
+		</div>
+		<div id="pcs-comment-tab-message" style="display:none">
+			<textarea readonly rows="10" cols="40"></textarea>
+		</div>
+
+		<button type="submit"
+				id="pcs-comment-form-button-submit"
+				title="Create mailto link and open it in default email client &#10;Note: you have to send the email to post comment"
+				>Post via email</button>
+		<button type="button"
+				id="pcs-comment-form-button-message"
+				title="See the text of email message to be sent &#10;Note: you can copy it and send manually"
+				onclick="CommentSystem.viewEmail(&quot;natvis-like-experience-with-gdb-pretty-printers-natvis-like-declarative-printers&quot;);"
+				>View email text</button>
+		<a target="_blank"
+				id="pcs-comment-gmail-config-help"
+				title="How to configure Chrome to open mailto links in Gmail..."
+				href="https://productforums.google.com/forum/#!topic/gmail/JtWVPbUfh-o"
+				>?</a>
+		</fieldset>
+
+		<!--			<a href="https://dirtyhandscoding.github.io/feeds/comment.natvis-like-experience-with-gdb-pretty-printers-natvis-like-declarative-printers.atom.xml">
+				Comment Atom Feed
+			</a>
+-->
+	</form>
+	<script>CommentSystem.displayReplyTo();</script>
+</section>
+
+	</div>
+	<script>
+		$('#pcs-comments').css({display: "none"});
+		$('#pcs-comments-collapse-button').addClass('collapsed');
+	</script>
+</section>
+
+  </article>
+</section>
+        <section id="extras" class="body">
+                <div class="social">
+                        <h2>social</h2>
+                        <ul>
+                            <li><a href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate">atom feed</a></li>
+                            <li><a href="/feeds/all.rss.xml" type="application/rss+xml" rel="alternate">rss feed</a></li>
+
+                        </ul>
+                </div><!-- /.social -->
+        </section><!-- /#extras -->
+
+        <footer id="contentinfo" class="body">
+                <p>Powered by <a href="http://getpelican.com/">Pelican</a>. Theme <a href="https://github.com/blueicefield/pelican-blueidea/">blueidea</a>, customized to personal taste.</p>
+        </footer><!-- /#contentinfo -->
+
+</body>
+</html>

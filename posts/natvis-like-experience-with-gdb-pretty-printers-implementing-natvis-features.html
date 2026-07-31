@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <!-- load favicon from /images -->
+        <link rel="icon" type="image/png" href="/images/favicon.png" />
+        <!-- stgatilov: properly detect device width on a mobile -->
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/> 
+
+        <meta charset="utf-8" />
+        <title>Natvis-like experience with GDB pretty printers. Implementing natvis features</title>
+        <link rel="stylesheet" href="https://dirtyhandscoding.github.io/theme/css/main.css" />
+        <link href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Dirty hands coding Atom Feed" />
+        <link href="/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="Dirty hands coding RSS Feed" />
+
+        <!--[if IE]>
+            <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+        <![endif]-->
+</head>
+
+<body id="index" class="home">
+        <header id="banner" class="body">
+                <h1><a href="https://dirtyhandscoding.github.io/">Dirty hands coding </a></h1>
+                <nav><ul>
+                    <li><a href="/archives.html">ARCHIVES</a></li>
+                    <li><a href="/categories.html">CATEGORIES</a></li>
+                    <li><a href="/tags.html">TAGS</a></li>
+                    <li><a href="/pages/contact.html">CONTACT</a></li>
+                </ul>
+<form class="navbar-search" action="https://dirtyhandscoding.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);">
+                        <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input">
+                    </form>
+                </nav>
+<div id="submenu">
+                    <ul>
+                            <li class="active"><a href="https://dirtyhandscoding.github.io/category/cc.html">C/C++</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/high-performance.html">High performance</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/uncategorized.html">Uncategorized</a></li>
+                    </ul>
+                <div>
+        </header><!-- /#banner -->
+<section id="content" class="body">
+  <article>
+    <header>
+      <h1 class="entry-title">
+        <a href="https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-implementing-natvis-features.html" rel="bookmark"
+           title="Permalink to Natvis-like experience with GDB pretty printers. Implementing natvis features">Natvis-like experience with GDB pretty printers. Implementing natvis features</a></h1>
+    </header>
+
+    <div class="entry-content">
+<footer class="post-info">
+        <span>31 July 2026</span>
+	        <span>| in <a href="https://dirtyhandscoding.github.io/category/cc.html">C/C++</a></span>
+<span>| tags: <a href="https://dirtyhandscoding.github.io/tag/cpp.html">cpp</a><a href="https://dirtyhandscoding.github.io/tag/debug.html">debug</a><a href="https://dirtyhandscoding.github.io/tag/gdb.html">gdb</a><a href="https://dirtyhandscoding.github.io/tag/natvis.html">natvis</a></span>
+</footer><!-- /.post-info -->          <div class="series-summary series-in-article">
+        <p>This article is part 2 of the <span class="series-name">Natvis-like experience with GDB pretty printers</span> series:</p>
+            <ol class="parts">
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-introduction.html'>Introduction</a>
+        </li>
+        <li class="active">
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-implementing-natvis-features.html'>Implementing natvis features</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-natvis-like-declarative-printers.html'>Natvis-like declarative printers</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-auto-summary.html'>Auto-summary</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-debugging-and-ides.html'>Debugging and IDEs</a>
+        </li>
+    </ol>
+
+    </div>
+
+      <p>GDB lacks a lot of the features of natvis, and I had to implement their equivalents for GDB pretty printers myself.</p>
+<h2 id="printer-behind-pointer"><a class="toclink" href="#printer-behind-pointer">Printer behind pointer</a></h2>
+<p>For a pointer value like <code>idEntity*</code>, MSVC debugger shows the address followed by the display string of the pointee, while GDB only shows the raw address. Both allow  to expand the value to see the children of the pointee, but in case of MSVC that would be natvis-customized children, while GDB would display the raw members. GDB just does not apply pretty printer of the pointee automatically.</p>
+<p>Here you can see: CLion in its normal state, CLion with idEntity pretty printer applied through pointer, MSVC with natvis applied.</p>
+<div class="center-content">
+    <img src="https://dirtyhandscoding.github.io/images/B_gdb_pretty_printers/entity_pointers_clion_raw.png" style="width: 100%; max-width: 179px" />
+    <img src="https://dirtyhandscoding.github.io/images/B_gdb_pretty_printers/entity_pointers_clion_pp.png" style="width: 100%; max-width: 309px" />
+    <img src="https://dirtyhandscoding.github.io/images/B_gdb_pretty_printers/entity_pointers_msvc.png" class="w500" />
+    <!-- glass : game.entities -->
+</div>
+
+<p>The standard <a href="https://sourceware.org/gdb/current/onlinedocs/gdb.html/gdb_002eprinting.html#gdb_002eprinting">RegexpCollectionPrettyPrinter</a> does not support this case out of the box, it is necessary to implement a custom class derived from PrettyPrinter. A custom class allows to inspect every incoming gdb.Value and match pretty printer based on its type or even the actual value.</p>
+<p>Here is how I match references and pointers to the pretty printer of the value type:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TdmPrettyPrinterCollection</span><span class="p">(</span><span class="n">gdb</span><span class="o">.</span><span class="n">printing</span><span class="o">.</span><span class="n">PrettyPrinter</span><span class="p">):</span>
+    <span class="c1"># called by GDB to find pretty-printer</span>
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="o">...</span>
+        <span class="c1"># resolve &#39;as is&#39;: works for value types</span>
+        <span class="n">printer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_printer_maybe_derived</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">printer</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">printer</span><span class="o">.</span><span class="n">gen_printer</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+        <span class="c1"># avoid TYPE_CODE_TYPEDEF below</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">gdb</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">get_basic_type</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">type</span><span class="p">))</span>
+
+        <span class="c1"># resolve reference type</span>
+        <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">type</span><span class="o">.</span><span class="n">code</span> <span class="o">==</span> <span class="n">gdb</span><span class="o">.</span><span class="n">TYPE_CODE_REF</span> <span class="ow">or</span> <span class="n">value</span><span class="o">.</span><span class="n">type</span><span class="o">.</span><span class="n">code</span> <span class="o">==</span> <span class="n">gdb</span><span class="o">.</span><span class="n">TYPE_CODE_RVALUE_REF</span><span class="p">:</span>
+            <span class="n">target_value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">referenced_value</span><span class="p">()</span>
+            <span class="n">printer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_printer_maybe_derived</span><span class="p">(</span><span class="n">target_value</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">printer</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">printer</span><span class="o">.</span><span class="n">gen_printer</span><span class="p">(</span><span class="n">target_value</span><span class="p">)</span>
+
+        <span class="c1"># resolve pointer type (address is prepended)</span>
+        <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">type</span><span class="o">.</span><span class="n">code</span> <span class="o">==</span> <span class="n">gdb</span><span class="o">.</span><span class="n">TYPE_CODE_PTR</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">LiteralStringPrinter</span><span class="p">(</span><span class="s1">&#39;null&#39;</span><span class="p">)</span>
+            <span class="n">prefix</span> <span class="o">=</span> <span class="s1">&#39;0x</span><span class="si">{:x}</span><span class="s1"> &#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">target_value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">dereference</span><span class="p">()</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">LiteralStringPrinter</span><span class="p">(</span><span class="s1">&#39;bad&#39;</span><span class="p">)</span>  <span class="c1"># includes pointer to void</span>
+            <span class="n">printer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_printer_maybe_derived</span><span class="p">(</span><span class="n">target_value</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">printer</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">PrefixPrinter</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="n">printer</span><span class="o">.</span><span class="n">gen_printer</span><span class="p">(</span><span class="n">target_value</span><span class="p">))</span>
+        <span class="o">...</span>
+</code></pre></div>
+
+<p>A few implementations details:</p>
+<ol>
+<li>
+<p>You have probably noticed a call to <code>gdb.types.get_basic_type</code>. This has to be used a lot, because typedef is a separate type of kind <code>gdb.TYPE_CODE_TYPEDEF</code>, and without resolving it you can't see whether it is really a struct/pointer/reference/integer/etc.</p>
+</li>
+<li>
+<p>There is try/catch around pointer dereference. I don't like such blatant silencing of all kind of errors, but this is the only way to work with pointers reliably. A pointer can be null, void, function, member, uninitialized, and in all of these cases you get an exception.</p>
+</li>
+</ol>
+<p>The type of variable <code>printer</code> is derived from <code>gdb.printing.SubPrettyPrinter</code>, and <code>printer.gen_printer</code> is the actual constructor of the pretty printer with <code>to_string</code> / <code>children</code> methods.
+The code uses a few simple pretty printers:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># displays given string, no children</span>
+<span class="k">class</span> <span class="nc">LiteralStringPrinter</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">literal</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">literal</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">literal</span> <span class="o">=</span> <span class="n">literal</span>
+
+    <span class="k">def</span> <span class="nf">to_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">literal</span>
+
+<span class="c1"># wraps the given pretty printer: prepends given prefix to its display string</span>
+<span class="k">class</span> <span class="nc">PrefixPrinter</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">,</span> <span class="n">pointee_printer</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pointee_printer</span> <span class="o">=</span> <span class="n">pointee_printer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prefix</span> <span class="o">=</span> <span class="n">prefix</span>
+
+    <span class="k">def</span> <span class="nf">to_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>    <span class="c1"># printer can have no &#39;to_string&#39; method</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pointee_printer</span><span class="o">.</span><span class="n">to_string</span><span class="p">())</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="s1">&#39;???&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">prefix</span> <span class="o">+</span> <span class="n">res</span>
+
+    <span class="k">def</span> <span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>    <span class="c1"># printer can have no &#39;children&#39; method</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pointee_printer</span><span class="o">.</span><span class="n">children</span><span class="p">()</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+</code></pre></div>
+
+<h2 id="printers-registration"><a class="toclink" href="#printers-registration">Printers registration</a></h2>
+<p>Now we have to select pretty printers by C++ type ourselves, so we can choose how to do the type matching exactly. I found it convenient to declare various attributes on a pretty printer as class static members, and automatically take them into account during type match:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TdmPrettyPrinterCollection</span><span class="p">(</span><span class="n">gdb</span><span class="o">.</span><span class="n">printing</span><span class="o">.</span><span class="n">PrettyPrinter</span><span class="p">):</span>
+    <span class="o">...</span>
+    <span class="c1"># --------- registration: take properties from class static member</span>
+    <span class="k">def</span> <span class="nf">add_printer_implicit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gen_printer</span><span class="p">):</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">pn</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;wildcard&#39;</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;allow_pointer&#39;</span><span class="p">,</span> <span class="s1">&#39;allow_derived&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">gen_printer</span><span class="p">,</span> <span class="n">pn</span><span class="p">):</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="n">pn</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">gen_printer</span><span class="p">,</span> <span class="n">pn</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_printer</span><span class="p">(</span><span class="n">gen_printer</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">create_with_printers</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">gen_printer_list</span><span class="p">):</span>
+        <span class="n">ppcoll</span> <span class="o">=</span> <span class="n">TdmPrettyPrinterCollection</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">gp</span> <span class="ow">in</span> <span class="n">gen_printer_list</span><span class="p">:</span>
+            <span class="n">ppcoll</span><span class="o">.</span><span class="n">add_printer_implicit</span><span class="p">(</span><span class="n">gp</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ppcoll</span>
+
+    <span class="k">class</span> <span class="nc">TdmSubprinter</span><span class="p">(</span><span class="n">gdb</span><span class="o">.</span><span class="n">printing</span><span class="o">.</span><span class="n">SubPrettyPrinter</span><span class="p">):</span>
+        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gen_printer</span><span class="p">,</span> <span class="n">matcher</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span>
+                    <span class="n">wildcard</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                    <span class="n">name</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                    <span class="n">allow_pointer</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">allow_derived</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+            <span class="k">assert</span> <span class="n">wildcard</span><span class="p">,</span> <span class="s1">&#39;Matching criterion not set&#39;</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">wildcard</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="n">wildcard</span> <span class="o">=</span> <span class="p">[</span><span class="n">wildcard</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">wildcard</span><span class="p">:</span>
+                <span class="n">matcher</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="n">gen_printer</span><span class="o">.</span><span class="vm">__name__</span>
+            <span class="nb">super</span><span class="p">(</span><span class="n">TdmPrettyPrinterCollection</span><span class="o">.</span><span class="n">TdmSubprinter</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">gen_printer</span> <span class="o">=</span> <span class="n">gen_printer</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">allow_pointer</span> <span class="o">=</span> <span class="n">allow_pointer</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">allow_derived</span> <span class="o">=</span> <span class="n">allow_derived</span>
+</code></pre></div>
+
+<p>I found it easier to match type by wildcard. Initially regex was also supported, but it was then eliminated for performance reasons. The <code>matcher</code> object stores all wildcards in a trie by its literal prefix, which is faster to query than matching against many precompiled regexes. In some cases it is useful to set several wildcards on one printer:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">idHashMapPrinter</span><span class="p">:</span>
+    <span class="c1"># one specific class regardless of template arguments</span>
+    <span class="n">wildcard</span> <span class="o">=</span> <span class="s1">&#39;idHashMap&lt;*&gt;&#39;</span>
+    <span class="o">...</span>
+<span class="k">class</span> <span class="nc">idListPrinter</span><span class="p">:</span>
+    <span class="c1"># covers 3 std::vector-like containers</span>
+    <span class="n">wildcard</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;idList&lt;*&gt;&#39;</span><span class="p">,</span> <span class="s1">&#39;idStaticList&lt;*&gt;&#39;</span><span class="p">,</span> <span class="s1">&#39;idFlexList&lt;*&gt;&#39;</span><span class="p">]</span>
+    <span class="o">...</span>
+</code></pre></div>
+
+<p>The attribute <code>allow_pointer = False</code> allows to block matching by pointers described <a href="https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-implementing-natvis-features.html#printer-behind-pointer">just above</a>, and <code>allow_derived = True</code> allows to apply the printer to values of derived type.</p>
+<h2 id="runtime-type"><a class="toclink" href="#runtime-type">Runtime type</a></h2>
+<p>If MSVC debugger sees a pointer to an object with RTTI (i.e. with at least once virtual function), then the debugger automatically converts the pointer to its actual runtime type for the sake of the inspection. This feature is especially important for the <code>idEntity</code> hierarchy, since there are so many derived class and most of the code uses base <code>idEntity*</code> pointers. A related but different question is whether a natvis rule for a base type applies to a derived type: both ways are available in natvis thanks to the <code>Inheritable</code> attribute.</p>
+<p>In case of GDB, automatic downcasting by RTTI is not enabled by default, but can be enabled like this:</p>
+<ol>
+<li>
+<p><strong>set print object on</strong> command in GDB console enables this behavior for the types not covered by pretty printers.</p>
+</li>
+<li>
+<p>For the types covered by pretty printers, one has to implement it manually in the type matching.</p>
+</li>
+</ol>
+<p>Luckily, point 2 is quite easy to do in Python:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TdmPrettyPrinterCollection</span><span class="p">(</span><span class="n">gdb</span><span class="o">.</span><span class="n">printing</span><span class="o">.</span><span class="n">PrettyPrinter</span><span class="p">):</span>
+    <span class="o">...</span>
+    <span class="c1"># called by GDB to find pretty-printer</span>
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="c1"># cast to most derived type based on RTTI</span>
+        <span class="c1"># natvis does this automatically as well</span>
+        <span class="n">dynamic_type</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">dynamic_type</span>
+        <span class="k">if</span> <span class="n">dynamic_type</span> <span class="o">!=</span> <span class="n">value</span><span class="o">.</span><span class="n">type</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">dynamic_type</span><span class="p">)</span>
+        <span class="o">...</span>
+</code></pre></div>
+
+<p>Now, applying base class printers to derived types is more complicated. This is where we have to look inside the <code>_find_printer_maybe_derived</code> function seen earlier.</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TdmPrettyPrinterCollection</span><span class="p">(</span><span class="n">gdb</span><span class="o">.</span><span class="n">printing</span><span class="o">.</span><span class="n">PrettyPrinter</span><span class="p">):</span>
+    <span class="o">...</span>
+    <span class="c1"># find printer for given type; include its base types in the search</span>
+    <span class="k">def</span> <span class="nf">_find_printer_maybe_derived</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="p">,</span> <span class="n">is_deref</span><span class="p">):</span>
+        <span class="nb">type</span> <span class="o">=</span> <span class="n">gdb</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">get_basic_type</span><span class="p">(</span><span class="nb">type</span><span class="p">)</span>   <span class="c1"># avoid TYPE_CODE_TYPEDEF</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="o">.</span><span class="n">code</span> <span class="o">!=</span> <span class="n">gdb</span><span class="o">.</span><span class="n">TYPE_CODE_STRUCT</span> <span class="ow">and</span> <span class="nb">type</span><span class="o">.</span><span class="n">code</span> <span class="o">!=</span> <span class="n">gdb</span><span class="o">.</span><span class="n">TYPE_CODE_UNION</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">base_type_sequence</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_base_types</span><span class="p">(</span><span class="nb">type</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">base_type</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">base_type_sequence</span><span class="p">):</span>
+            <span class="n">typename</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_normal_type_name</span><span class="p">(</span><span class="n">base_type</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">typename</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">printer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_printer_exact</span><span class="p">(</span><span class="n">typename</span><span class="p">,</span> <span class="n">is_deref</span><span class="p">,</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">printer</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">printer</span>
+
+    <span class="c1"># find printer with specified type name exactly</span>
+    <span class="k">def</span> <span class="nf">_find_printer_exact</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">typename</span><span class="p">,</span> <span class="n">is_deref</span><span class="p">,</span> <span class="n">is_base</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">typename</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">printer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">matcher</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">typename</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">printer</span><span class="o">.</span><span class="n">enabled</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">is_deref</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">printer</span><span class="o">.</span><span class="n">allow_pointer</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">is_base</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">printer</span><span class="o">.</span><span class="n">allow_derived</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">return</span> <span class="n">printer</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="c1"># returns sequence of base class types</span>
+    <span class="c1"># starting from specified type and going into bases</span>
+    <span class="c1"># note: stops on multiple inheritance!</span>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_get_base_types</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">type</span><span class="o">.</span><span class="n">code</span> <span class="o">!=</span> <span class="n">gdb</span><span class="o">.</span><span class="n">TYPE_CODE_TYPEDEF</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="o">.</span><span class="n">code</span> <span class="o">!=</span> <span class="n">gdb</span><span class="o">.</span><span class="n">TYPE_CODE_STRUCT</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="nb">type</span><span class="p">]</span>
+
+        <span class="n">res</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">res</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">type</span><span class="p">)</span>
+            <span class="n">base_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="nb">type</span><span class="o">.</span><span class="n">fields</span><span class="p">()</span> <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">is_base_class</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">base_names</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">break</span>   <span class="c1"># no base or multiple inheritance</span>
+
+            <span class="n">base_type</span> <span class="o">=</span> <span class="n">gdb</span><span class="o">.</span><span class="n">lookup_type</span><span class="p">(</span><span class="n">base_names</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="nb">type</span> <span class="o">=</span> <span class="n">base_type</span>
+
+        <span class="k">return</span> <span class="n">res</span>
+
+    <span class="c1"># same as in the implementation of RegexpCollectionPrettyPrinter</span>
+    <span class="c1"># most importantly, it follows typedefs and drops const/volatile</span>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_get_normal_type_name</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
+        <span class="n">typename</span> <span class="o">=</span> <span class="n">gdb</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">get_basic_type</span><span class="p">(</span><span class="nb">type</span><span class="p">)</span><span class="o">.</span><span class="n">tag</span>
+        <span class="k">if</span> <span class="n">typename</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">typename</span>
+        <span class="k">return</span> <span class="nb">type</span><span class="o">.</span><span class="n">name</span>
+</code></pre></div>
+
+<p>This is quite an impressive amount of non-trivial boilerplate in our custom <code>gdb.printing.PrettyPrinter</code> implementation just to get the behavior which we assume for granted in natvis.</p>
+<h2 id="printer-pinning"><a class="toclink" href="#printer-pinning">Printer pinning</a></h2>
+<p>The <code>children</code> method of a pretty printer returns an array of (str, gdb.Value) pairs. Each gdb.Value is returned to the debugger, which selects another pretty printer for it without any regard to the context. Sometimes it is desirable to pre-select pretty printer for the value being returned, or pin specific pretty printer to the gdb.Value. Such printer pinning can be used to implement two natvis features: alternative views for a type, and synthetic children.</p>
+<p>I have not found any way to achieve this properly in GDB pretty printers. In theory, there are many ways how this could be implemented:</p>
+<ul>
+<li>allowing to return constructed pretty-printer object instead of gdb.Value from children method</li>
+<li>allowing to return some options alongside gdb.Value and passing them into pretty-printers</li>
+<li>allowing to attach arbitrary user data to gdb.Value</li>
+</ul>
+<p>I considered several workarounds to achieve the pinning effect:</p>
+<ul>
+<li>Using <code>setattr</code> on gdb.Value to set userdata. The extra attribute is lost, most likely because gdb.Value is copied somewhere inside GDB.</li>
+<li>Returning gdb.Value with the same data but some artificial helper type (in a sense, save userinfo inside the type). The ultimate blocker I faced is that gdb.Value data buffer must be of the same size as the C++ type. It means I have to generate too many C++ types, parametrized by sizeof and sequence number.</li>
+<li>Saving everything in a huge global table and returning gdb.Value of artificial type and the index in the table. When debugger creates our special pretty-printer for the artificial type, we read the index and use it to restore back the original gdb.Value and all the extra options.</li>
+</ul>
+<p>In the end I managed to make the last approach work. Its greatest weakness is that there is no way to track whether an entry in the global table is still referenced and when it can be discarded, so we have to choose between unbounded memory leak and some values potentially being lost in the debugger. I chose the latter variant and store all the entries in a circular buffer.</p>
+<p>First of all, I made an artificial C++ type holding a single integer:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">// this is an artificial type which contains a 64-bit integer inside</span>
+<span class="c1">// it is used by &#39;embed_printer_for_value&#39; feature of GDB pretty-printers</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">GdbHelper</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kt">int64_t</span><span class="w"> </span><span class="n">index</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="c1">// we must ensure that the type is not stripped from the binary</span>
+<span class="c1">// global variable seems to be enough for that</span>
+<span class="n">GdbHelper</span><span class="w"> </span><span class="n">g_gdb_helper</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mf">17l</span><span class="n">l</span><span class="p">};</span>
+</code></pre></div>
+
+<p>Then I implemented a circular buffer with million entries. When debugger tries to add more elements, the oldest ones get evicted. I also implemented a budget on total data size (1 GB), although I think it is not important.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># fixed-size circular buffer</span>
+<span class="c1"># every added element has ID: you can find it by ID and check if it was removed</span>
+<span class="c1"># special addition method drops oldest values to keep total size under budget</span>
+<span class="k">class</span> <span class="nc">GdbHelperCircularBuffer</span><span class="p">:</span>
+    <span class="o">...</span>
+
+<span class="c1"># every gdb.Value with pinned printer is stored in this huge global buffer</span>
+<span class="c1"># we can&#39;t know when they are no longer necessary, so we only remove them after long time when budget is exceeded</span>
+<span class="n">g_gdb_helper_table</span> <span class="o">=</span> <span class="n">GdbHelperCircularBuffer</span><span class="p">(</span><span class="mi">10</span> <span class="o">**</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">10</span> <span class="o">**</span> <span class="mi">9</span><span class="p">)</span>
+<span class="n">GdbHelperEntry</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s1">&#39;GdbHelperEntry&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">,</span> <span class="s1">&#39;gen_printer&#39;</span><span class="p">,</span> <span class="s1">&#39;size&#39;</span><span class="p">])</span>
+</code></pre></div>
+
+<p>Then, the actual pinning is done by the main function <code>embed_printer_for_value</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># returns artificial gdb.Value which is later resolved to specified (gdb.Value + pretty-printer class) combination</span>
+<span class="c1"># information is stored in the global table, and entry ID is wrapped into GdbHelper struct</span>
+<span class="k">def</span> <span class="nf">embed_printer_for_value</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">gen_printer</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">size</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">size</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">bytes</span><span class="p">)</span>
+    <span class="nb">id</span> <span class="o">=</span> <span class="n">g_gdb_helper_table</span><span class="o">.</span><span class="n">add_limited</span><span class="p">(</span><span class="n">GdbHelperEntry</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">gen_printer</span><span class="p">,</span> <span class="n">size</span><span class="p">))</span>
+    <span class="n">helper_type</span> <span class="o">=</span> <span class="n">gdb</span><span class="o">.</span><span class="n">lookup_type</span><span class="p">(</span><span class="s1">&#39;GdbHelper&#39;</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">helper_type</span> <span class="ow">and</span> <span class="n">helper_type</span><span class="o">.</span><span class="n">sizeof</span> <span class="o">==</span> <span class="mi">8</span><span class="p">,</span> <span class="s2">&quot;Make sure GdbHelper struct exists and is not stripped out.&quot;</span>
+    <span class="n">helper_value</span> <span class="o">=</span> <span class="n">gdb</span><span class="o">.</span><span class="n">Value</span><span class="p">(</span><span class="nb">id</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="n">byteorder</span> <span class="o">=</span> <span class="s1">&#39;little&#39;</span><span class="p">),</span> <span class="n">helper_type</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">helper_value</span>
+</code></pre></div>
+
+<p>And finally, here is the implementation and registration of the pretty-printer for the artificial type:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># pretty-printer for GdbHelper</span>
+<span class="c1"># extracts entry ID and looks into the global table</span>
+<span class="k">def</span> <span class="nf">GdbHelperPrinter</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+    <span class="nb">id</span> <span class="o">=</span> <span class="nb">int</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">bytes</span><span class="p">,</span> <span class="n">byteorder</span> <span class="o">=</span> <span class="s1">&#39;little&#39;</span><span class="p">)</span>
+    <span class="n">elem</span> <span class="o">=</span> <span class="n">g_gdb_helper_table</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">elem</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">LiteralStringPrinter</span><span class="p">(</span><span class="s1">&#39;{{value is obsolete}}&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">elem</span><span class="o">.</span><span class="n">gen_printer</span><span class="p">(</span><span class="n">elem</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+
+<span class="c1"># register the pretty-printer for GdbHelper</span>
+<span class="k">def</span> <span class="nf">register_gdb_helper</span><span class="p">():</span>
+    <span class="n">coll</span> <span class="o">=</span> <span class="n">gdb</span><span class="o">.</span><span class="n">printing</span><span class="o">.</span><span class="n">RegexpCollectionPrettyPrinter</span><span class="p">(</span><span class="s1">&#39;GdbHelper&#39;</span><span class="p">)</span>
+    <span class="n">coll</span><span class="o">.</span><span class="n">add_printer</span><span class="p">(</span><span class="s1">&#39;GdbHelper&#39;</span><span class="p">,</span> <span class="s1">&#39;^GdbHelper$&#39;</span><span class="p">,</span> <span class="n">GdbHelperPrinter</span><span class="p">)</span>
+    <span class="n">gdb</span><span class="o">.</span><span class="n">printing</span><span class="o">.</span><span class="n">register_pretty_printer</span><span class="p">(</span><span class="n">gdb</span><span class="o">.</span><span class="n">current_objfile</span><span class="p">(),</span> <span class="n">coll</span><span class="p">,</span> <span class="n">replace</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<span class="n">register_gdb_helper</span><span class="p">()</span>
+</code></pre></div>
+
+<p>Indeed, this solution smells, and I was worried that it would fail on some debuggers. But it works reliably, I think I have not seen any issues due to it. It proved to be less fragile than the dreaded "deep-printing" trap.</p>
+<h2 id="alternative-views"><a class="toclink" href="#alternative-views">Alternative views</a></h2>
+<p>Natvis allows to specify several custom "views" for the type, with each having its own display string and children. For example, here <code>idEntity</code> and <code>renderEntity_s</code> have normal display strings with detailed information, as well as shortened "simple" display strings that only shows the name, and <code>idInteraction</code> uses the simplified version in its display string:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&lt;Type</span><span class="w"> </span><span class="na">Name=</span><span class="s">&quot;idEntity&quot;</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nt">&lt;DisplayString</span><span class="w"> </span><span class="na">IncludeView=</span><span class="s">&quot;simple&quot;</span><span class="nt">&gt;</span>Entity[{entityNumber}]={name}<span class="nt">&lt;/DisplayString&gt;</span>
+<span class="w">    </span><span class="nt">&lt;DisplayString&gt;</span>Entity<span class="w"> </span>{name}:<span class="w"> </span>num={entityNumber}<span class="w"> </span>def={entityDefNumber}<span class="nt">&lt;/DisplayString&gt;</span>
+<span class="w">    </span>...
+<span class="nt">&lt;/Type&gt;</span>
+<span class="nt">&lt;Type</span><span class="w"> </span><span class="na">Name=</span><span class="s">&quot;renderEntity_s&quot;</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nt">&lt;DisplayString</span><span class="w"> </span><span class="na">Condition=</span><span class="s">&quot;entityNum != 0&quot;</span><span class="w"> </span><span class="na">IncludeView=</span><span class="s">&quot;simple&quot;</span><span class="nt">&gt;</span>{*gameLocal.entities[entityNum],view(simple)}<span class="nt">&lt;/DisplayString&gt;</span>
+<span class="w">    </span><span class="nt">&lt;DisplayString</span><span class="w"> </span><span class="na">Condition=</span><span class="s">&quot;entityNum != 0&quot;</span><span class="nt">&gt;</span>renderEntity:<span class="w"> </span>{gameLocal.entities[entityNum],view(simple)}<span class="nt">&lt;/DisplayString&gt;</span>
+<span class="w">    </span>...
+<span class="nt">&lt;/Type&gt;</span>
+<span class="nt">&lt;Type</span><span class="w"> </span><span class="na">Name=</span><span class="s">&quot;idInteraction&quot;</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nt">&lt;DisplayString&gt;</span>interaction({numSurfaces}):<span class="w"> </span>{*lightDef,view(simple)}<span class="w"> </span><span class="ni">&amp;amp;</span><span class="w"> </span>{*entityDef,view(simple)}<span class="nt">&lt;/DisplayString&gt;</span>
+<span class="w">    </span>...
+<span class="nt">&lt;/Type&gt;</span>
+</code></pre></div>
+
+<p>Attributes <code>IncludeView</code> and <code>ExcludeView</code> can be used to customize children as well.</p>
+<p>This feature is almost a synonym of the printer pinning mechanism I described just above. We can implement several pretty printers per type: the main one and the alternative ones. Whenever we want to use an alternative view for a child, we return it with the alternative pretty-printer pinned. As for the display string, just construct alternative pretty printer directly in Python code and call its <code>to_string</code> method.</p>
+<p>I can't say I use alternative views a lot in natvis, only a little bit for display strings. I think I can live without this feature in general. I have not used it in GDB pretty printers yet.</p>
+<h2 id="synthetic"><a class="toclink" href="#synthetic">Synthetic</a></h2>
+<p>This is the second usage of printer pinning, and this one is absolutely essential for me. Natvis allows us to make a "synthetic" child with a specified display string and children. We are not limited to a flat list of children, we can define an arbitrary tree in a lazy fashion! Most importantly, this allows me to conveniently inspect all the intrusive linked lists present in the game engine: basically, I can add buttons like "please show me all the elements of this list".</p>
+<p>For example, game entities can be linked into so-called "teams" that are attached to each other and run through physics together, and these teams are organised as intrusive linked lists. Here is how I solve this issue in natvis:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&lt;Type</span><span class="w"> </span><span class="na">Name=</span><span class="s">&quot;idEntity&quot;</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nt">&lt;DisplayString&gt;</span>Entity({entityNumber}):<span class="w"> </span>{name}<span class="nt">&lt;/DisplayString&gt;</span>
+<span class="w">    </span><span class="nt">&lt;Expand&gt;</span>
+<span class="w">        </span><span class="nt">&lt;ExpandedItem&gt;</span>this,!<span class="nt">&lt;/ExpandedItem&gt;</span>
+<span class="w">        </span><span class="nt">&lt;Synthetic</span><span class="w"> </span><span class="na">Name=</span><span class="s">&quot;[Team]&quot;</span><span class="nt">&gt;</span>
+<span class="w">            </span><span class="nt">&lt;Expand&gt;</span>
+<span class="w">                </span><span class="nt">&lt;LinkedListItems&gt;</span>
+<span class="w">                    </span><span class="nt">&lt;HeadPointer&gt;</span>teamMaster<span class="nt">&lt;/HeadPointer&gt;</span>
+<span class="w">                    </span><span class="nt">&lt;NextPointer&gt;</span>teamChain<span class="nt">&lt;/NextPointer&gt;</span>
+<span class="w">                    </span><span class="nt">&lt;ValueNode&gt;</span>this<span class="nt">&lt;/ValueNode&gt;</span>
+<span class="w">                </span><span class="nt">&lt;/LinkedListItems&gt;</span>
+<span class="w">            </span><span class="nt">&lt;/Expand&gt;</span>
+<span class="w">        </span><span class="nt">&lt;/Synthetic&gt;</span>
+<span class="w">    </span><span class="nt">&lt;/Expand&gt;</span>
+<span class="nt">&lt;/Type&gt;</span>
+</code></pre></div>
+
+<p>Here is an example of how it looks in MSVC and CLion with synthetic "team" already expanded. The "card player" has head, sword, belt, and cards in his team:</p>
+<div class="center-content">
+    <img src="https://dirtyhandscoding.github.io/images/B_gdb_pretty_printers/entity_team_synthetic_pp.png" class="w500" />
+    <img src="https://dirtyhandscoding.github.io/images/B_gdb_pretty_printers/entity_team_synthetic_msvc.png" class="w500" />
+</div>
+
+<p>GDB pretty printers do not allow to return a tree from <code>children</code> method, and does not support synthetic values out of the box. But we can make a separate pretty-printer for each synthetic and pin it to the returned value like this:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">idEntityPrinter</span><span class="p">:</span>
+
+    <span class="k">class</span> <span class="nc">TeamSynthetic</span><span class="p">:</span>
+        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="k">def</span> <span class="nf">to_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">return</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">def</span> <span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="n">curr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="s1">&#39;teamMaster&#39;</span><span class="p">]</span>
+            <span class="n">k</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">while</span> <span class="nb">int</span><span class="p">(</span><span class="n">curr</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">res</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s1">&#39;[</span><span class="si">%d</span><span class="s1">]&#39;</span> <span class="o">%</span> <span class="n">k</span><span class="p">,</span> <span class="n">curr</span><span class="p">))</span>
+                <span class="n">k</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">curr</span> <span class="o">=</span> <span class="n">curr</span><span class="o">.</span><span class="n">dereference</span><span class="p">()[</span><span class="s1">&#39;teamChain&#39;</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">res</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">to_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;Entity(</span><span class="si">%d</span><span class="s1">): </span><span class="si">%s</span><span class="s1"> &#39;</span> <span class="o">%</span> <span class="p">(</span>
+            <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="s1">&#39;entityNumber&#39;</span><span class="p">]),</span>
+            <span class="n">display_string</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">raw_children_inline</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="n">child</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;[Team]&#39;</span><span class="p">,</span> <span class="n">embed_printer_for_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">idEntityPrinter</span><span class="o">.</span><span class="n">TeamSynthetic</span><span class="p">))</span>
+        <span class="n">res</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">res</span>
+</code></pre></div>
+
+<p>It is not very fun to write a new class every time, so we can wrap the making of a class in a simple wrapper:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># returns a synthetic gdb.Value that can be expanded to display the given list of children</span>
+<span class="c1"># children_lambda should be a lambda wrapping a list of children for lazy evaluation</span>
+<span class="k">def</span> <span class="nf">make_synthetic</span><span class="p">(</span><span class="n">children_lambda</span><span class="p">,</span> <span class="n">display</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">SyntheticPrinter</span><span class="p">:</span>
+        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+            <span class="k">pass</span>
+        <span class="k">def</span> <span class="nf">to_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">display</span>
+        <span class="k">def</span> <span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">children_lambda</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">children_lambda</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">children_lambda</span>
+    <span class="k">return</span> <span class="n">embed_printer_for_value</span><span class="p">(</span><span class="n">gdb</span><span class="o">.</span><span class="n">Value</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">SyntheticPrinter</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Now we can do everything inside the <code>children</code> method. Note that this new version also uses some of the utilities which will be defined later:</p>
+<div class="highlight"><pre><span></span><code>    <span class="k">def</span> <span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">raw_children_inline</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">synthetic</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">linked_list_children_list</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="s1">&#39;teamMaster&#39;</span><span class="p">],</span>
+                <span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">dereference</span><span class="p">()[</span><span class="s1">&#39;teamChain&#39;</span><span class="p">],</span>
+                <span class="n">marked_if</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">address</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">child</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;[Team]&#39;</span><span class="p">,</span> <span class="n">make_synthetic</span><span class="p">(</span><span class="n">synthetic</span><span class="p">))</span>
+        <span class="n">res</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">res</span>
+</code></pre></div>
+
+<h2 id="raw-members"><a class="toclink" href="#raw-members">Raw members</a></h2>
+<p>It is usually a bad idea to override the list of children in debugger visualization without providing some way to access all the "raw" members of the class. For example, <code>idEntity</code> class has so many members that listing them all in a pretty printer in order to add the "[Team]" synthetic is stupid. And even for small classes, there is always a risk that some new member will be added without updating the pretty printer, and someone's debug session will be spoiled.</p>
+<p>The first approach is to list the raw members directly as children, as if you have listed all of them by hand. In natvis this is achieved by adding <code>&lt;ExpandedItem&gt;this,!&lt;/ExpandedItem&gt;</code>, where exclamation mark means "use raw view", i.e. use the built-in view which behaves according to the default rules of the debugger. The second approach is to add a synthetic child with name <code>[raw]</code>, that lists all the raw members when expanded. It is added automatically for every natvis rule, although you can opt-out by setting <code>HideRawView="true"</code> on <code>Expand</code> node.</p>
+<p>In case of GDB pretty printers, all of this has to be implemented manually by using the API. In this implementation, I tried to mimic VS Code and show the contents of the base classes inside expandable synthetic children:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">RawSubclassPrinter</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="c1"># avoid TYPE_CODE_TYPEDEF</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">gdb</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">get_basic_type</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">type</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">to_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">vtype</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">type</span>
+        <span class="k">assert</span> <span class="n">vtype</span><span class="o">.</span><span class="n">code</span> <span class="o">!=</span> <span class="n">gdb</span><span class="o">.</span><span class="n">TYPE_CODE_TYPEDEF</span>
+
+        <span class="k">if</span> <span class="n">vtype</span><span class="o">.</span><span class="n">code</span> <span class="ow">in</span> <span class="p">[</span><span class="n">gdb</span><span class="o">.</span><span class="n">TYPE_CODE_STRUCT</span><span class="p">,</span> <span class="n">gdb</span><span class="o">.</span><span class="n">TYPE_CODE_UNION</span><span class="p">]:</span>
+            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">vtype</span><span class="o">.</span><span class="n">fields</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">artificial</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">is_base_class</span><span class="p">:</span>
+                    <span class="n">base_type</span> <span class="o">=</span> <span class="n">gdb</span><span class="o">.</span><span class="n">lookup_type</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                    <span class="n">base_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">base_type</span><span class="p">)</span>
+                    <span class="n">child</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> </span><span class="si">{base}</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">embed_printer_for_value</span><span class="p">(</span><span class="n">base_value</span><span class="p">,</span> <span class="n">RawSubclassPrinter</span><span class="p">))</span>
+                    <span class="n">res</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
+                    <span class="k">continue</span>
+                <span class="n">child</span> <span class="o">=</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">),</span> <span class="n">get_field</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">f</span><span class="p">))</span>
+                <span class="n">res</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">vtype</span><span class="o">.</span><span class="n">code</span> <span class="o">==</span> <span class="n">gdb</span><span class="o">.</span><span class="n">TYPE_CODE_ARRAY</span><span class="p">:</span>
+            <span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">elemtype</span><span class="p">)</span> <span class="o">=</span> <span class="n">get_array_length_and_element_type</span><span class="p">(</span><span class="n">vtype</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+                <span class="n">res</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s1">&#39;[</span><span class="si">%d</span><span class="s1">]&#39;</span> <span class="o">%</span> <span class="n">i</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+
+        <span class="k">return</span> <span class="n">res</span>
+
+<span class="k">class</span> <span class="nc">RawPrinter</span><span class="p">(</span><span class="n">RawSubclassPrinter</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">to_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;[expand to see raw children]&#39;</span>
+
+<span class="c1"># add this child to the returned list in SomePrinter.children to add expandable [raw] child like in natvis</span>
+<span class="k">def</span> <span class="nf">raw_child_expandable</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">(</span><span class="s1">&#39;[raw]&#39;</span><span class="p">,</span> <span class="n">embed_printer_for_value</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">RawPrinter</span><span class="p">))</span>
+
+<span class="c1"># append this array to the returned list in SomePrinter.children to add raw members inline</span>
+<span class="k">def</span> <span class="nf">raw_children_inline</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">RawPrinter</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="n">children</span><span class="p">()</span>
+</code></pre></div>
+
+<p>The usage example of the first approach has been shown on <code>idEntity</code> at the end of the <a href="https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-implementing-natvis-features.html#synthetic">previous section</a>.
+Here is how the second approach is used for a <code>std::vector</code>-like container we saw above:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">idListPrinter</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="p">[</span><span class="n">raw_child_expandable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)]</span>
+        <span class="n">res</span> <span class="o">+=</span> <span class="n">array_children_list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="s1">&#39;list&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="s1">&#39;num&#39;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">res</span>
+</code></pre></div>
+
+<p>The function <code>array_children_list</code> will be described later: it returns the list with all the elements of the dynamic array. The raw synthetic child is added just before that. Here is how it looks:</p>
+<div class="center-content">
+    <img src="https://dirtyhandscoding.github.io/images/B_gdb_pretty_printers/stimentity_rawsynthetic_pp.png" style="width: 100%; max-width: 358px" />
+    <!-- inn business : game stimentity list -->
+</div>
+
+<h2 id="default-printer"><a class="toclink" href="#default-printer">Default printer</a></h2>
+<p>It is sometimes useful to have a function that returns display string or children of any gdb.Value.
+For example, here is the natvis rule using <code>ExpandedItem</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&lt;Type</span><span class="w"> </span><span class="na">Name=</span><span class="s">&quot;idBoxOctree::Link&quot;</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nt">&lt;DisplayString&gt;</span>link<span class="w"> </span>to<span class="w"> </span>{*(idClipModel*)object}<span class="nt">&lt;/DisplayString&gt;</span>
+<span class="w">    </span><span class="nt">&lt;Expand&gt;</span>
+<span class="w">        </span><span class="nt">&lt;ExpandedItem&gt;</span>*(idClipModel*)object<span class="nt">&lt;/ExpandedItem&gt;</span>
+<span class="w">    </span><span class="nt">&lt;/Expand&gt;</span>
+<span class="nt">&lt;/Type&gt;</span>
+</code></pre></div>
+
+<p>And it can be transformed into GDB pretty printers like this:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">idBoxOctreeLinkPrinter</span><span class="p">:</span>
+    <span class="n">wildcard</span> <span class="o">=</span> <span class="s1">&#39;idBoxOctree::Link&#39;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="n">pcm_type</span> <span class="o">=</span> <span class="n">gdb</span><span class="o">.</span><span class="n">lookup_type</span><span class="p">(</span><span class="s1">&#39;idClipModel*&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pobject</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="s1">&#39;object&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">pcm_type</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">to_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;link to &#39;</span> <span class="o">+</span> <span class="n">display_string</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pobject</span><span class="o">.</span><span class="n">dereference</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">children_of</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pobject</span><span class="o">.</span><span class="n">dereference</span><span class="p">())</span> <span class="o">+</span> <span class="p">[</span><span class="n">raw_child_expandable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)]</span>
+</code></pre></div>
+
+<p>Thanks to the API function <code>gdb.default_visualizer</code>, both <code>children_of</code> and <code>display_string</code> are easy to implement, although one has to decide how these functions should work for the types not covered by a pretty printer:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># returns &quot;display string&quot; for a value (in natvis terms)</span>
+<span class="c1"># this is what MatchedPrinter.to_string returns, without looking at children</span>
+<span class="c1"># works fine for types without pretty-printer, e.g. primitive type</span>
+<span class="k">def</span> <span class="nf">display_string</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">gdb</span><span class="o">.</span><span class="n">Value</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="n">pp</span> <span class="o">=</span> <span class="n">default_visualizer</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">pp</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">pp</span><span class="o">.</span><span class="n">to_string</span><span class="p">()</span>
+    <span class="n">simple</span> <span class="o">=</span> <span class="n">print_simple_value</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">simple</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">simple</span>
+    <span class="k">return</span> <span class="s1">&#39;???&#39;</span>
+
+<span class="c1"># returns children list for a value</span>
+<span class="c1"># this is what MatchedPrinter.children returns</span>
+<span class="c1"># returns raw members for a type without pretty-printer (empty for primitive types)</span>
+<span class="k">def</span> <span class="nf">children_of</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">skip_raw_child</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+    <span class="n">pp</span> <span class="o">=</span> <span class="n">default_visualizer</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">pp</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">raw_children_inline</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">pp</span><span class="o">.</span><span class="n">children</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">skip_raw_child</span> <span class="ow">and</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;[raw]&#39;</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">res</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">res</span>
+
+<span class="c1"># getting custom pretty printer for a given value</span>
+<span class="c1"># note: AutoDisplayStringPrinter is considered &quot;default&quot;, not &quot;custom&quot;</span>
+<span class="k">def</span> <span class="nf">default_visualizer</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+    <span class="n">pp</span> <span class="o">=</span> <span class="n">gdb</span><span class="o">.</span><span class="n">default_visualizer</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pp</span><span class="p">,</span> <span class="n">AutoDisplayStringPrinter</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">pp</span>
+
+<span class="c1"># which values are allowed to be printed using builtin GDB algorithm</span>
+<span class="c1"># we must be very careful to avoid the infinite deep-printing issue of GDB here!</span>
+<span class="k">def</span> <span class="nf">print_simple_value</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+    <span class="n">vtype</span> <span class="o">=</span> <span class="n">gdb</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">get_basic_type</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">type</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">vtype</span><span class="o">.</span><span class="n">code</span> <span class="ow">in</span> <span class="p">[</span><span class="n">gdb</span><span class="o">.</span><span class="n">TYPE_CODE_ENUM</span><span class="p">,</span> <span class="n">gdb</span><span class="o">.</span><span class="n">TYPE_CODE_INT</span><span class="p">,</span> <span class="n">gdb</span><span class="o">.</span><span class="n">TYPE_CODE_FLT</span><span class="p">,</span> <span class="n">gdb</span><span class="o">.</span><span class="n">TYPE_CODE_CHAR</span><span class="p">,</span> <span class="n">gdb</span><span class="o">.</span><span class="n">TYPE_CODE_BOOL</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">vtype</span><span class="o">.</span><span class="n">code</span> <span class="ow">in</span> <span class="p">[</span><span class="n">gdb</span><span class="o">.</span><span class="n">TYPE_CODE_PTR</span><span class="p">,</span> <span class="n">gdb</span><span class="o">.</span><span class="n">TYPE_CODE_ARRAY</span><span class="p">]</span> <span class="ow">and</span> <span class="n">vtype</span><span class="o">.</span><span class="n">target</span><span class="p">()</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;char&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">vtype</span><span class="o">.</span><span class="n">code</span> <span class="o">==</span> <span class="n">gdb</span><span class="o">.</span><span class="n">TYPE_CODE_PTR</span> <span class="ow">and</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;null&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;&quot;&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">string</span><span class="p">())</span> <span class="o">+</span> <span class="s1">&#39;&quot;&#39;</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;bad&#39;</span>
+    <span class="k">return</span> <span class="kc">None</span>
+</code></pre></div>
+
+<p>Some notes about implementation:</p>
+<ul>
+<li>
+<p><code>gdb.default_visualizer</code> is wrapped into <code>default_visualizer</code> that skips <code>AutoDisplayStringPrinter</code>. This is done for <a href="https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-auto-summary.html">the auto-summary feature</a>.</p>
+</li>
+<li>
+<p>The function <code>print_simple_value</code> can convert scalar C++ values and C-strings to Python strings. Recall that converting gdb.Value to str can freeze GDB because of deep-printing.</p>
+</li>
+<li>
+<p>By convention, <code>children_of</code> automatically filters away the <code>[raw]</code> child, which is present in many types.</p>
+</li>
+</ul>
+<p>These two functions are not very useful by themselves. They can be avoided because usually the type of the target value is known, so we can just construct pretty printer directly and call its <code>children</code>/<code>to_string</code> method. However, these functions can be used in generic context, as we'll see in <a href="https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-natvis-like-declarative-printers.html">the chapter about declarative printers</a>.</p>
+<h2 id="arrays-and-lists"><a class="toclink" href="#arrays-and-lists">Arrays and lists</a></h2>
+<p>Natvis has built-in elements like <code>ArrayItems</code> and <code>LinkedListItems</code> to display contents of these standard data structures. Here are some helpers which do the same, just to avoid copy/pasting the same code everywhere:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># returns all elements of the given array as a list of children</span>
+<span class="k">def</span> <span class="nf">array_children_list</span><span class="p">(</span><span class="n">ptr_value</span><span class="p">,</span> <span class="n">count_value</span><span class="p">):</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">count_value</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+        <span class="n">res</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="n">ptr_value</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">res</span>
+
+<span class="c1"># returns all elements of the given linked list as a list of children</span>
+<span class="c1"># terminates on None, null pointer, optional lambda, or revisiting the same node</span>
+<span class="k">def</span> <span class="nf">linked_list_children_list</span><span class="p">(</span><span class="n">first_node</span><span class="p">,</span> <span class="n">func_next_node</span><span class="p">,</span> <span class="n">func_item_of_node</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">terminate_if</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">marked_if</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">terminate_if</span><span class="p">:</span>
+        <span class="n">terminate_if</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="kc">False</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">func_item_of_node</span><span class="p">:</span>
+        <span class="n">func_item_of_node</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">p</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">marked_if</span><span class="p">:</span>
+        <span class="n">marked_if</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="kc">False</span>
+    <span class="n">pnode</span> <span class="o">=</span> <span class="n">first_node</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">visited_addresses</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="k">while</span> <span class="n">pnode</span> <span class="ow">and</span> <span class="nb">int</span><span class="p">(</span><span class="n">pnode</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">terminate_if</span><span class="p">(</span><span class="n">pnode</span><span class="p">):</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;[</span><span class="si">%d</span><span class="s1">]&#39;</span> <span class="o">%</span> <span class="n">k</span>
+        <span class="k">if</span> <span class="n">marked_if</span><span class="p">(</span><span class="n">pnode</span><span class="p">):</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;=&gt;&#39;</span> <span class="o">+</span> <span class="n">name</span>
+        <span class="n">cycled</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">pnode</span><span class="p">)</span> <span class="ow">in</span> <span class="n">visited_addresses</span>
+        <span class="k">if</span> <span class="n">cycled</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;[cycle]&#39;</span>
+        <span class="n">res</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">name</span><span class="p">,</span> <span class="n">func_item_of_node</span><span class="p">(</span><span class="n">pnode</span><span class="p">)))</span>
+        <span class="n">visited_addresses</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">pnode</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">cycled</span><span class="p">:</span>
+            <span class="k">break</span>
+        <span class="n">pnode</span> <span class="o">=</span> <span class="n">func_next_node</span><span class="p">(</span><span class="n">pnode</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">res</span>
+</code></pre></div>
+          <div class="series-neighbors">
+        <p class="series-prev">
+            <span class="arrow-left"></span>
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-introduction.html'>
+                Part 1: Introduction
+            </a>
+        </p>
+        <p class="series-next">
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-natvis-like-declarative-printers.html'>
+                Part 3: Natvis-like declarative printers
+            </a>
+            <span class="arrow-right"></span>
+        </p>
+    </div>
+
+    </div><!-- /.entry-content -->
+    
+    			<!--<script type="text/javascript" src="http://code.jquery.com/jquery-2.1.4.min.js"></script>-->
+		<script src="https://dirtyhandscoding.github.io/theme/js/jquery.min.js"></script>
+	<script type="text/javascript" src="https://dirtyhandscoding.github.io/theme/pelican_comment_system/comments.js"></script>
+	<script type="text/javascript">
+		$(document).ready(function() {
+			CommentSystem.email_user   = "itiswrongemail";
+			CommentSystem.email_domain = "outlook.com";
+
+			$('#pcs-comment-form').on("submit",
+				function( event )
+				{
+					event.preventDefault();
+					$(location).attr('href', CommentSystem.getMailtoLink("natvis-like-experience-with-gdb-pretty-printers-implementing-natvis-features"));
+				}
+			);
+		});
+	</script>
+
+    	<section>
+	<div id="pcs-comments-header" class="inline-menu">
+	<header>
+		<div>Comments (0)</div>
+		<button type="button" title="Expand or collapse the comments section" class="icon-label" id="pcs-comments-collapse-button" onclick="CommentSystem.collapsible($('#pcs-comments'), $(this));">
+			<span class="nocss">expand</span>
+		</button>
+			<a href="https://dirtyhandscoding.github.io/feeds/comment.natvis-like-experience-with-gdb-pretty-printers-implementing-natvis-features.atom.xml" class="icon-label">atom feed: comments</a>
+	</header>
+	</div>
+	<div id="pcs-comments">
+		<p>There are no comments yet.</p>
+	<section>
+	<div display="none" id="pcs-comment-notreply-helper" />
+	<form id="pcs-comment-form" action="#">
+		<fieldset>
+		<legend>Add a Comment</legend>
+		<div id="pcs-comment-tab-inputs">
+			<input type="hidden" id="pcs-comment-form-input-replyto"/>
+			<label for="pcs-comment-form-input-name">Name</label>
+			<input  id="pcs-comment-form-input-name" type="text" size="40" placeholder="Enter your name or nickname" />
+			<br/>
+			<label for="pcs-comment-form-input-website">Website</label>
+			<input  id="pcs-comment-form-input-website" type="text" size="40" placeholder="Enter your website (optional)" />
+			<br/>
+			<label for="pcs-comment-form-input-empty">Empty</label>
+			<input  id="pcs-comment-form-input-empty" type="text" size="30" placeholder="Do NOT enter anything here!" />
+			<label   for="pcs-comment-form-input-textarea">Your Comment</label>
+			<br/>
+			<textarea id="pcs-comment-form-input-textarea" rows="7" cols="40" placeholder="Enter your comment (markdown is allowed)"></textarea>
+		</div>
+		<div id="pcs-comment-tab-message" style="display:none">
+			<textarea readonly rows="10" cols="40"></textarea>
+		</div>
+
+		<button type="submit"
+				id="pcs-comment-form-button-submit"
+				title="Create mailto link and open it in default email client &#10;Note: you have to send the email to post comment"
+				>Post via email</button>
+		<button type="button"
+				id="pcs-comment-form-button-message"
+				title="See the text of email message to be sent &#10;Note: you can copy it and send manually"
+				onclick="CommentSystem.viewEmail(&quot;natvis-like-experience-with-gdb-pretty-printers-implementing-natvis-features&quot;);"
+				>View email text</button>
+		<a target="_blank"
+				id="pcs-comment-gmail-config-help"
+				title="How to configure Chrome to open mailto links in Gmail..."
+				href="https://productforums.google.com/forum/#!topic/gmail/JtWVPbUfh-o"
+				>?</a>
+		</fieldset>
+
+		<!--			<a href="https://dirtyhandscoding.github.io/feeds/comment.natvis-like-experience-with-gdb-pretty-printers-implementing-natvis-features.atom.xml">
+				Comment Atom Feed
+			</a>
+-->
+	</form>
+	<script>CommentSystem.displayReplyTo();</script>
+</section>
+
+	</div>
+	<script>
+		$('#pcs-comments').css({display: "none"});
+		$('#pcs-comments-collapse-button').addClass('collapsed');
+	</script>
+</section>
+
+  </article>
+</section>
+        <section id="extras" class="body">
+                <div class="social">
+                        <h2>social</h2>
+                        <ul>
+                            <li><a href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate">atom feed</a></li>
+                            <li><a href="/feeds/all.rss.xml" type="application/rss+xml" rel="alternate">rss feed</a></li>
+
+                        </ul>
+                </div><!-- /.social -->
+        </section><!-- /#extras -->
+
+        <footer id="contentinfo" class="body">
+                <p>Powered by <a href="http://getpelican.com/">Pelican</a>. Theme <a href="https://github.com/blueicefield/pelican-blueidea/">blueidea</a>, customized to personal taste.</p>
+        </footer><!-- /#contentinfo -->
+
+</body>
+</html>

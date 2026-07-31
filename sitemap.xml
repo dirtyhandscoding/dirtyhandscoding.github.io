@@ -5,28 +5,28 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
 <url>
 <loc>https://dirtyhandscoding.github.io/</loc>
-<lastmod>2026-07-31T21:47:32-00:00</lastmod>
+<lastmod>2026-07-31T22:00:30-00:00</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
 
 <url>
 <loc>https://dirtyhandscoding.github.io/archives.html</loc>
-<lastmod>2026-07-31T21:47:32-00:00</lastmod>
+<lastmod>2026-07-31T22:00:30-00:00</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
 
 <url>
 <loc>https://dirtyhandscoding.github.io/tags.html</loc>
-<lastmod>2026-07-31T21:47:32-00:00</lastmod>
+<lastmod>2026-07-31T22:00:30-00:00</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
 
 <url>
 <loc>https://dirtyhandscoding.github.io/categories.html</loc>
-<lastmod>2026-07-31T21:47:32-00:00</lastmod>
+<lastmod>2026-07-31T22:00:30-00:00</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
@@ -36,6 +36,13 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <lastmod>2018-05-01T00:20:00+07:00</lastmod>
 <changefreq>monthly</changefreq>
 <priority>0.3</priority>
+</url>
+
+<url>
+<loc>https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-introduction.html</loc>
+<lastmod>2026-07-31T22:01:00+07:00</lastmod>
+<changefreq>monthly</changefreq>
+<priority>0.7</priority>
 </url>
 
 <url>
@@ -110,7 +117,7 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
 <url>
 <loc>https://dirtyhandscoding.github.io/category/cc.html</loc>
-<lastmod>2022-07-18T08:25:00+05:32</lastmod>
+<lastmod>2026-07-31T22:01:00+05:32</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
@@ -131,20 +138,34 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
 <url>
 <loc>https://dirtyhandscoding.github.io/tag/cpp.html</loc>
-<lastmod>2022-07-18T08:25:00+05:32</lastmod>
-<changefreq>daily</changefreq>
-<priority>0.3</priority>
-</url>
-
-<url>
-<loc>https://dirtyhandscoding.github.io/tag/msvc.html</loc>
-<lastmod>2022-07-18T08:25:00+05:32</lastmod>
+<lastmod>2026-07-31T22:01:00+05:32</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
 </url>
 
 <url>
 <loc>https://dirtyhandscoding.github.io/tag/debug.html</loc>
+<lastmod>2026-07-31T22:01:00+05:32</lastmod>
+<changefreq>daily</changefreq>
+<priority>0.3</priority>
+</url>
+
+<url>
+<loc>https://dirtyhandscoding.github.io/tag/gdb.html</loc>
+<lastmod>2026-07-31T22:01:00+05:32</lastmod>
+<changefreq>daily</changefreq>
+<priority>0.3</priority>
+</url>
+
+<url>
+<loc>https://dirtyhandscoding.github.io/tag/natvis.html</loc>
+<lastmod>2026-07-31T22:01:00+05:32</lastmod>
+<changefreq>daily</changefreq>
+<priority>0.3</priority>
+</url>
+
+<url>
+<loc>https://dirtyhandscoding.github.io/tag/msvc.html</loc>
 <lastmod>2022-07-18T08:25:00+05:32</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
@@ -260,6 +281,34 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <lastmod>2017-07-19T10:49:00+05:32</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.3</priority>
+</url>
+
+<url>
+<loc>https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-implementing-natvis-features.html</loc>
+<lastmod>2026-07-31T22:02:00+07:00</lastmod>
+<changefreq>monthly</changefreq>
+<priority>0.7</priority>
+</url>
+
+<url>
+<loc>https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-natvis-like-declarative-printers.html</loc>
+<lastmod>2026-07-31T22:03:00+07:00</lastmod>
+<changefreq>monthly</changefreq>
+<priority>0.7</priority>
+</url>
+
+<url>
+<loc>https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-auto-summary.html</loc>
+<lastmod>2026-07-31T22:04:00+07:00</lastmod>
+<changefreq>monthly</changefreq>
+<priority>0.7</priority>
+</url>
+
+<url>
+<loc>https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-debugging-and-ides.html</loc>
+<lastmod>2026-07-31T22:05:00+07:00</lastmod>
+<changefreq>monthly</changefreq>
+<priority>0.7</priority>
 </url>
 
 <url>

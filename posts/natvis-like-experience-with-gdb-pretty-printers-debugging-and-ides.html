@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <!-- load favicon from /images -->
+        <link rel="icon" type="image/png" href="/images/favicon.png" />
+        <!-- stgatilov: properly detect device width on a mobile -->
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/> 
+
+        <meta charset="utf-8" />
+        <title>Natvis-like experience with GDB pretty printers. Debugging and IDEs</title>
+        <link rel="stylesheet" href="https://dirtyhandscoding.github.io/theme/css/main.css" />
+        <link href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Dirty hands coding Atom Feed" />
+        <link href="/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="Dirty hands coding RSS Feed" />
+
+        <!--[if IE]>
+            <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+        <![endif]-->
+</head>
+
+<body id="index" class="home">
+        <header id="banner" class="body">
+                <h1><a href="https://dirtyhandscoding.github.io/">Dirty hands coding </a></h1>
+                <nav><ul>
+                    <li><a href="/archives.html">ARCHIVES</a></li>
+                    <li><a href="/categories.html">CATEGORIES</a></li>
+                    <li><a href="/tags.html">TAGS</a></li>
+                    <li><a href="/pages/contact.html">CONTACT</a></li>
+                </ul>
+<form class="navbar-search" action="https://dirtyhandscoding.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);">
+                        <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input">
+                    </form>
+                </nav>
+<div id="submenu">
+                    <ul>
+                            <li class="active"><a href="https://dirtyhandscoding.github.io/category/cc.html">C/C++</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/high-performance.html">High performance</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/uncategorized.html">Uncategorized</a></li>
+                    </ul>
+                <div>
+        </header><!-- /#banner -->
+<section id="content" class="body">
+  <article>
+    <header>
+      <h1 class="entry-title">
+        <a href="https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-debugging-and-ides.html" rel="bookmark"
+           title="Permalink to Natvis-like experience with GDB pretty printers. Debugging and IDEs">Natvis-like experience with GDB pretty printers. Debugging and IDEs</a></h1>
+    </header>
+
+    <div class="entry-content">
+<footer class="post-info">
+        <span>31 July 2026</span>
+	        <span>| in <a href="https://dirtyhandscoding.github.io/category/cc.html">C/C++</a></span>
+<span>| tags: <a href="https://dirtyhandscoding.github.io/tag/cpp.html">cpp</a><a href="https://dirtyhandscoding.github.io/tag/debug.html">debug</a><a href="https://dirtyhandscoding.github.io/tag/gdb.html">gdb</a><a href="https://dirtyhandscoding.github.io/tag/natvis.html">natvis</a></span>
+</footer><!-- /.post-info -->          <div class="series-summary series-in-article">
+        <p>This article is part 5 of the <span class="series-name">Natvis-like experience with GDB pretty printers</span> series:</p>
+            <ol class="parts">
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-introduction.html'>Introduction</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-implementing-natvis-features.html'>Implementing natvis features</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-natvis-like-declarative-printers.html'>Natvis-like declarative printers</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-auto-summary.html'>Auto-summary</a>
+        </li>
+        <li class="active">
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-debugging-and-ides.html'>Debugging and IDEs</a>
+        </li>
+    </ol>
+
+    </div>
+
+      <p>It is not easy to do things right inside GDB pretty printers, especially at the beginning.
+Here are some extra tools I used and some ways to looks into specific debuggers.</p>
+<h2 id="python-imports"><a class="toclink" href="#python-imports">Python imports</a></h2>
+<p>GDB pretty printers can be loaded by executing <code>source path/to/printers.py</code> in GDB console (which is usually automated with <code>.gdbinit</code>).
+It is possible to execute it many times, and each new execution overwrites the previous one.
+However, it works fine only if you have all the pretty printers code in one file.
+Otherwise Python's built-in import caching stands in the way: Python reuses old code behind imports by default.</p>
+<p>I solved the problem by adding this hack in the main Python file:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># force reloading all our modules marked as &quot;uncached&quot;</span>
+<span class="c1"># this allows us to refresh our pretty printers without restarting TDM</span>
+<span class="n">uncached_modules_names</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">modname</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">modname</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;tdmuc_&#39;</span><span class="p">):</span>
+        <span class="n">uncached_modules_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">modname</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">modname</span> <span class="ow">in</span> <span class="n">uncached_modules_names</span><span class="p">:</span>
+    <span class="k">del</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="n">modname</span><span class="p">]</span>
+</code></pre></div>
+
+<p>All the files I want to hot-reload have their names prefixed with <code>tdmuc_</code>.</p>
+<p>A somewhat related issue is how to do relative import of the files. In the end, I hacked it like this:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># GDB executes this file from god-knows-where</span>
+<span class="c1"># I have no idea how to do a relative import in this case</span>
+<span class="n">basedir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">basedir</span><span class="p">)</span>
+<span class="o">...</span>
+
+<span class="kn">import</span> <span class="nn">tdmuc_idlib</span>
+</code></pre></div>
+
+<p>With these tweaks, I can find GDB console in any IDE and manually execute <code>source</code> command again after editing the pretty printers, then probably do one step to force a refresh of all values in the GUI. As far as I remember, MSVC refreshes debugger visualization automatically every time you edit and save the natvis file using its built-in editor.</p>
+<h2 id="debuggers-hang"><a class="toclink" href="#debuggers-hang">Debuggers hang</a></h2>
+<p>Initially I was developing the pretty printers in VS Code, and quickly noticed that sometimes gdb hangs completely when stopping at breakpoint. Here are several things I tried to debug the issue:</p>
+<ol>
+<li>
+<p>I implemented verbose logging of my Python code using <a href="https://docs.python.org/3/library/sys.html#sys.settrace">sys.settrace</a>, including all the calls, returns, and exceptions, parameters and return values. Everything properly indented to see the call structure.</p>
+</li>
+<li>
+<p>I switched all the <code>children</code> methods of pretty printers from Python generators to returning lists. This makes Python traces much easier to understand.</p>
+</li>
+<li>
+<p>I used <a href="https://stackoverflow.com/questions/79965756/log-all-input-output-of-gdb-mi">strace to intercept stdin/stdout of gdb process</a> so that I can see which MI commands GDB receives (and which responses it returns). This is what helped me in the end.</p>
+</li>
+</ol>
+<h4 id="vs-code"><a class="toclink" href="#vs-code">VS Code</a></h4>
+<p>The first debugger to debug was VS Code, where I noticed reproducible hanging at a specific breakpoint. Looking at the stdin log, I saw the last MI command:</p>
+<div class="highlight"><pre><span></span><code>1027-stack-list-arguments 2 0 1
+</code></pre></div>
+
+<p>After that GDB is calling my pretty printers all the time and never stops.</p>
+<p>According to <a href="https://sourceware.org/gdb/current/onlinedocs/gdb.html/GDB_002fMI-Stack-Manipulation.html">MI docs</a>, the first argument <code>2</code> here means <code>--simple-values</code>, which means "<em>print the name, type and value for simple data types, and the name and type for arrays, structures and unions</em>". A rather vague specification, I would say. The true meaning can be found in function <a href="https://github.com/sailfishos-mirror/gdb/blob/master/gdb/mi/mi-cmd-var.c#L343">mi_simple_type_p</a>: non-simple types are arrays, structs, unions, and references to them, everything else is considered simple, including pointers. And since pointer is considered simple, its value is printed... and by default it means <a href="https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-introduction.html#inspection-model">deep-printed</a>, which typically hangs when pointers are expandable.</p>
+<p>Here is the <a href="https://github.com/microsoft/vscode-cpptools/issues/14487">bug report</a>.</p>
+<p>One workaround which probably helps is to execute <code>set print max-depth 0</code> in GDB, but now I get crashes instead of freezes.</p>
+<h4 id="clion"><a class="toclink" href="#clion">CLion</a></h4>
+<p>This is the only IDE where I have not experienced GDB hanging yet.
+It looks like it has a correct implementation of pretty printers and can handle any loops in the children graph.</p>
+<h4 id="kdevelop"><a class="toclink" href="#kdevelop">KDevelop</a></h4>
+<p>KDevelop has the same problem but with local variables instead of function parameters. Its last MI command before hanging is:</p>
+<div class="highlight"><pre><span></span><code>46-stack-list-locals --thread 1 --frame 0 --simple-values
+</code></pre></div>
+
+<p>Here is the <a href="https://bugs.kde.org/show_bug.cgi?id=522317">bug report</a>.</p>
+<h4 id="gdbgui"><a class="toclink" href="#gdbgui">gdbgui</a></h4>
+<p>This one was a bit harder to analyze since it uses a different file to communicate with GDB (it was file descriptor 13 for me). It hangs on the same location with the following last words:</p>
+<div class="highlight"><pre><span></span><code>1-stack-list-variables --simple-values
+</code></pre></div>
+
+<p>Here is the <a href="https://github.com/cs01/gdbgui/issues/514">bug report</a>.</p>
+<h4 id="code-blocks"><a class="toclink" href="#code-blocks">Code Blocks</a></h4>
+<p>Code::Blocks hangs much more easily that the first two IDEs. I don't even need to set a breakpoint at a special place: just expanding the "game" global variable causes gdb to hang. The problematic spot I used previously also works to reproduce the issue.</p>
+<p>When I look at the stdin/stdout traces, I saw that Code::Blocks does not use GDB/MI (machine interface) intended for IDEs. Instead, it seems to use the normal interface that we usually use when we run GDB directly without IDE.</p>
+<p>The last command I see in stdin is:</p>
+<div class="highlight"><pre><span></span><code>info args
+</code></pre></div>
+
+<p>This one should display the values of all function arguments, In the typical GDB tradition, "show" actually means deep-print. Code::Blocks calls <code>info locals</code> as well.</p>
+<h4 id="qtcreator"><a class="toclink" href="#qtcreator">QtCreator</a></h4>
+<p>For some reason, I have not managed to enable GDB pretty printers in QtCreator.
+If I go to GDB console and enable them manually, they do work inside GDB console but the GUI watch still does not show anything useful.</p>
+<h2 id="performance"><a class="toclink" href="#performance">Performance</a></h2>
+<p>Performance of value inspection can become a big problem in a debugger.
+Type matching is executed once per every value touched during debugger update. In the end, I replaced the regexes with custom trie + wildcard matching, and also added some early-out by type code in matching.</p>
+<p>Unfortunately, IDEs have some unavoidable issues with performance.</p>
+<p>Recall the idea that <code>make_synthetic</code> should accept a lambda? Expensive traversal of linked lists should not be executed unless the synthetic is expanded. Well, it turns out it was rather pointless, because CLion calls <code>children</code> method immediately when the value is displayed in IDE, even if it is not expanded. The call to <code>children</code> method is here:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">cidr_make_var</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">parent_cidr_var</span><span class="p">,</span> <span class="n">exp</span><span class="p">,</span> <span class="n">lang</span><span class="p">,</span> <span class="n">register</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">raw</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="o">...</span>
+    <span class="c1"># has_more</span>
+    <span class="c1"># compute only for dynamic vars, for non-dynamic vars clients should only use the numchild attribute</span>
+    <span class="k">if</span> <span class="n">dynamic</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">children_val_pretty_printer</span><span class="p">,</span> <span class="s1">&#39;children&#39;</span><span class="p">):</span>
+        <span class="n">has_more</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">children_val_pretty_printer</span><span class="o">.</span><span class="n">children</span><span class="p">():</span>
+            <span class="n">has_more</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">break</span>
+        <span class="n">result</span><span class="p">[</span><span class="s1">&#39;has_more&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">has_more</span>
+    <span class="o">...</span>
+</code></pre></div>
+
+<p><a href="https://sourceware.org/gdb/current/onlinedocs/gdb.html/Pretty-Printing-API.html">GDB documentation advises</a> returning a generator instead of an explicit list from <code>children</code> method. Which makes perfect sense, since CLion by default <a href="https://stackoverflow.com/questions/44612821/how-can-i-show-full-array-without-double-clicking">only displays the first 50 elements</a> even if I expand the value. Indeed, if I have an idList with 65536 elements expanded (the entity array in the game is like that), CLion works much faster with generators than with explicit lists.</p>
+<p>To fix this problem, I replaced explicit lists with generators in a few performance-critical functions:</p>
+<ul>
+<li><code>array_children_list</code> --- for large arrays</li>
+<li><code>linked_list_children_list</code> ---  for linked lists</li>
+<li><code>RawSubclassPrinter.children</code> --- raw members of large structs</li>
+</ul>
+<p>I did not modify all the custom printers I already had: they still returns explicit lists, and use 'plus' operator and append for concatenation. To make it work, I wrapped the three optimized functions with <code>wrap_children_generator</code> decorator that converts a generator into custom container called <code>LazyArray</code>. This container can be built either from list or from iterable, supports concatenation, evaluates generators lazily with caching, implements the basic interface of list. The main benefit of using a decorator here is that I can switch generators off by changing a single flag: in that case the generators will be unrolled into explicit lists immediately.</p>
+<h2 id="conclusion"><a class="toclink" href="#conclusion">Conclusion</a></h2>
+<p>So, after about two months of working on GDB pretty printers on my free weekends and about 1000 lines of code in the base library, I finally got it working the way I wanted!
+I would say I am satisfied with the result. Although I have not done much real debugging with it yet, since I have basically turned myself into a Python developer lately =) But we'll see in the future.</p>
+<p>I have translated the majority of our natvis definitions into GDB. That's about 500 lines of code, covering 54 types out of 95 natvis definitions. Not all of the natvis definitions were ported, I skipped some declarations from the rarely visited corners of the codebase. </p>
+<p>I am quite disappointed with the path I had to walk to get this result. I'm not happy with how much code is required on top of the GDB pretty printers to make them work well. This is too huge of an entry barrier! Putting such features into some popular support library could help, but until such a library exists pretty printers are going to be too weak compared to natvis.</p>
+<p>Finally, GDB should use properly limited deep-printing by default instead of that hanging stuff!</p>
+<h2 id="gallery"><a class="toclink" href="#gallery">Gallery</a></h2>
+<p>Some screenshots without pretty printers:</p>
+<div class="center-content">
+    <img src="https://dirtyhandscoding.github.io/images/B_gdb_pretty_printers/showcase_before_1.png" style="width: 100%; max-width: 326px" />
+    <img src="https://dirtyhandscoding.github.io/images/B_gdb_pretty_printers/showcase_before_2.png" style="width: 100%; max-width: 375px" />
+</div>
+
+<p>And with everything enabled:</p>
+<div class="center-content">
+    <img src="https://dirtyhandscoding.github.io/images/B_gdb_pretty_printers/showcase_after_1.png" style="width: 100%; max-width: 870px" />
+    <img src="https://dirtyhandscoding.github.io/images/B_gdb_pretty_printers/showcase_after_2.png" style="width: 100%; max-width: 757px" />
+    <img src="https://dirtyhandscoding.github.io/images/B_gdb_pretty_printers/showcase_after_3.png" style="width: 100%; max-width: 961px" />
+    <img src="https://dirtyhandscoding.github.io/images/B_gdb_pretty_printers/showcase_after_4.png" style="width: 100%; max-width: 889px" />
+</div>
+          <div class="series-neighbors">
+        <p class="series-prev">
+            <span class="arrow-left"></span>
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-auto-summary.html'>
+                Part 4: Auto-summary
+            </a>
+        </p>
+    </div>
+
+    </div><!-- /.entry-content -->
+    
+    			<!--<script type="text/javascript" src="http://code.jquery.com/jquery-2.1.4.min.js"></script>-->
+		<script src="https://dirtyhandscoding.github.io/theme/js/jquery.min.js"></script>
+	<script type="text/javascript" src="https://dirtyhandscoding.github.io/theme/pelican_comment_system/comments.js"></script>
+	<script type="text/javascript">
+		$(document).ready(function() {
+			CommentSystem.email_user   = "itiswrongemail";
+			CommentSystem.email_domain = "outlook.com";
+
+			$('#pcs-comment-form').on("submit",
+				function( event )
+				{
+					event.preventDefault();
+					$(location).attr('href', CommentSystem.getMailtoLink("natvis-like-experience-with-gdb-pretty-printers-debugging-and-ides"));
+				}
+			);
+		});
+	</script>
+
+    	<section>
+	<div id="pcs-comments-header" class="inline-menu">
+	<header>
+		<div>Comments (0)</div>
+		<button type="button" title="Expand or collapse the comments section" class="icon-label" id="pcs-comments-collapse-button" onclick="CommentSystem.collapsible($('#pcs-comments'), $(this));">
+			<span class="nocss">expand</span>
+		</button>
+			<a href="https://dirtyhandscoding.github.io/feeds/comment.natvis-like-experience-with-gdb-pretty-printers-debugging-and-ides.atom.xml" class="icon-label">atom feed: comments</a>
+	</header>
+	</div>
+	<div id="pcs-comments">
+		<p>There are no comments yet.</p>
+	<section>
+	<div display="none" id="pcs-comment-notreply-helper" />
+	<form id="pcs-comment-form" action="#">
+		<fieldset>
+		<legend>Add a Comment</legend>
+		<div id="pcs-comment-tab-inputs">
+			<input type="hidden" id="pcs-comment-form-input-replyto"/>
+			<label for="pcs-comment-form-input-name">Name</label>
+			<input  id="pcs-comment-form-input-name" type="text" size="40" placeholder="Enter your name or nickname" />
+			<br/>
+			<label for="pcs-comment-form-input-website">Website</label>
+			<input  id="pcs-comment-form-input-website" type="text" size="40" placeholder="Enter your website (optional)" />
+			<br/>
+			<label for="pcs-comment-form-input-empty">Empty</label>
+			<input  id="pcs-comment-form-input-empty" type="text" size="30" placeholder="Do NOT enter anything here!" />
+			<label   for="pcs-comment-form-input-textarea">Your Comment</label>
+			<br/>
+			<textarea id="pcs-comment-form-input-textarea" rows="7" cols="40" placeholder="Enter your comment (markdown is allowed)"></textarea>
+		</div>
+		<div id="pcs-comment-tab-message" style="display:none">
+			<textarea readonly rows="10" cols="40"></textarea>
+		</div>
+
+		<button type="submit"
+				id="pcs-comment-form-button-submit"
+				title="Create mailto link and open it in default email client &#10;Note: you have to send the email to post comment"
+				>Post via email</button>
+		<button type="button"
+				id="pcs-comment-form-button-message"
+				title="See the text of email message to be sent &#10;Note: you can copy it and send manually"
+				onclick="CommentSystem.viewEmail(&quot;natvis-like-experience-with-gdb-pretty-printers-debugging-and-ides&quot;);"
+				>View email text</button>
+		<a target="_blank"
+				id="pcs-comment-gmail-config-help"
+				title="How to configure Chrome to open mailto links in Gmail..."
+				href="https://productforums.google.com/forum/#!topic/gmail/JtWVPbUfh-o"
+				>?</a>
+		</fieldset>
+
+		<!--			<a href="https://dirtyhandscoding.github.io/feeds/comment.natvis-like-experience-with-gdb-pretty-printers-debugging-and-ides.atom.xml">
+				Comment Atom Feed
+			</a>
+-->
+	</form>
+	<script>CommentSystem.displayReplyTo();</script>
+</section>
+
+	</div>
+	<script>
+		$('#pcs-comments').css({display: "none"});
+		$('#pcs-comments-collapse-button').addClass('collapsed');
+	</script>
+</section>
+
+  </article>
+</section>
+        <section id="extras" class="body">
+                <div class="social">
+                        <h2>social</h2>
+                        <ul>
+                            <li><a href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate">atom feed</a></li>
+                            <li><a href="/feeds/all.rss.xml" type="application/rss+xml" rel="alternate">rss feed</a></li>
+
+                        </ul>
+                </div><!-- /.social -->
+        </section><!-- /#extras -->
+
+        <footer id="contentinfo" class="body">
+                <p>Powered by <a href="http://getpelican.com/">Pelican</a>. Theme <a href="https://github.com/blueicefield/pelican-blueidea/">blueidea</a>, customized to personal taste.</p>
+        </footer><!-- /#contentinfo -->
+
+</body>
+</html>

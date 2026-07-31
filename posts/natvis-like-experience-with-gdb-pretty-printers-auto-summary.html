@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <!-- load favicon from /images -->
+        <link rel="icon" type="image/png" href="/images/favicon.png" />
+        <!-- stgatilov: properly detect device width on a mobile -->
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/> 
+
+        <meta charset="utf-8" />
+        <title>Natvis-like experience with GDB pretty printers. Auto-summary</title>
+        <link rel="stylesheet" href="https://dirtyhandscoding.github.io/theme/css/main.css" />
+        <link href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Dirty hands coding Atom Feed" />
+        <link href="/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="Dirty hands coding RSS Feed" />
+
+        <!--[if IE]>
+            <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+        <![endif]-->
+</head>
+
+<body id="index" class="home">
+        <header id="banner" class="body">
+                <h1><a href="https://dirtyhandscoding.github.io/">Dirty hands coding </a></h1>
+                <nav><ul>
+                    <li><a href="/archives.html">ARCHIVES</a></li>
+                    <li><a href="/categories.html">CATEGORIES</a></li>
+                    <li><a href="/tags.html">TAGS</a></li>
+                    <li><a href="/pages/contact.html">CONTACT</a></li>
+                </ul>
+<form class="navbar-search" action="https://dirtyhandscoding.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);">
+                        <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input">
+                    </form>
+                </nav>
+<div id="submenu">
+                    <ul>
+                            <li class="active"><a href="https://dirtyhandscoding.github.io/category/cc.html">C/C++</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/high-performance.html">High performance</a></li>
+                            <li><a href="https://dirtyhandscoding.github.io/category/uncategorized.html">Uncategorized</a></li>
+                    </ul>
+                <div>
+        </header><!-- /#banner -->
+<section id="content" class="body">
+  <article>
+    <header>
+      <h1 class="entry-title">
+        <a href="https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-auto-summary.html" rel="bookmark"
+           title="Permalink to Natvis-like experience with GDB pretty printers. Auto-summary">Natvis-like experience with GDB pretty printers. Auto-summary</a></h1>
+    </header>
+
+    <div class="entry-content">
+<footer class="post-info">
+        <span>31 July 2026</span>
+	        <span>| in <a href="https://dirtyhandscoding.github.io/category/cc.html">C/C++</a></span>
+<span>| tags: <a href="https://dirtyhandscoding.github.io/tag/cpp.html">cpp</a><a href="https://dirtyhandscoding.github.io/tag/debug.html">debug</a><a href="https://dirtyhandscoding.github.io/tag/gdb.html">gdb</a><a href="https://dirtyhandscoding.github.io/tag/natvis.html">natvis</a></span>
+</footer><!-- /.post-info -->          <div class="series-summary series-in-article">
+        <p>This article is part 4 of the <span class="series-name">Natvis-like experience with GDB pretty printers</span> series:</p>
+            <ol class="parts">
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-introduction.html'>Introduction</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-implementing-natvis-features.html'>Implementing natvis features</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-natvis-like-declarative-printers.html'>Natvis-like declarative printers</a>
+        </li>
+        <li class="active">
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-auto-summary.html'>Auto-summary</a>
+        </li>
+        <li >
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-debugging-and-ides.html'>Debugging and IDEs</a>
+        </li>
+    </ol>
+
+    </div>
+
+      <p>Even with semi-declarative pretty printers, it is hardly possible to define a custom printer for every struct in the codebase. So it is great to have some automatic display string generation algorithm which works on everything and makes sense. MSVC debugger deep-prints all the types which are not customized. GDB does not, because we already know that its implementation is unacceptable.</p>
+<p>Deep printing algorithm can be used safely if it accepts an extra parameter <span class="math">\(M\)</span> such that:</p>
+<ol>
+<li>Only the first <span class="math">\(M\)</span> characters are returned if the full output length exceeds <span class="math">\(M\)</span> or is infinite.</li>
+<li>The whole request takes <span class="math">\(O(L)\)</span> time, where <span class="math">\(L\)</span> is the number of characters returned.</li>
+</ol>
+<p>The parameter <span class="math">\(M\)</span> can be deduced from the width of the GUI field or simply hardcoded to some sane limit.</p>
+<p>An algorithm with such properties can be achieved by traversing the children tree recursively, appending all the strings on the fly, and stopping immediately when the length limit is achieved. It is critical that we print at least one character when we enter any node of the tree (e.g. opening brace), otherwise we can go into infinite recursion. If listing the first <span class="math">\(k\)</span> children of a node takes <span class="math">\(O(k)\)</span> time, then this algorithm works strictly in <span class="math">\(O(L)\)</span> time. There is no need for such strictness in the real practice, of course.</p>
+<h2 id="deep-printing-implementation"><a class="toclink" href="#deep-printing-implementation">Deep printing implementation</a></h2>
+<p>To begin with, we need some container to handle the limited concatenation:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># helper for simple concatenation of strings into a text of limited length</span>
+<span class="k">class</span> <span class="nc">StringBuilder</span><span class="p">:</span>
+    <span class="c1"># return True on overflow</span>
+    <span class="k">def</span> <span class="nf">append</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+        <span class="o">...</span>
+    <span class="k">def</span> <span class="nf">finalize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="o">...</span>
+</code></pre></div>
+
+<p>The recursive function which deep-prints a value accepts a builder and pushes all the results into it.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># appends deep-printed text for the given value</span>
+<span class="c1"># return True iff build is overflown after the call</span>
+<span class="k">def</span> <span class="nf">append_deep_summary</span><span class="p">(</span><span class="n">builder</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="n">simple</span> <span class="o">=</span> <span class="n">print_simple_value</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">simple</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">builder</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">simple</span><span class="p">)</span>
+
+    <span class="c1"># avoid TYPE_CODE_TYPEDEF</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">gdb</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">get_basic_type</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">type</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">type</span><span class="o">.</span><span class="n">code</span> <span class="o">==</span> <span class="n">gdb</span><span class="o">.</span><span class="n">TYPE_CODE_ARRAY</span><span class="p">:</span>
+        <span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">elemtype</span><span class="p">)</span> <span class="o">=</span> <span class="n">get_array_length_and_element_type</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">type</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">builder</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;{ &#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">builder</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;, &#39;</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">True</span>
+            <span class="k">if</span> <span class="n">append_deep_summary</span><span class="p">(</span><span class="n">builder</span><span class="p">,</span> <span class="n">value</span><span class="p">[</span><span class="n">i</span><span class="p">]):</span>
+                <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="n">builder</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39; }&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="n">pp</span> <span class="o">=</span> <span class="n">default_visualizer</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">pp</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">getattr</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">pp</span><span class="p">),</span> <span class="s1">&#39;auto_summary&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="c1"># never deep-print custom types with pretty-printer</span>
+        <span class="k">return</span> <span class="n">builder</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pp</span><span class="o">.</span><span class="n">to_string</span><span class="p">())</span>
+
+    <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">type</span><span class="o">.</span><span class="n">code</span> <span class="o">==</span> <span class="n">gdb</span><span class="o">.</span><span class="n">TYPE_CODE_PTR</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">builder</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;null&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">builder</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;0x</span><span class="si">{:x}</span><span class="s1"> &#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">))):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">target_value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">dereference</span><span class="p">()</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">builder</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;bad&#39;</span><span class="p">)</span> <span class="c1"># includes void</span>
+        <span class="k">return</span> <span class="n">append_deep_summary</span><span class="p">(</span><span class="n">builder</span><span class="p">,</span> <span class="n">target_value</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">type</span><span class="o">.</span><span class="n">code</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="n">gdb</span><span class="o">.</span><span class="n">TYPE_CODE_STRUCT</span><span class="p">,</span> <span class="n">gdb</span><span class="o">.</span><span class="n">TYPE_CODE_UNION</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="n">builder</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;???&#39;</span><span class="p">)</span>
+
+    <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">def</span> <span class="nf">process_base</span><span class="p">(</span><span class="n">tvalue</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">tvalue</span><span class="o">.</span><span class="n">type</span><span class="o">.</span><span class="n">fields</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">artificial</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">is_base_class</span><span class="p">:</span>
+                <span class="n">base_type</span> <span class="o">=</span> <span class="n">gdb</span><span class="o">.</span><span class="n">lookup_type</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="n">base_value</span> <span class="o">=</span> <span class="n">tvalue</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">base_type</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">process_base</span><span class="p">(</span><span class="n">base_value</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="kc">True</span>
+                <span class="k">continue</span>
+            <span class="k">nonlocal</span> <span class="n">count</span>
+            <span class="k">if</span> <span class="n">builder</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s%s</span><span class="s1">: &#39;</span> <span class="o">%</span> <span class="p">(</span><span class="s1">&#39;, &#39;</span> <span class="k">if</span> <span class="n">count</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">)):</span>
+                <span class="k">return</span> <span class="kc">True</span>
+            <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">append_deep_summary</span><span class="p">(</span><span class="n">builder</span><span class="p">,</span> <span class="n">get_field</span><span class="p">(</span><span class="n">tvalue</span><span class="p">,</span> <span class="n">f</span><span class="p">)):</span>
+                <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">if</span> <span class="n">builder</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;{ &#39;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">if</span> <span class="n">process_base</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">if</span> <span class="n">builder</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39; }&#39;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="kc">False</span>
+</code></pre></div>
+
+<p>You can notice that some code that duplicates previous sections:</p>
+<ul>
+<li>Enumerating raw members of struct/union. But this time base classes are flattened, and we can early-out on output overflow.</li>
+<li>Enumerating array elements. This time with early-out.</li>
+<li>Resolving pointers by prepending address.</li>
+</ul>
+<p>This is how this traversal can be used to get the final string output:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># returns auto summary as a final string with limit applied</span>
+<span class="c1"># for performance reasons, it should not be concatenated with anything else...</span>
+<span class="k">def</span> <span class="nf">get_auto_summary_as_string</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">prefix</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">):</span>
+    <span class="n">builder</span> <span class="o">=</span> <span class="n">StringBuilder</span><span class="p">()</span>
+    <span class="n">builder</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">append_deep_summary</span><span class="p">(</span><span class="n">builder</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">builder</span><span class="o">.</span><span class="n">finalize</span><span class="p">()</span>
+</code></pre></div>
+
+<h2 id="default-display-string"><a class="toclink" href="#default-display-string">Default display string</a></h2>
+<p>Recall that we want this algorithm to be used for all non-customized types. Let's put it into <code>to_string</code> method of a pretty printer:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># pretty-printer to produce auto-summary for non-customized types</span>
+<span class="k">class</span> <span class="nc">AutoDisplayStringPrinter</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">prefix</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prefix</span> <span class="o">=</span> <span class="n">prefix</span>
+    <span class="k">def</span> <span class="nf">to_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">get_auto_summary_as_string</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prefix</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="k">return</span> <span class="n">raw_children_inline</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Here are some examples of summaries generated by this algorithm. Includes structs, pointers, strings, customized types.</p>
+<div class="center-content">
+    <img src="https://dirtyhandscoding.github.io/images/B_gdb_pretty_printers/auto_summary_default.png" style="width: 100%; max-width: 1012px" />
+</div>
+
+<p>Unfortunately, we can't put this pretty printer into our <code>TdmPrettyPrinterCollection</code> for two reasons: 1) it needs to match all types, and 2) it has to have the least priority among everything. A custom collection class is needed. But it needs some of the same code, so it looks like a big chunk of copy/paste, which is not very interesting.</p>
+<p>What is interesting is how this auto-summary pretty printer is registered in GDB:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">register_auto_display_string</span><span class="p">(</span><span class="n">event</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="c1"># according to docs, gdb.pretty_printers has the least priority of 3 groups</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">gdb</span><span class="o">.</span><span class="n">pretty_printers</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">gdb</span><span class="o">.</span><span class="n">printing</span><span class="o">.</span><span class="n">PrettyPrinter</span><span class="p">)</span> <span class="ow">and</span> <span class="n">x</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;auto_display_string_printer&#39;</span><span class="p">:</span>
+            <span class="k">del</span> <span class="n">gdb</span><span class="o">.</span><span class="n">pretty_printers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">break</span>
+    <span class="n">gdb</span><span class="o">.</span><span class="n">pretty_printers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">AutoDisplayStringDefaultPrinterCollection</span><span class="p">())</span>
+    <span class="c1"># CLion has builtin printer &#39;lookup&#39; which covers all arrays in a way we don&#39;t like</span>
+    <span class="c1"># in order to see array contents in display string, we have to override it</span>
+    <span class="n">gdb</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s1">&#39;disable pretty-printer global lookup&#39;</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">ENABLE_AUTO_SUMMARY</span><span class="p">:</span>
+    <span class="c1"># delay registration until executable is loaded into GDB</span>
+    <span class="c1"># this allows us to set this pretty printer last</span>
+    <span class="c1"># also it is necessary because &#39;lookup&#39; is loaded late</span>
+    <span class="n">gdb</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">executable_changed</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">register_auto_display_string</span><span class="p">)</span>
+    <span class="c1"># but also run it now: this helps for manual refresh of pretty printers without restarting debugging</span>
+    <span class="n">register_auto_display_string</span><span class="p">()</span>
+</code></pre></div>
+
+<p>First, we register the collection differently, we register it to the global list, which has the least priority. Thus deleting the old version on hot-reload is something to be implemented manually.
+Second, CLion has built-in pretty printer collection called <code>lookup</code>, which is weaker than our auto-summary but has greater priority. This built-in collection is registered after <code>.gdbinit</code> is finished, so we have to subscribe to <code>executable_changed</code> GDB event in order to disable it properly.</p>
+<h2 id="custom-printers-and-auto-summary"><a class="toclink" href="#custom-printers-and-auto-summary">Custom printers and auto-summary</a></h2>
+<p>As long as we are careful regarding performance, we can also use the auto-summary inside our custom printers. For example, this is how we make <code>idListPrinter</code> show its elements in the display string:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">idListPrinter</span><span class="p">:</span>
+    <span class="o">...</span>
+    <span class="k">def</span> <span class="nf">to_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="s1">&#39;num&#39;</span><span class="p">])</span>
+        <span class="n">header</span> <span class="o">=</span> <span class="s1">&#39;List[</span><span class="si">%d</span><span class="s1">]&#39;</span> <span class="o">%</span> <span class="n">n</span>
+        <span class="k">if</span> <span class="n">ENABLE_AUTO_SUMMARY</span><span class="p">:</span>
+            <span class="n">builder</span> <span class="o">=</span> <span class="n">StringBuilder</span><span class="p">()</span>
+            <span class="n">builder</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">header</span> <span class="o">+</span> <span class="s1">&#39; { &#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">builder</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;, &#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">append_deep_summary</span><span class="p">(</span><span class="n">builder</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="s1">&#39;list&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]):</span>
+                    <span class="k">break</span>
+            <span class="n">builder</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39; }&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">builder</span><span class="o">.</span><span class="n">finalize</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">header</span>
+</code></pre></div>
+
+<p>Here is an example with deep-printed array elements underlined:</p>
+<div class="center-content">
+    <img src="https://dirtyhandscoding.github.io/images/B_gdb_pretty_printers/auto_summary_idlist.png" style="width: 100%; max-width: 877px" />
+</div>
+
+<script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width < 768) ? "left" : align;
+        indent = (screen.width < 768) ? "0em" : indent;
+        linebreak = (screen.width < 768) ? 'true' : linebreak;
+    }
+
+    var mathjaxscript = document.createElement('script');
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
+
+    var configscript = document.createElement('script');
+    configscript.type = 'text/x-mathjax-config';
+    configscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'none' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    messageStyle: 'normal'," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        availableFonts: ['STIX', 'TeX']," +
+        "        preferredFont: 'STIX'," +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+</script>
+          <div class="series-neighbors">
+        <p class="series-prev">
+            <span class="arrow-left"></span>
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-natvis-like-declarative-printers.html'>
+                Part 3: Natvis-like declarative printers
+            </a>
+        </p>
+        <p class="series-next">
+            <a href='https://dirtyhandscoding.github.io/posts/natvis-like-experience-with-gdb-pretty-printers-debugging-and-ides.html'>
+                Part 5: Debugging and IDEs
+            </a>
+            <span class="arrow-right"></span>
+        </p>
+    </div>
+
+    </div><!-- /.entry-content -->
+    
+    			<!--<script type="text/javascript" src="http://code.jquery.com/jquery-2.1.4.min.js"></script>-->
+		<script src="https://dirtyhandscoding.github.io/theme/js/jquery.min.js"></script>
+	<script type="text/javascript" src="https://dirtyhandscoding.github.io/theme/pelican_comment_system/comments.js"></script>
+	<script type="text/javascript">
+		$(document).ready(function() {
+			CommentSystem.email_user   = "itiswrongemail";
+			CommentSystem.email_domain = "outlook.com";
+
+			$('#pcs-comment-form').on("submit",
+				function( event )
+				{
+					event.preventDefault();
+					$(location).attr('href', CommentSystem.getMailtoLink("natvis-like-experience-with-gdb-pretty-printers-auto-summary"));
+				}
+			);
+		});
+	</script>
+
+    	<section>
+	<div id="pcs-comments-header" class="inline-menu">
+	<header>
+		<div>Comments (0)</div>
+		<button type="button" title="Expand or collapse the comments section" class="icon-label" id="pcs-comments-collapse-button" onclick="CommentSystem.collapsible($('#pcs-comments'), $(this));">
+			<span class="nocss">expand</span>
+		</button>
+			<a href="https://dirtyhandscoding.github.io/feeds/comment.natvis-like-experience-with-gdb-pretty-printers-auto-summary.atom.xml" class="icon-label">atom feed: comments</a>
+	</header>
+	</div>
+	<div id="pcs-comments">
+		<p>There are no comments yet.</p>
+	<section>
+	<div display="none" id="pcs-comment-notreply-helper" />
+	<form id="pcs-comment-form" action="#">
+		<fieldset>
+		<legend>Add a Comment</legend>
+		<div id="pcs-comment-tab-inputs">
+			<input type="hidden" id="pcs-comment-form-input-replyto"/>
+			<label for="pcs-comment-form-input-name">Name</label>
+			<input  id="pcs-comment-form-input-name" type="text" size="40" placeholder="Enter your name or nickname" />
+			<br/>
+			<label for="pcs-comment-form-input-website">Website</label>
+			<input  id="pcs-comment-form-input-website" type="text" size="40" placeholder="Enter your website (optional)" />
+			<br/>
+			<label for="pcs-comment-form-input-empty">Empty</label>
+			<input  id="pcs-comment-form-input-empty" type="text" size="30" placeholder="Do NOT enter anything here!" />
+			<label   for="pcs-comment-form-input-textarea">Your Comment</label>
+			<br/>
+			<textarea id="pcs-comment-form-input-textarea" rows="7" cols="40" placeholder="Enter your comment (markdown is allowed)"></textarea>
+		</div>
+		<div id="pcs-comment-tab-message" style="display:none">
+			<textarea readonly rows="10" cols="40"></textarea>
+		</div>
+
+		<button type="submit"
+				id="pcs-comment-form-button-submit"
+				title="Create mailto link and open it in default email client &#10;Note: you have to send the email to post comment"
+				>Post via email</button>
+		<button type="button"
+				id="pcs-comment-form-button-message"
+				title="See the text of email message to be sent &#10;Note: you can copy it and send manually"
+				onclick="CommentSystem.viewEmail(&quot;natvis-like-experience-with-gdb-pretty-printers-auto-summary&quot;);"
+				>View email text</button>
+		<a target="_blank"
+				id="pcs-comment-gmail-config-help"
+				title="How to configure Chrome to open mailto links in Gmail..."
+				href="https://productforums.google.com/forum/#!topic/gmail/JtWVPbUfh-o"
+				>?</a>
+		</fieldset>
+
+		<!--			<a href="https://dirtyhandscoding.github.io/feeds/comment.natvis-like-experience-with-gdb-pretty-printers-auto-summary.atom.xml">
+				Comment Atom Feed
+			</a>
+-->
+	</form>
+	<script>CommentSystem.displayReplyTo();</script>
+</section>
+
+	</div>
+	<script>
+		$('#pcs-comments').css({display: "none"});
+		$('#pcs-comments-collapse-button').addClass('collapsed');
+	</script>
+</section>
+
+  </article>
+</section>
+        <section id="extras" class="body">
+                <div class="social">
+                        <h2>social</h2>
+                        <ul>
+                            <li><a href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate">atom feed</a></li>
+                            <li><a href="/feeds/all.rss.xml" type="application/rss+xml" rel="alternate">rss feed</a></li>
+
+                        </ul>
+                </div><!-- /.social -->
+        </section><!-- /#extras -->
+
+        <footer id="contentinfo" class="body">
+                <p>Powered by <a href="http://getpelican.com/">Pelican</a>. Theme <a href="https://github.com/blueicefield/pelican-blueidea/">blueidea</a>, customized to personal taste.</p>
+        </footer><!-- /#contentinfo -->
+
+</body>
+</html>
